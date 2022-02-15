@@ -30,12 +30,12 @@ library(ggplot2)
 
 # Bring in our in house functions. First combine them all in a vector
 funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/plot_por_sim.r",
-          "https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/por_sim.r",
-          "https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/parms_calc.r",
-          "https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/u_calc.r",
-          "https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/F_crit.r",
-          "https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/Lotka_r.r",
-          "https://raw.githubusercontent.com/Mar-scal/Assessment_fns/master/Maps/standard_SHK.r")
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/por_sim.r",
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/parms_calc.r",
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/u_calc.r",
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/F_crit.r",
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/Lotka_r.r",
+          "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/standard_SHK.r")
 # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
 for(fun in funs) 
 {
@@ -43,7 +43,6 @@ for(fun in funs)
   source(paste0(getwd(),"/",basename(fun)))
   file.remove(paste0(getwd(),"/",basename(fun)))
 }
-
 
 
 #################################################################
@@ -54,13 +53,6 @@ for(fun in funs)
 ## relative to reference points. By separating the main simulations from the evaluation components
 ## we can run one and not the other if need be - speeds up overall evaluation.
 ## the functions could be better integrated with more time.
-
-
-
-
-
-
-  
 
 # Standard Leslie matrix models with MC simulations------------------------------------------------------------
 
