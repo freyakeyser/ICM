@@ -934,7 +934,7 @@ write.csv(N.options,'options.for.biomass.to.number.animals.NW.csv')
    # rownames(r.decline)<-c('none',as.character(por.sim.result$rem.future))
     #r.decline$biomass<-c(0,as.numeric(por.sim.result$rem.future)*39.34/1000)
     #write.csv(r.decline, paste0('C:/mydocs/ICCAT/POR2020/NW/_repro',repro.cycle,'/r.decline.csv'))
-
+browser()
 write.csv(x0$Results,paste0('C:/mydocs/ICCAT/POR2020/NW/_repro',repro.cycle,'/parameter.vals.csv'))
         
     ## get every 5th year on scale
