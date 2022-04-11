@@ -232,7 +232,7 @@ standard.SHK <- function(linf.mn = 309.8, k.mn = 0.061, t0.mn = -5.90, linf.se =
     steepness <- alpha.hat/(4+alpha.hat) # DK note: Where does the 4 come from?
     steepness.table[i] <- steepness
     # So this is some sort of reproductive metric accounting for generation time
-    R <- 0.633-(0.187*log(r*G)) # DK note: Where do these numbers come from???
+    R <- 0.633-(0.187*log(r*G)) # DK note: Where does this come from
     R.table[i] <- R
     SPRmer <- 1/sqrt(alpha.hat) # Spawning potential ratio at maximum excess recruitment, Reference point from Brooks et al. 2010 paper.
     SPRmer.table[i] <- SPRmer

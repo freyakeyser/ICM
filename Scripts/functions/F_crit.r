@@ -27,8 +27,8 @@ F.crit<-function(age.mat,max.age,mx,r.M,sel,removals)
     si<-exp(-(.M+f.vec)) #### So this is the survivorship for each age class... Z,
     lx<-0
     lx[1]<-1                     #lx is the proportion alive at the start of each age class
-    for(i in 2:(length(si)+1))
-    {lx[i]<-lx[i-1]*si[i-1]} # So here we make this the proportion alive in each age class
+    for(i in 2:(length(si)+1)) lx[i]<-lx[i-1]*si[i-1] # So here we make this the proportion alive in each age class
+    
     spr<-sum(lx[1:length(si)]*.mx) # This gets the lifetime contribution of recruits for each spawner thanks to some heavy lifting from the mx vector.
     # sumsq <- (spr-(1/.litter))^2  #litter is the number of female age-0 offspring
     # DK Note: I believe we are going to want to generalize this, (see the fishmethods sbpr function) to look at other possibilities (make this a percentage of maximum spawner potential (MSP)?)

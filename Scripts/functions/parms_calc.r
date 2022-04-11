@@ -85,7 +85,7 @@ parms.calc<-function(linf.mn = 309.8, k.mn = 0.061, t0.mn = -5.90, linf.se = 13.
   n.pups.year <- n.fem.pups/repro.cycle #Number of female pups per year
 
   # Getting the bounds on the maximum age
-  tmax <- 7*log(2)/k # Where does this relationship come from?
+  tmax <- 7*log(2)/k # DK note Where does this relationship come from?
   max.age.upper.bound <- tmax
   # Grab one of the possible max ages for the simulation
   max.age <- round(runif(1,max.age.lb,max.age.upper.bound))

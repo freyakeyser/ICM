@@ -206,7 +206,7 @@ source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
 # We need to get the N.options object into the por.sim fu
 source("D:/Github/ICM/Scripts/functions/por_sim.r")
 # Note only have an even number of sims or the code will break as is!
-por.sim.result<-por.sim(n.sims=4, repro.cycle=2,N.options = N.options)
+por.sim.result<-por.sim(n.sims=200, repro.cycle=2,N.options = N.options)
 
 
 source("D:/Github/ICM/Scripts/functions/plot_por_sim.r")
