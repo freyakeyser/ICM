@@ -41,7 +41,7 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K)
       file.remove(paste0(getwd(),"/",basename(fun)))
     }
     
-    pop.ops <- as.numeric(quadratic_solver(a = (r/K),b =-(1+r), c = pop.next))
+    pop.ops <- as.numeric(quadratic.solver(a = (r/K),b =-(1+r), c = pop.next))
     Pop.current<-c(pop.ops)+removals.next
   }
   return(list(Pop.current = Pop.current,Pop.ops = pop.ops))
