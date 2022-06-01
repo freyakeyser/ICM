@@ -1,14 +1,18 @@
 # Function to calculate Lotka R
 
 # Function Arguements
-# age.mat:   Age at maturity from params_calc function
-# max.age:   Maximum age
-# mx:        Age specific fecundity
-# r.M:       Age specific Natural mortality
-# u:         Exploitation rate (annual not instantaneous), currently set up to be 1 value.
-# sel:       Selectivity, currently set up to be 1 value
+# age.mat:     Age at maturity from params_calc function
+# n.offspring: Number of offspring a female produces on average, for fish we'll need this for each mature age class, so should be a vector
+# gest:        The gestation period, for fish well make this 1 (i.e. this will effectively enable an individual to reproduce once a year
+# nat.mort:    Natural mortality, probably will be 0.2 for most stocks
+# juv.mult:    A multiplier to allow for juvenile mortality if that's of interest.
+# max.age:     Maximum age
+# repo.lag:    Lag in years between giving birth and conceiving again.  Likely 0 for fish.
+# u:           Exploitation rate (annual not instantaneous), currently set up to be 1 value.
+# sel:         Selectivity, currently set up to be 1 value
 
-lotka.r<-function(age.mat,max.age,mx,r.M,u,sel)
+
+lotka.r<-function(age.mat,n.offspring, gest = 1,nat.mort,juv.mult =1 ,max.age,repo.lag,u,sel)
 {
   # Function to solve for lotka r.
   minimise<-function(start.r)
@@ -21,12 +25,20 @@ lotka.r<-function(age.mat,max.age,mx,r.M,u,sel)
     sumsq <- sum((lotka-1)^2)
     return(sumsq)
   }
-
+  
+  # The gestation period
+  gest.lag<-gest+repo.lag
+  # A vector of something....
+  temp<-c(0,c(rep(0,age.mat+gest-1),n.offspring,rep(c(rep(0,gest.lag-1),offspring),100))) 
+  # A fecundity vector 
+  mx<-temp[1:(max.age+1)]
+  
+  r.M<-c(nat.mort*juv.mult,rep(nat.mort,max.age-1))
+  
   # Instantaneous fishing mortality
   f<- -log(1-u)
   ## Set up the fishing mortality vector based on selectivity, max age, age at maturity, etch
-  #note that the plus 1 is to deal with the parameterization of an age0 in Enric's code
-  f.vec<-c(rep(0,sel+1),rep(f,age.mat-sel),rep(0,max.age-age.mat))
+  f.vec<-c(rep(0,sel),rep(f,max.age-sel))      
   # Survival by age including natural mortality and fishing mortality
   si<-exp(-(r.M+f.vec))
 
@@ -38,13 +50,8 @@ lotka.r<-function(age.mat,max.age,mx,r.M,u,sel)
 
   # Multiply survivorship by fecundity to get reproductive contribution of each age
   lxmx<-lx[1:length(si)]*mx
-  assign(".lxmx",lxmx)     # Store in expression frame
-  assign(".x",x)
-  # print("expected female output from one newly born female")
-  #print(sum(lxmx))
-  #print("mx")
-  #print(mx)
+
   # and now solve the lotka r minimizing function to get an estimate of reproductive capacity.
-  junk<-nlminb(start = 0.03,obj = minimise, lower=-1,upper=0.5)
+  junk<-nlminb(start = 0.03,obj = minimise, lower=-1,upper=1)
   return(junk)
 }
