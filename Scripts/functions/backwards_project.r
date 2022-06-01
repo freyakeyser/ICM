@@ -12,36 +12,26 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K)
 {
 
   
-  ### So first we have the discrete time exponential model, n(t+1) = R*n(t) because we only have data at discrete time steps to update our model.
-  ### Where r = R-1, so rearranging r+1 is what we want for this model, I think?
+  ### So rolling with the easy peasy continuous time exponential
   ### simple exponential population growth, in this formulation with the removals I think I'm saying the removals happen right at the outset
   if(option == 'exponential') 
   {
-    pop.ops <- (pop.next)/(1+r)
+    pop.ops <- (pop.next)/(exp(r))
     Pop.current<- pop.ops+removals.next 
   }
   # Logistic growth model, 
   # The maths be.... N(t+1) = N(t) + rN(t)(1-N(t)/K).... now we are solving for N(t) not N(t+1), so we rearrange terms
   # to get it in the quadratic formula....  (r/K)N^2 -(1+r)N  + N(t+1) = 0... we have r, K, and N(t+1) so we can solve for N(t)
-  # But of course that means there are two possible solutions using the logistic model, the minimum solution from the quadratic
-  # is the biologically reasonable solution, the maximum becomes more reasonable as you increase r, but is generally biologically irrelvant
-  # at least in the parameter space we are interested in.
-  # As with the exponential model, I think doing the removals like this means that they are happening right at the start of the year and don't 
-  # get to contributed to growth/reproduction of the population
+  # But #1, this is the discrete time version, and that's not useful
+  # But thanks to my longtime biological math hero Sarah Otto and her book on Mathematical modelling
+  # This will solve the backwards logistic and is easy peasy to use for forwards logistic
+  # Hurray for math!
   if(option == "logistic")
   {
-    if(!exists('quadratic.solver')) # Just so you only download this once
-
-    {
-      # Get the quadratic solver function
-      fun <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/quadratic_solver.r")
-      # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-      download.file(fun,destfile = basename(fun))
-      source(paste0(getwd(),"/",basename(fun)))
-      file.remove(paste0(getwd(),"/",basename(fun)))
-    }
-    
-    pop.ops <- as.numeric(quadratic.solver(a = (r/K),b =-(1+r), c = pop.next))
+    # Ha, we can use this to solve for N.last, wha!!
+    logistic.n.last <- function(N.last) sum((exp(r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K) - pop.next))^2
+    par = pop.next
+    pop.ops <- optimx(par, logistic.n.last, method = "BFGS")$p1
     Pop.current<-c(pop.ops)+removals.next
   }
   return(list(Pop.current = Pop.current,Pop.ops = pop.ops))

@@ -1,4 +1,4 @@
-# This is a function to estimate population history over time currently using logistic or exponential growth models
+# This is a script to estimate population history over time currently using logistic or exponential growth models
 library(tidyverse)
 
 # Load the backwards projection via github
@@ -21,18 +21,16 @@ file.remove(paste0(getwd(),"/",basename(fun)))
 years <- 1980:2020
 n.years <- length(years)
 pop.next <- 40000
-K = 500000
-r=0.1
-eff = 0.1 # Proportional removals.
+K = 200000
+r=0.4
+eff = 0.28 # Proportional removals.
 res <- data.frame(year = years, 
                   exponential = c(rep(NA,n.years-1),pop.next),
                   rem.exp = c(rep(NA,n.years)),
                   exp.change = c(rep(NA,n.years)),
                   logistic = c(rep(NA,n.years-1),pop.next),
                   logistic.change =  c(rep(NA,n.years)), 
-                  rem.log = c(rep(NA,n.years)),
-                  logistic.unreal = c(rep(NA,n.years-1),pop.next),
-                  logistic.unreal.change = c(rep(NA,n.years)))
+                  rem.log = c(rep(NA,n.years)))
 
 # So a really interesting problem for back calculation of the logistic model.  As you approach K, r becomes increasingly small
 # so if you 'start' the model anywhere near enough to K then you are going to have very little growth.  Buuut if you have removals
@@ -68,31 +66,20 @@ for(i in n.years:2)
   log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals = removal.log)
   pop.log.next <- min(log.res$Pop.current)
   res$logistic[i-1] <- pop.log.next
-  res$logistic.change[i] <- min(log.res$Pop.ops) - res$logistic[i]
+  res$logistic.change[i] <- log.res$Pop.ops - res$logistic[i]
   res$rem.log[i] <- removal.log
-  res$logistic.unreal[i-1] <- max(log.res$Pop.current)
-  res$logistic.unreal.change[i] <- max(log.res$Pop.ops) - res$logistic.unreal[i]
+
 }
 
-res.long <- pivot_longer(res,cols =c('logistic','exponential','logistic.unreal'),names_to = "Model",values_to = "Abundance")
+res.long <- pivot_longer(res,cols =c('logistic','exponential'),names_to = "Model",values_to = "Abundance")
 # Interesting how an F of even 5% seems to obliterate the shape of the logistic curve and makes the logistic model just look like an exponential model
 # I haven't wrapped my head around what that is...
-ggplot(res.long %>% dplyr::filter(Model != 'logistic.unreal')) + geom_line(aes(x=year,y=Abundance,color=Model),size=2) + scale_color_manual(values = c("blue","orange"))
-
-# The unreal solution, but check out what happens as you increase r, the minimum solution increasingly gets silly instead of the max, and in reality the time series
-# could be made up of a hodge-podge of mins and maxs, but I don't think we'll need to worry about it at r values we'll encounter...
-# but still stewing on it! Curious that at high r values the population stabilizes at a N that is much higher than K, what that N level is, is a function of r.. 
-# so N = [(1/r)+1]K when we pull the max values only.... there's a proof I should know in there somewhere isn't there :-D
-ggplot(res.long) + geom_line(aes(x=year,y=Abundance,color=Model),size=2) + 
-  scale_color_manual(values = c("blue","orange",'red'))
-
-#r = 2 was 46500 or 1.5K
-#r = 1 was 62000 or 2K
-#r = 0.5 was 93000 or 3K
-#r = 0.25 was 155000 or 5K
-# N = (1/r +1)K
+ggplot(res.long) + geom_line(aes(x=year,y=Abundance,color=Model),size=2) + scale_color_manual(values = c("blue","orange"))
 
 
+## FOR THE FORWARD PROJECTIONS
+# The forward projection solution is easy as pie so this is good, save this for when I get to the forward projections
+#N.next <- (exp(r)* ((N.last)/(1-(N.last/K)))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K)
 
 
 
