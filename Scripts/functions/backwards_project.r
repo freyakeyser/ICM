@@ -30,12 +30,16 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K)
   # get to contributed to growth/reproduction of the population
   if(option == "logistic")
   {
-    # Get the quadratic solver function
-    fun <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/quadratic_solver.r")
-    # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-    download.file(fun,destfile = basename(fun))
-    source(paste0(getwd(),"/",basename(fun)))
-    file.remove(paste0(getwd(),"/",basename(fun)))
+    if(!exists('quadratic.solver')) # Just so you only download this once
+
+    {
+      # Get the quadratic solver function
+      fun <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/quadratic_solver.r")
+      # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+      download.file(fun,destfile = basename(fun))
+      source(paste0(getwd(),"/",basename(fun)))
+      file.remove(paste0(getwd(),"/",basename(fun)))
+    }
     
     pop.ops <- as.numeric(quadratic_solver(a = (r/K),b =-(1+r), c = pop.next))
     Pop.current<-c(pop.ops)+removals.next

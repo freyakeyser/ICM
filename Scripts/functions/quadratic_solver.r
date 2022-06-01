@@ -6,7 +6,7 @@
 # c:  The population size 'next year'
 
 
-quadratic_solver <- function(a, b, c) 
+quadratic.solver <- function(a, b, c) 
 {
   discriminant <- (b^2) - (4*a*c)
   if(discriminant < 0) return(paste0("This quadratic equation has no real numbered roots."))

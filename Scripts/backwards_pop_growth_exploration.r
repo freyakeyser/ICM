@@ -57,7 +57,7 @@ for(i in n.years:2)
   
   # Start with the exponential model
   if(i != n.years) pop.next = pop.exp.next
-  exp.res <- back.proj(option = "exponential",pop.next = pop.next,K=K,r=r,removals.next = removal.exp)
+  exp.res <- back.proj(option = "exponential",pop.next = pop.next,K=K,r=r,removals = removal.exp)
   pop.exp.next <- exp.res$Pop.current
   res$exponential[i-1] <- pop.exp.next
   res$rem.exp[i] <- removal.exp
@@ -65,7 +65,7 @@ for(i in n.years:2)
   res$exp.F <- res$rem.exp[i]/ res$exponential
   # Run backwards through the logistic model
   if(i != n.years) pop.next = pop.log.next
-  log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals.next = removal.log)
+  log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals = removal.log)
   pop.log.next <- min(log.res$Pop.current)
   res$logistic[i-1] <- pop.log.next
   res$logistic.change[i] <- min(log.res$Pop.ops) - res$logistic[i]
