@@ -1,6 +1,12 @@
 # This is a function to estimate population history over time currently using logistic or exponential growth models
 library(tidyverse)
-source("D:/Github/ICM/Scripts/functions/backwards_project.r")
+
+# Load the backwards projection via github
+fun <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/backwards_project.r")
+# Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+download.file(fun,destfile = basename(fun))
+source(paste0(getwd(),"/",basename(fun)))
+file.remove(paste0(getwd(),"/",basename(fun)))
 
 # OK, so lets compare trajectories of the backwards logistic and backwards exponential
 # Play around with pop.next r, and K, most interesting.  Note that if K <= our the value we start at (i.e. the most recent year) 

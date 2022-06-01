@@ -1,7 +1,8 @@
 # This is a function to estimate population history over time currently using logistic or exponential growth models
 # But it starts at the end of the time series and projects backwards to the start of the time series. Requires 
 # and estimate of r, K(logistic option only), intrinsic rate of growth (r) and the removals for the year
-library(tidyverse)
+
+# Arguments
 #option:        So far we can do exponential or logistic growth, other options are on the table if someone has a good one
 #pop.next:      The population size in year t+1, which is used to estimate the size of the population in year t
 #r:             The intrinsic rate of growth for the population
@@ -9,7 +10,7 @@ library(tidyverse)
 #K:             The carrying capacity, only necessary for logistic model
 back.proj <- function(option = "exponential",pop.next,r,removals.next,K)
 {
-  source("D:/Github/ICM/Scripts/functions/quadratic_solver.r")
+
   
   ### So first we have the discrete time exponential model, n(t+1) = R*n(t) because we only have data at discrete time steps to update our model.
   ### Where r = R-1, so rearranging r+1 is what we want for this model, I think?
@@ -29,6 +30,13 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K)
   # get to contributed to growth/reproduction of the population
   if(option == "logistic")
   {
+    # Get the quadratic solver function
+    fun <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/master/Scripts/functions/quadratic_solver.r")
+    # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+    download.file(fun,destfile = basename(fun))
+    source(paste0(getwd(),"/",basename(fun)))
+    file.remove(paste0(getwd(),"/",basename(fun)))
+    
     pop.ops <- as.numeric(quadratic_solver(a = (r/K),b =-(1+r), c = pop.next))
     Pop.current<-c(pop.ops)+removals.next
   }
