@@ -19,9 +19,9 @@ file.remove(paste0(getwd(),"/",basename(fun)))
 years <- 1980:2020
 n.years <- length(years)
 pop.next <- 40000
-K = 42000
+K = 420000
 r=0.1
-eff = 0.0001 # Proportional removals.
+eff = 0.2 # Proportional removals.
 res <- data.frame(year = years, 
                   exponential = c(rep(NA,n.years-1),pop.next),
                   exp.change = c(rep(NA,n.years)),
@@ -57,7 +57,7 @@ for(i in n.years:2)
   # Start with the exponential model
   if(i != n.years) pop.next = pop.exp.next
   res$F.exp[i] <- removal.exp/ pop.next
-  exp.res <- back.proj(option = "exponential",pop.next = pop.next,K=K,r=r,removals = removal.exp,fishery.timing = 'beginning')
+  exp.res <- back.proj(option = "exponential",pop.next = pop.next,K=K,r=r,removals = removal.exp,fishery.timing = 'end')
   pop.exp.next <- exp.res$Pop.current
   res$exponential[i-1] <- pop.exp.next
   res$rem.exp[i] <- -removal.exp
@@ -65,8 +65,8 @@ for(i in n.years:2)
   # Run backwards through the logistic model
   if(i != n.years) pop.next = pop.log.next
   res$F.log[i] <- removal.log/ pop.next
-  log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals = removal.log,fishery.timing = 'beginning')
-  pop.log.next <- min(log.res$Pop.current)
+  log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals = removal.log,fishery.timing = 'end')
+  pop.log.next <- log.res$Pop.current
   res$logistic[i-1] <- pop.log.next
   res$rem.log[i] <- -removal.log
   res$logistic.change[i] <- res$logistic[i] -  res$logistic[i-1] - res$rem.log[i]
@@ -79,9 +79,26 @@ res.long <- pivot_longer(res,cols =c('logistic','exponential'),names_to = "Model
 # I haven't wrapped my head around what that is...
 ggplot(res.long) + geom_line(aes(x=year,y=Abundance,color=Model),size=2) + scale_color_manual(values = c("blue","orange"))
 
+# So the thing with the backwards calcs that is so mind blowy is that the logistic dynamics are 'slower' than the exponential dynamics
+# This is especially disorienting when you include the removals in the population dynamics (fishery.timing = 'end')
+# For a given r and N the logistic model will always have less growth than the exponential model. When F is low relative to r the models tend to act
+# more or less intuitively, to be at the current N the exponential model grows 'faster' and as such it declines back through time more quickly.
+# But as F approaches r the scenario flips and the population 'declines' into the current value.  Here the logistic dynamics are 
+# more 'extreme' then the exponential dynamics, this is a bit of an artifact of the 'simulation' I have set up where F is 
+# approximately F*pop size, the logistic model has less ability to 'compensate' for this F than the exponential model does, so 
+# the backwards estimates start to take off high (remember we are going backwards so removals get added to the population backwards and pop growth gets removed)
+# Basically at this point F is too high for the logistic growth model and it's saying that level of removals had to lead to a population collapose to your
+# current level, whereas the exponential model is more resillant.
+
+# Now, when we swtich to fishery.timing = 'end', everything is fine when F is low. The same patterns as above hold, but the models are 
+# much more sensitive to lower values of F as they are included within the model dyanmics.  So an F of around half of r leads to
+# the model tripping out
+
+
+# So this will all be most interesting once we have real data in hand and start looking at real removals and the predicted R values.
+
 ## FOR THE FORWARD PROJECTIONS
 # The forward projection solution is easy as pie so this is good, save this for when I get to the forward projections
 #N.next <- (exp(r)* ((N.last)/(1-(N.last/K)))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K)
-
 
 
