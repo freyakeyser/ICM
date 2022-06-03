@@ -19,9 +19,9 @@ file.remove(paste0(getwd(),"/",basename(fun)))
 years <- 1980:2020
 n.years <- length(years)
 pop.next <- 40000
-K = 420000
+K = 80000
 r=0.1
-eff = 0.2 # Proportional removals.
+eff = 0.05 # Proportional removals.
 res <- data.frame(year = years, 
                   exponential = c(rep(NA,n.years-1),pop.next),
                   exp.change = c(rep(NA,n.years)),
@@ -90,9 +90,8 @@ ggplot(res.long) + geom_line(aes(x=year,y=Abundance,color=Model),size=2) + scale
 # Basically at this point F is too high for the logistic growth model and it's saying that level of removals had to lead to a population collapose to your
 # current level, whereas the exponential model is more resillant.
 
-# Now, when we swtich to fishery.timing = 'end', everything is fine when F is low. The same patterns as above hold, but the models are 
-# much more sensitive to lower values of F as they are included within the model dyanmics.  So an F of around half of r leads to
-# the model tripping out
+# Now, when we switch to fishery.timing = 'end' I'm not seeing much difference between the beginning models which is reassuring, but at higher
+# F's we could possible get some weirder behavior if we are anywhere near the K
 
 
 # So this will all be most interesting once we have real data in hand and start looking at real removals and the predicted R values.

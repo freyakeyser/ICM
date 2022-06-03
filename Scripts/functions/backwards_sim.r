@@ -51,6 +51,7 @@ icm.sim<-function(years,n.years,n.sims,forward.n.years,
   
   for(i in 1:(1*n.sims*2))   #2 is a patch to get n.sims values for r that are <r.cutoff 
   {
+    
     junk<-lotka.r(age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],0,0)   #exploitation rate = 0; sel=0  
     vars<-c(junk$par,age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],0,0)
     #browser()
@@ -129,7 +130,7 @@ icm.sim<-function(years,n.years,n.sims,forward.n.years,
     junk<-c()
     for(y in 1:n.years) junk[y]<-u.calc(nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],age.mat.vec[i],sel,rem*0.7,Pop.vec[y])
     mean.u.vec[i]<-mean(junk) 
-  } #end simulation
+  } #end backwards projection
   
   
   
