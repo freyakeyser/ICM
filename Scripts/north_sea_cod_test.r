@@ -2,6 +2,7 @@
 library(readxl)
 library(tidyverse)
 library(rio)
+library(ggthemes)
 
 # OK, lets give this a spin...
 funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
@@ -19,7 +20,10 @@ age.mat <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat
 n.offspring <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_fecundity")
 nat.mort <-  rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_nat_mort")
 abund <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "abundance") # This is in 1000s
+weight.age <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_weight") 
 removals <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_removals")
+
+
 # Or if you want to bring in the local data.
 #age.mat <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_mat")
 #n.offspring <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_fecundity")
@@ -36,9 +40,9 @@ rem <- c(removals$total_catch,NA)
 years <- age.mat$Year
 N.end <- rowSums(abund[59,2:7])
 vpa.abund <- rowSums(abund[,2:7])
-dec.mod <- lm(log(vpa.abund)~years)
-summ.dm <- summary(dec.mod)
-dec.rate <- summ.dm$coefficients[2,1]
+#dec.mod <- lm(log(vpa.abund)~years)
+#summ.dm <- summary(dec.mod)
+#dec.rate <- summ.dm$coefficients[2,1]
 
 # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
 recruits <- abund[,2]
@@ -63,10 +67,20 @@ did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst
 quants <- did.it.work %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
                                                                       med = median(abund),
                                                                       U.50 = quantile(abund,probs=c(0.75)))
+
 # All the results in a plot
-ggplot(did.it.work) +geom_line(aes(x=years,y=abund,color=sim)) 
+ggplot(did.it.work) + geom_line(aes(x=years,y=abund,color=sim)) +xlab("") + ylab("Abundance (1000s)") + 
+                      geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+                      scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +  
+                      theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75)
 # Same thing but functional boxplots
 ggplot(quants) + geom_line(aes(x=years,y= med)) + geom_ribbon(aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
-                 geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund))
+                 geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+                 xlab("") + ylab("Abundance (1000s)") + 
+                 scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +  
+                 theme_few() + theme(legend.position = 'none')
 # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
-ggplot(tst$r) + geom_line(aes(x=years,y=r,group=n.sims,color=n.sims))
+ggplot(tst$r) + geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) + 
+                xlab("") + ylab("Estimated growth rate (r)") + 
+                scale_y_continuous(breaks = seq(0,1.5,by=0.1)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +  
+                theme_few() + theme(legend.position = 'none') + scale_color_viridis_c(end = 0.75)
