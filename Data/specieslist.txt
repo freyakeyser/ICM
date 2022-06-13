@@ -1,0 +1,13 @@
+genus.species
+Scaphirhynchus_albus
+Albula_glossodonta
+Bathycongrus_macrocercus
+Blachea_xenobranchialis
+Conger_oceanicus
+Gnathophis_codoniphorus
+Moringua_penni
+Anarchias_allardicei
+Enchelycore_pardalis
+Cirricaecula_johnsoni
+Ophichthus_microstictus
+Gadus_morhua

@@ -1,136 +1,168 @@
-# The backwards simulation part of the ICM.sim function, this likely will just be me using this for testing purposes.
+# The backwards simulation part of the ICM.sim function which we need for the first part of this work to see how well the model does at backwards projections of the stock
 
 # All the data you need to make it dance...
-# years
-# n.years
-# n.sims
-# forward.n.years
-# age.mat         The age at maturity estimated in parms_calc using life history information
-# max.age         The longevity of the species estimated in parms_calc using life history information
-# nat.mort:       Natural mortality, probably will be 0.2 for most stocks
-# juv.mult:       A multiplier to allow for juvenile mortality if that's of interest.
+# years:          The years you are running the backwards calculation for
+# n.sims:         The number of simulations you are running
+# fwd.n.years:    Number of years forward you want to run the simulation
+
+# mat.age         Age at maturity if one value it is the age at 50% maturity, if a vector it is the age at maturities for each age(or age/year), if a matrix we want this to be unique for each simulation
+#                 we could also let this vary by year, but we'll need to go 3-D array or something for that# ages:           What are the ages you are using this is used to calculate max age, which may not be ideal with plus group stocks.
+
+# nm:             Natural mortality, this wants the instantaneous natural mortality, not the proportional. There are several options here....
+#                 You can enter a vector of instantaneous natural moralities, just put a single number of all ages, or put in a character
+#                 string that will tell the function to calculate the natural mortality based on life history data. If a matrix the rows are different simulations
+#                 we could also let this vary by year, but we'll need to go 3-D array or something for that
+
 # sel             The selectivity of the stock.  Currently this is set up as a single number and it is tweaked in the code, we'll need to make this more complex.
-# removals        Removals from the fishery in a given year.
+
+# rems        Removals from the fishery in a given year.
+
 # N               Population size in a given year
-# repo.lag:       Lag in years between giving birth and conceiving again.  Likely 0 for fish.
-# gest:           The gestation period, for fish well make this 1 (i.e. this will effectively enable an individual to reproduce once a year
+
 # u:              Exploitation rate (annual not instantaneous), currently set up to be 1 value.
-# pop.model:      What method you going to use to get the population growth modeled for the backwards model.  You can use exponential model and logistic model.
+
+# pop.model:      What method you going to use to get the population growth modeled for the backwards model.  You can use exponential model, logistic model, 
+                  #or a dec.rate (decline rate) model.
+
+# What we need for the Lotka.r function...
+# fecund:      How are you estimating fecundity. If a vector it is the number of recruits produced by the average individual in the age classes. 
+#              If a matrix the rows are different simulations. Also have options to set fecund = 'eggs' which we can use if we can get an estimate of egg mortality
+#              fecund = 'SPR' uses the spawner per recruit metric, to get this to work we need to know how many recruits there are in a given year
+#              We could also let this vary by year, but we'll need to go 3-D array or something for that
+# mat.ogive.K 
+# L.inf 
+# K 
+# t0 
+# a.len.wgt 
+# b.len.wgt 
+# a.fec.len 
+
+# w.age           The weight of individuals for each age, if a matrix the rows are different simulations
+#                 we could also let this vary by year, but we'll need to go 3-D array or something for that
+# K
+# dec.rate
 
 
-icm.sim<-function(years,n.years,n.sims,forward.n.years,
-                  age.mat,max.age,nat.mort,juv.mult,sel,removals,N,repo.lag,gest,u,pop.model = "exp")
+icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,fecund = NULL,N.end = NULL,
+                  sel,rems,N,u,pop.model = "exp",
+                  dec.rate = NULL,
+                  L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
+                  sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
-  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
-  source("D:/Github/ICM/Scripts/functions/F_crit.r")
-  source("D:/Github/ICM/Scripts/functions/u_calc.r")
-  source("D:/Github/ICM/Scripts/functions/backwards_project.r")
+  
+  # Download the function to go from inla to sf
+  funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/Lotka_r.r",
+            "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_project.r"
+  )
+  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+  for(fun in funs) 
+  {
+    download.file(fun,destfile = basename(fun))
+    source(paste0(getwd(),"/",basename(fun)))
+    file.remove(paste0(getwd(),"/",basename(fun)))
+  }
+  
+  require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
   
   #Initialize a bunch of objects
   n.years<-length(years)
-  Pop<-matrix(rep(0,n.years*n.sims),n.sims,n.years)    #matrix(data=NA, nrow=<<see below>>, ncol=<<see below>>,byrow=F, dimnames=NULL) 
-  Forward.pop<-matrix(rep(0,forward.n.years*n.sims),n.sims,forward.n.years)
+  Pop<-data.frame(abund = rep(NA,n.years*n.sims),sim = rep(1:n.sims,n.years),years = sort(rep(years,n.sims)))    #matrix(data=NA, nrow=<<see below>>, ncol=<<see below>>,byrow=F, dimnames=NULL) 
   Pop.vec<-rep(NA,n.years)
   rem<-rep(NA,n.years)
-  Forward.pop.vec<-rep(0,forward.n.years)
-  r.vec<-rep(0,n.sims)
-  vars.neg<-matrix(rep(0,10*n.sims*2),n.sims*2,10) ## this is how many arguemnts are in the function; 2*n.sims
-  r.fishing.vec<-rep(0,n.sims)
-  yr<-seq(1,forward.n.years)
-  F.crit.vec<-rep(0,n.sims)
-  N.crit.vec<-rep(0,n.sims)
-  spr.crit.vec<-rep(0,n.sims)
-  spr.f0.vec<-rep(0,n.sims)
-  mean.u.vec<-rep(0,n.sims)
+  r.vec<-NULL
   B1.vec<-rep(0,n.sims) ### backwards projections 
-  B2.vec<-rep(0,n.sims) ### forward projections
-  #removals<-matrix(rep(0,n.years*n.sims),n.sims,n.years)
+  #rems<-matrix(rep(0,n.years*n.sims),n.sims,n.years)
 
-  
-  #create vectors of random pars
-  
-  for(i in 1:(1*n.sims*2))   #2 is a patch to get n.sims values for r that are <r.cutoff 
+  #Calculate r for your example
+  for(i in 1:n.sims)
   {
+    # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
+    # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
+    if(i == 1)
+    {
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+                    L.inf = L.inf,K = K,t0 = t0, a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, a.fec.len = a.fec.len, b.fec.len = b.fec.len,
+                    sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
+    } # end if(i == 1)
+      
+    if(i > 1)
+    {
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+                    L.inf = L.inf,K = K,t0 = t0, a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, a.fec.len = a.fec.len, b.fec.len = b.fec.len,
+                    sd.mat = sd.mat,sd.nm = sd.nm,sd.wt = sd.wt,sd.fecund = sd.fecund)   
+      #browser()
+    }
     
-    junk<-lotka.r(age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],0,0)   #exploitation rate = 0; sel=0  
-    vars<-c(junk$par,age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],0,0)
-    #browser()
-    vars.neg[i,]<-vars
-    #### fishing only on juveniles OR constant selectivity on all individuals older than age 2
-    junk2<-F.crit.calc(age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],sel,100)
-    #junk2<-F.crit.calc.original(age.mat.vec[i],litter.vec[i],gestation.vec[i],nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],lag.vec[i],sel,1) ## note, here you are taking one animal each year
-    
-    r.vec[i]<-junk$par 
-    F.crit.vec[i]<-junk2$f      
-    N.crit.vec[i]<-junk2$N.crit
-    spr.crit.vec[i]<-junk2$spr.f
-    spr.f0.vec[i]<-junk2$spr.f0
-    
+    tmp <-junk$res[,2] 
+    if(length(tmp) == 1) tmp <- rep(tmp,n.years)
+    r.vec[[i]] <- data.frame(r = tmp,years = years[-1],n.sims=i)
+
   }
-  temp.r.vec<-r.vec[r.vec>0 & r.vec<r.cutoff]
-  temp.F.crit.vec<-F.crit.vec[r.vec>0 & r.vec<r.cutoff]
-  temp.N.crit.vec<-N.crit.vec[r.vec>0 & r.vec<r.cutoff]
-  temp.spr.crit.vec<-spr.crit.vec[r.vec>0 & r.vec<r.cutoff]
-  temp.spr.f0.vec<-spr.f0.vec[r.vec>0 & r.vec<r.cutoff]
-  
-  r.vec<-temp.r.vec[1:n.sims]
-  F.crit.vec<-temp.F.crit.vec[1:n.sims]
-  N.crit.vec<-temp.N.crit.vec[1:n.sims]
-  spr.crit.vec<-temp.spr.crit.vec[1:n.sims]
-  spr.f0.vec<-temp.spr.f0.vec[1:n.sims]
-  print(r.vec)
-  
-  
-  
-  
+  #unwrap your r vector
+  r.vec <- do.call('rbind',r.vec)
+  #temp.r.vec<-r.vec[r.vec>0 & r.vec<r.cutoff]
+  #r.vec<-temp.r.vec[1:n.sims]
   ############################################################
   
   #then do backward population projections for each population decline scenario
   
   for(i in 1:n.sims)
   {
+    #
     # Get the final year estimate of your population
-    Pop.vec[n.years]<-N.end[i]
+    Pop.vec[n.years] <- pop.next <- N.end # Assuming this is our known starting point, could add uncertainty to this as well if we want to.
+    r.tmp <- r.vec[r.vec$n.sims == i,]
     #Now run your model backwards with the r from the Lotka function and
     # if you use the logistic growth model the K estimated for the population.
     for(y in n.years:2)
     {
+      
       # DK Note: So for our removals time series, we put the removals between t+1 and t 
       # down as year t+1.  We can change this, but that's how this is set up at the moment.
-      removals.next <- removals[y]
+      removals.next <- rems[y-1]
+      r.up <- r.tmp$r[y-1] # This is only a vector of 58 so gotta reduce index by 1.
       # The exponential model
-      if(pop.model == 'exp') 
+      if(pop.model == 'exponential') 
       {
-        exp.res <- back.proj(option = "exponential",pop.next = Pop.vec[y],r=r,removals = removals.next)
+        exp.res <- back.proj(option = "exponential",pop.next = pop.next,r=r.up,removals = removals.next)
         pop.next <- exp.res$Pop.current
       }
       # If you are running the logistic model
       if(pop.model == 'logistic')
       {
-        log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r,removals = removals.next)
+        log.res <- back.proj(option = "logistic",pop.next = pop.next,K=K,r=r.up,removals = removals.next)
         pop.next <- min(log.res$Pop.current)
       }
+      if(pop.model == 'dec.rate')
+      {
+        # This needs way more thought than it's been given by DK!
+        #removals[i,]<-(-1+exp(r.vec[i])+dec.rate[i]) ## redone with Jamie.
+        pop.next <- pop.next + pop.next*(-1+exp(r.up)+dec.rate[i])
+      }
+      #browser()
       Pop.vec[y-1] <- pop.next
+
     } #Loop through all the years.
-    
-    Pop[i,]<-Pop.vec
+    #browser()
+    Pop$abund[Pop$sim == i]<-Pop.vec
     
     ### calc removals (increase due to r plus amount population declined by):   
     # removals[i,]<-Pop.vec-(Pop.vec/exp(r.vec[i]))+(Pop.vec*(decl.rate[i])) WRONG
-    removals[i,]<-Pop.vec*(-1+exp(r.vec[i])+decl.rate[i]) ## redone with Jamie.
     
     ## removals in final year of population decline to calculate forward exploitation rate   
-    rem<- removals[n.years]
+    #rem<- removals[n.years]
     
     #print(Pop.vec)
-    B1.vec[i]<-lm(log(Pop.vec)~years)$coef[2]  ## logic check
+    #B1.vec[i]<-lm(log(Pop.vec)~years)$coef[2]  ## logic check
     
     
     #calculate exploitation
-    junk<-c()
-    for(y in 1:n.years) junk[y]<-u.calc(nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],age.mat.vec[i],sel,rem*0.7,Pop.vec[y])
-    mean.u.vec[i]<-mean(junk) 
+    #junk<-c()
+    #for(y in 1:n.years) junk[y]<-u.calc(nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],age.mat.vec[i],sel,rem*0.7,Pop.vec[y])
+    #mean.u.vec[i]<-mean(junk) 
   } #end backwards projection
-  
+
+    return(list(Pop=Pop,r = r.vec))
+}
   
   
