@@ -49,7 +49,6 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
-  
   # Download the function to go from inla to sf
   funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/Lotka_r.r",
             "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_project.r"
@@ -81,7 +80,9 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     if(i == 1)
     {
       junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
-                    L.inf = L.inf,K = K,t0 = t0, a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, a.fec.len = a.fec.len, b.fec.len = b.fec.len,
+                    L.inf = L.inf,K = K,t0 = t0, 
+                    a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
+                    a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                     sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
     } # end if(i == 1)
       
@@ -143,7 +144,7 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       Pop.vec[y-1] <- pop.next
 
     } #Loop through all the years.
-    #browser()
+    
     Pop$abund[Pop$sim == i]<-Pop.vec
     
     ### calc removals (increase due to r plus amount population declined by):   

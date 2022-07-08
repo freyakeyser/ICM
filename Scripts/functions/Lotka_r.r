@@ -19,9 +19,8 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
                   #                         2) Using the "Then_pauly" nat mort (L.inf and K only) 
                   #                         3) using the "Jensen K" nat mort(K only needed)
                   #                         4) if using the 'eggs' method to estimate fecundity. (L.inf,K, t0, a.fec.len,b.fec.len)
-                  ) 
+) 
 {
-  
   
   # Some warning messages if you didn't include something you needed...
   #if(nat.mort == "Jensen Maturity")  stop("maybe)
@@ -48,7 +47,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   
   # Set up a dataframe
   res <- data.frame(yrs = NA, r = NA)
-  if(yrs > 1) n.yrs <- length(yrs) else n.yrs <- 2 # Needs to be 2 if just doing it for one year to work how I have loop set up
+  if(length(yrs) > 1) n.yrs <- length(yrs) else n.yrs <- 2 # Needs to be 2 if just doing it for one year to work how I have loop set up
   # Get the maximum age
   max.age <- max(ages)
   # If you are using the fecund = ages, then we need to start from age 0
@@ -97,7 +96,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(is.vector(wt.at.age)) W.age <- rlnorm(length(wt.at.age),wt.at.age,sd.nm)
     if(!is.vector(wt.at.age)) for(i in 1:nrow(wt.at.age)) W.age[i,] <- rlnorm(length(wt.at.age[i,]),as.numeric(log(wt.at.age[i,])),sd.wt)
   }
-  #browser()
+  
   if(is.null(wt.at.age) | fecund =='eggs')
   {
     L.age <- L.inf*(1-exp(-K*(ages-t0))) # Need this for both eggs case and missing weight case.
@@ -134,7 +133,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(is.vector(nat.mort)) nat.mort <- rlnorm(length(nat.mort),nat.mort,sd.nm)
   }
   
-
+  
   
   # Now get the mx vector, 
   if(is.character(fecund))  
@@ -152,11 +151,11 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(fecund == "SPR")
     {
       spr <- sbpr(age=ages,
-                ssbwgt=W.age,
-                partial=rep(1,length(ages)),
-                pmat=mat.ogive,
-                M=nat.mort, # This can just be one value if m assumed fixed.
-                plus=T,oldest =max(ages),pF=0,pM=0.5,incrF = 0.1,MSP=0)	
+                  ssbwgt=W.age,
+                  partial=rep(1,length(ages)),
+                  pmat=mat.ogive,
+                  M=nat.mort, # This can just be one value if m assumed fixed.
+                  plus=T,oldest =max(ages),pF=0,pM=0.5,incrF = 0.1,MSP=0)	
       #So each individual in an age class will contribute this many recruits...
       # Which is what mx should be, I think??
       mx.t <- nat.mort*W.age*mat.ogive/unlist(spr$Reference_Point[2])/2 # Divided by 2 because Euler below in terms of number of females produced
@@ -174,13 +173,17 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     
   }
   
-
-  
+  # remove columns associated with NAs in mx, and remove NAs from mx
+  if(any(is.na(colSums(mx)))) {
+    ages <- ages[-which(is.na(colSums(mx)))]
+    nat.mort <- nat.mort[-which(is.na(colSums(mx)))]
+    mx <- mx[-which(is.na(colSums(mx)))]
+    mx.t <- mx.t[-which(is.na(colSums(mx.t)))]
+  }
   
   # Now run this through all the yrs 
   for(j in 1:(n.yrs-1))
   {
-    
     # Get the r estimate for each year if we are running through a bunch of years
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
@@ -192,11 +195,11 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     for(i in 2:(length(si))) lx[i]<-lx[i-1]*si[i-1]
     #browser()
     if(!is.null(nrow(mx.t))) mx <- mx.t[j,] else mx <- mx.t
-    #browser()
+    
     # Now we are cooking!
     junk<-nlminb(start = 0.1, obj = eulerlotka)
     res[j,] <- c(yrs[j],junk$par)
-
   } # end for(j in 1:(n.yrs-1))
+  
   return(list(res=res,mx=mx,lx=lx,spr = spr,mat.ogive = mat.ogive,wt.at.age = W.age,nat.mort = nat.mort))
 }
