@@ -50,8 +50,8 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
   # Download the function to go from inla to sf
-  funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/Lotka_r.r",
-            "https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_project.r"
+  funs <- c("https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/Lotka_r.r",
+            "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/backwards_project.r"
   )
   # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
   for(fun in funs) 
