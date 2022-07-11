@@ -1,7 +1,18 @@
 ---
 title: "ICM testing"
-output: html_document
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
 ---
+
+The stocks chosen for testing were those with the most complete data.     
+
+Some catch information was missing for certain years. These years are marked with "?" in the plots that follow. The median annual catch was assumed for missing years.     
+
+Catch data for _Sprattus sprattus_ (European sprat) was manually converted to be on the 1000s scale, in order to align with abundance data.          
 
 ```{r, echo=F, message=F, warning=F}
 # OK, so using the ICES assessments here's what we get for North Sea cod.
@@ -10,15 +21,17 @@ library(tidyverse)
 library(rio)
 library(ggthemes)
 
-# OK, lets give this a spin...
-funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
-# Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-for(fun in funs) 
-{
-  download.file(fun,destfile = basename(fun))
-  source(paste0(getwd(),"/",basename(fun)))
-  file.remove(paste0(getwd(),"/",basename(fun)))
-}
+# # OK, lets give this a spin...
+# funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
+# # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+# for(fun in funs) 
+# {
+#   download.file(fun,destfile = basename(fun))
+#   source(paste0(getwd(),"/",basename(fun)))
+#   file.remove(paste0(getwd(),"/",basename(fun)))
+# }
+
+source("./functions/backwards_sim.R")
 
 # Choose 5 ICES stocks that we have the necessary data for
 ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
@@ -81,6 +94,8 @@ for(i in Stocks){
   weight.age <- ASR_sub %>% filter(type=="WA") %>% rename(WA=value) %>% select(-type)
   removals <- ASR_sub %>% filter(type=="Catch") %>% rename(Catch=value) %>% select(-type)
 
+  if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
+  
   data <- age.mat %>%
     full_join(nat.mort) %>%
     full_join(abund) %>%
@@ -94,7 +109,14 @@ for(i in Stocks){
   data$prop.nat.mort <- 1-exp(-data$NM)
   #prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))] <- 1-exp(-prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))])
 
-  rem <- data %>% group_by(Year) %>% summarize(rem=sum(Catch,na.rm=T)) %>% pull(rem)
+  rem <- data %>% group_by(Year) %>% summarize(rem=sum(Catch)) %>% pull(rem)
+  
+  missing_rem<- NULL
+  if(any(is.na(rem))) {
+    missing_rem <- unique(data$Year)[which(is.na(rem))]
+    rem[is.na(rem)] <- median(rem, na.rm=T)
+  }
+  
   #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
   years <- data %>% pull(Year) %>% unique() %>% sort()
   N.end <- sum(data[data$Year==max(years),]$Num)
@@ -104,9 +126,9 @@ for(i in Stocks){
 
   # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
   #minage
-  minage <- as.numeric(min(data$age))
+  minage <- min(as.numeric(data$age))
   #maxage
-  maxage <- as.numeric(max(data$age))
+  maxage <- max(as.numeric(data$age))
   #recruits
   annual <- data.frame(Year=data$Year[data$age==minage], recruits=data$Num[data$age==minage])
   #ssn
@@ -151,6 +173,8 @@ for(i in Stocks){
                                                                         med = median(abund),
                                                                         U.50 = quantile(abund,probs=c(0.75)))
 
+  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
+  
   # All the results in a plot
   print(ggplot() +
           geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
@@ -159,7 +183,8 @@ for(i in Stocks){
           geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
-          ggtitle(i))
+          ggtitle(i) +
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?")))
   # Same thing but functional boxplots
   print(ggplot() +
           geom_line(data=quants, aes(x=years,y= med)) +
@@ -168,7 +193,8 @@ for(i in Stocks){
           xlab("") + ylab("Abundance (1000s)") +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
-          ggtitle(i))
+          ggtitle(i)+
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?")))
   # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
   print(ggplot(tst$r) +
           geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
