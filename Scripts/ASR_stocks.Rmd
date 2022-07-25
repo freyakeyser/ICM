@@ -1,7 +1,8 @@
 ---
 title: "ICM testing"
 output:
-  word_document: default
+  word_document: 
+    reference_docx: template.docx
   html_document: default
   pdf_document: default
 editor_options:
@@ -14,7 +15,8 @@ Some catch information was missing for certain years. These years are marked wit
 
 Catch data for _Sprattus sprattus_ (European sprat) was manually converted to be on the 1000s scale, in order to align with abundance data.          
 
-```{r, echo=F, message=F, warning=F}
+
+```{r, echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 # OK, so using the ICES assessments here's what we get for North Sea cod.
 library(readxl)
 library(tidyverse)
@@ -55,6 +57,29 @@ ASR_long <- ASR_trim %>%
   pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
 
+# summary plots for ALL stocks
+for (i in unique(ASR_long$Stock)) {
+  ASR_sub <- ASR_long %>%
+    select(Year, Stock, type, age, value) %>%
+    filter(Stock==i)
+  maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
+  maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
+  minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
+  forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+        geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+        theme_bw() + 
+        ggtitle(i) +
+    guides(x =  guide_axis(angle = 90)) 
+  print(p1)
+  
+  if(!dir.exists(paste0("../Figures/", i))) dir.create(paste0("../Figures/", i))
+  
+  png(filename=paste0("../Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
+  print(p1)
+  dev.off()
+}
+
 Stocks <- ASR_long %>%
   filter(!is.na(value)) %>%
   group_by(Stock, type) %>%
@@ -80,6 +105,7 @@ Stocks <- ASR_stocks %>%
 
 print(Stocks)
 
+
 # Bring in the data
 # Handy import function from the rio package... tricky part was getting the right filename here...
 for(i in Stocks){
@@ -88,6 +114,18 @@ for(i in Stocks){
     select(Year, Stock, type, age, value) %>%
     filter(Stock==i)
 
+  # maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
+  # maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
+  # minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
+  # forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  # 
+  # # summary plots
+  # print(ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+  #         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+  #         theme_bw() + 
+  #         ggtitle(i)
+  # )
+  
   age.mat <- ASR_sub %>% filter(type=="AM") %>% rename(AM=value) %>% select(-type)
   nat.mort <-  ASR_sub %>% filter(type=="NM") %>% rename(NM=value) %>% select(-type)
   abund <- ASR_sub %>% filter(type=="Num") %>% rename(Num=value) %>% select(-type)
@@ -176,7 +214,7 @@ for(i in Stocks){
   did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
   
   # All the results in a plot
-  print(ggplot() +
+  p2 <- ggplot() +
           geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
           xlab("") +
           ylab("Abundance (1000s)") +
@@ -184,9 +222,9 @@ for(i in Stocks){
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
           ggtitle(i) +
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?")))
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
   # Same thing but functional boxplots
-  print(ggplot() +
+  p3 <- ggplot() +
           geom_line(data=quants, aes(x=years,y= med)) +
           geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
           geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
@@ -194,9 +232,9 @@ for(i in Stocks){
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
           ggtitle(i)+
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?")))
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
   # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
-  print(ggplot(tst$r) +
+  p4 <- ggplot(tst$r) +
           geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
           xlab("") +
           ylab("Estimated growth rate (r)") +
@@ -204,6 +242,20 @@ for(i in Stocks){
           #scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
           scale_color_viridis_c(end = 0.75) +
-          ggtitle(i))
+          ggtitle(i)
+  
+  print(p2)
+  print(p3)
+  print(p4)
+  
+  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p2)
+  dev.off()
+  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_ribbon_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p3)
+  dev.off()
+  png(filename=paste0("../Figures/", i, "/growth_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p4)
+  dev.off()
 }
 ```
