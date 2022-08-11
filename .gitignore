@@ -1,0 +1,16 @@
+.Rproj.user
+*.Rhistory
+.RData
+.Ruserdata
+ASR_2018.xlsx
+.Rproj
+ICM.Rproj
+*ASR_stocks.docx
+*ASR_stocks_2022-07-08.docx
+*ASR_stocks.html
+*ASR_stocks.pdf
+.Rhistory
+.Rhistory
+Figures
+*.png
+*.docx

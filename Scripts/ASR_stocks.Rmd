@@ -1,0 +1,261 @@
+---
+title: "ICM testing"
+output:
+  word_document: 
+    reference_docx: template.docx
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+The stocks chosen for testing were those with the most complete data.     
+
+Some catch information was missing for certain years. These years are marked with "?" in the plots that follow. The median annual catch was assumed for missing years.     
+
+Catch data for _Sprattus sprattus_ (European sprat) was manually converted to be on the 1000s scale, in order to align with abundance data.          
+
+
+```{r, echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+# OK, so using the ICES assessments here's what we get for North Sea cod.
+library(readxl)
+library(tidyverse)
+library(rio)
+library(ggthemes)
+
+# # OK, lets give this a spin...
+# funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
+# # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+# for(fun in funs) 
+# {
+#   download.file(fun,destfile = basename(fun))
+#   source(paste0(getwd(),"/",basename(fun)))
+#   file.remove(paste0(getwd(),"/",basename(fun)))
+# }
+
+source("./functions/backwards_sim.R")
+
+# Choose 5 ICES stocks that we have the necessary data for
+ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
+datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
+# we want:
+# Year, Num, WA, Catch, AM, NM, StockID, Management, Area, Order, Family, Genus, Species
+ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
+                 grep(x=names(ASR), "WA"),
+                 grep(x=names(ASR), "Catch"),
+                 grep(x=names(ASR), "AM"),
+                 grep(x=names(ASR), "NM"))]
+ASRdat <- apply(X = ASRdat, 2, as.numeric)
+ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
+ASR_trim <- cbind(ASRsp, ASRdat)
+
+# need a unique ID for stock
+#table(ASR_trim$Management, ASR_trim$Species)
+ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
+
+ASR_long <- ASR_trim %>%
+  pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year")) %>%
+  separate(col=name, into=c("type", "age"), sep = "\\.")
+
+# summary plots for ALL stocks
+for (i in unique(ASR_long$Stock)) {
+  ASR_sub <- ASR_long %>%
+    select(Year, Stock, type, age, value) %>%
+    filter(Stock==i)
+  maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
+  maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
+  minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
+  forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+        geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+        theme_bw() + 
+        ggtitle(i) +
+    guides(x =  guide_axis(angle = 90)) 
+  print(p1)
+  
+  if(!dir.exists(paste0("../Figures/", i))) dir.create(paste0("../Figures/", i))
+  
+  png(filename=paste0("../Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
+  print(p1)
+  dev.off()
+}
+
+Stocks <- ASR_long %>%
+  filter(!is.na(value)) %>%
+  group_by(Stock, type) %>%
+  summarize(count=length(unique(value))) %>%
+  group_by(Stock) %>%
+  summarize(types=length(unique(type))) %>%
+  filter(types==5) %>%
+  select(Stock)
+
+ASR_stocks <- ASR_long %>%
+  filter(Stock %in% Stocks$Stock) %>%
+  filter(!is.na(value)) %>%
+  arrange(Stock, Year, type, as.numeric(age))
+
+Stocks <- ASR_stocks %>%
+  group_by(Stock, Species, type) %>%
+  summarize(ages=length(unique(age)),
+            years=length(unique(Year))) %>%
+  arrange(-years, -ages) %>%
+  filter(!Species=="morhua") %>%
+  distinct(Stock) %>%
+  pull(Stock)
+
+print(Stocks)
+
+
+# Bring in the data
+# Handy import function from the rio package... tricky part was getting the right filename here...
+for(i in Stocks){
+  print(i)
+  ASR_sub <- ASR_long %>%
+    select(Year, Stock, type, age, value) %>%
+    filter(Stock==i)
+
+  # maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
+  # maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
+  # minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
+  # forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  # 
+  # # summary plots
+  # print(ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+  #         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+  #         theme_bw() + 
+  #         ggtitle(i)
+  # )
+  
+  age.mat <- ASR_sub %>% filter(type=="AM") %>% rename(AM=value) %>% select(-type)
+  nat.mort <-  ASR_sub %>% filter(type=="NM") %>% rename(NM=value) %>% select(-type)
+  abund <- ASR_sub %>% filter(type=="Num") %>% rename(Num=value) %>% select(-type)
+  weight.age <- ASR_sub %>% filter(type=="WA") %>% rename(WA=value) %>% select(-type)
+  removals <- ASR_sub %>% filter(type=="Catch") %>% rename(Catch=value) %>% select(-type)
+
+  if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
+  
+  data <- age.mat %>%
+    full_join(nat.mort) %>%
+    full_join(abund) %>%
+    full_join(weight.age) %>%
+    full_join(removals)
+
+  data$available <- apply(is.na(data[, c("AM", "Num", "WA")]), 1, function(x) all(!x==T))
+  data <- data[data$available==T,]
+
+  # Tidy up the data for input...
+  data$prop.nat.mort <- 1-exp(-data$NM)
+  #prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))] <- 1-exp(-prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))])
+
+  rem <- data %>% group_by(Year) %>% summarize(rem=sum(Catch)) %>% pull(rem)
+  
+  missing_rem<- NULL
+  if(any(is.na(rem))) {
+    missing_rem <- unique(data$Year)[which(is.na(rem))]
+    rem[is.na(rem)] <- median(rem, na.rm=T)
+  }
+  
+  #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
+  years <- data %>% pull(Year) %>% unique() %>% sort()
+  N.end <- sum(data[data$Year==max(years),]$Num)
+  #N.end <- rowSums(abund[nrow(abund),-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
+  #vpa.abund <- rowSums(abund[,-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
+  vpa.abund <- data %>% group_by(Year) %>% summarize(vpa=sum(Num)) %>% pull(vpa)
+
+  # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
+  #minage
+  minage <- min(as.numeric(data$age))
+  #maxage
+  maxage <- max(as.numeric(data$age))
+  #recruits
+  annual <- data.frame(Year=data$Year[data$age==minage], recruits=data$Num[data$age==minage])
+  #ssn
+  data$ssn <- data$Num * data$AM
+  #ssb
+  data$ssb <- data$ssn * data$WA
+  #tot.ssb
+  annual <- data %>% group_by(Year) %>% summarize(tot.ssb = sum(ssb)) %>% left_join(annual)
+  #r.p.ssb
+  annual$r.p.ssb <- annual$recruits/annual$tot.ssb
+  # recs.per.age
+  data <- left_join(data, annual)
+  data$recs.per.age <- data$ssb*data$r.p.ssb
+  # mx
+  data$mx <- data$recs.per.age/data$ssn/2 # Moms only! Dividing by around 8 really nails it for NS cod for whatever reason :-)
+  # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
+
+  age.mat <- data %>% select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% select(-Year)
+  prop.nat.mort <- data %>% select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% select(-Year)
+  weight.age <- data %>% select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% select(-Year)
+  mx <- data %>% select("Year", "age", "mx") %>% pivot_wider(names_from=age, values_from = mx) %>% select(-Year) %>% as.data.frame()
+
+  tst <- icm.sim(years = years,
+                 mat.age = age.mat,
+                 nm = prop.nat.mort,
+                 w.age = weight.age,
+                 ages = minage:maxage,
+                 rems = rem,
+                 fecund = mx,
+                 N.end = N.end,
+                 pop.model = 'exponential',
+                 n.sims = 5,
+                 sd.mat = 0.5,
+                 sd.nm = 0.5,
+                 sd.wt = 0.5,
+                 sd.fecund = 0.5)
+
+  #Combine the data
+  did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
+  # Here get the Upper and lower 50% quantiles to make a functional boxplot
+  quants <- did.it.work %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
+                                                                        med = median(abund),
+                                                                        U.50 = quantile(abund,probs=c(0.75)))
+
+  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
+  
+  # All the results in a plot
+  p2 <- ggplot() +
+          geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
+          xlab("") +
+          ylab("Abundance (1000s)") +
+          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
+          ggtitle(i) +
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # Same thing but functional boxplots
+  p3 <- ggplot() +
+          geom_line(data=quants, aes(x=years,y= med)) +
+          geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
+          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          xlab("") + ylab("Abundance (1000s)") +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') +
+          ggtitle(i)+
+          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
+  p4 <- ggplot(tst$r) +
+          geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
+          xlab("") +
+          ylab("Estimated growth rate (r)") +
+          #scale_y_continuous(breaks = seq(0,1.5,by=0.1)) +
+          #scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') +
+          scale_color_viridis_c(end = 0.75) +
+          ggtitle(i)
+  
+  print(p2)
+  print(p3)
+  print(p4)
+  
+  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p2)
+  dev.off()
+  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_ribbon_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p3)
+  dev.off()
+  png(filename=paste0("../Figures/", i, "/growth_", i, ".png"), height=4, width=6, res=400, units="in")
+  print(p4)
+  dev.off()
+}
+```
