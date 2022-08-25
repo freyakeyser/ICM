@@ -23,7 +23,6 @@ abund <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.x
 weight.age <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_weight") 
 removals <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_dat.xlsx?raw=true',which = "age_removals")
 
-
 # Or if you want to bring in the local data.
 #age.mat <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_mat")
 #n.offspring <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_fecundity")
@@ -32,31 +31,56 @@ removals <- rio::import('https://github.com/Dave-Keith/ICM/blob/main/Data/Cod_da
 #weight.age <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_weight") 
 #removals <- read_xlsx("D:/Github/ICM/Data/Cod_dat.xlsx",sheet = "age_removals")
 
-# Tidy up the data for input...
+# OK, so rejig to get age 0, use a super high M for that and then get recruits from that...
+nat.mort[nrow(nat.mort)+1,] <- cbind(year = 2021,nat.mort[nrow(nat.mort),-1])
+
+nm.tmp <- data.frame(year = nat.mort$year,`0` = 2)
+nat.mort <- cbind(nm.tmp,nat.mort[,2:8])
+# Using that M let's get a new abundance estimate...
+# First turn M into a proportion
 prop.nat.mort <- nat.mort
 prop.nat.mort[,c(-1,-ncol(nat.mort))] <- 1-exp(-prop.nat.mort[,c(-1,-ncol(nat.mort))])
 
+n.tmp <- data.frame(year = abund$Year,`0` = abund[,2]/(1-prop.nat.mort[,2]))
+abund <- cbind(n.tmp,abund[,2:8])
+# Need to add an age at maturity column...
+am.tmp <- data.frame(year = age.mat$Year,`0` = 0)
+age.mat <- cbind(am.tmp,age.mat[,2:8])
+# And weight at age
+wa.tmp <- data.frame(year = weight.age$Year,`0` = 0.01)
+weight.age <- cbind(wa.tmp,weight.age[,2:8])
+
+
+# What if we up the ante on the older age classes...
+#prop.nat.mort[,3:7] <- 0.95
+
 rem <- c(removals$total_catch,NA)
-years <- age.mat$Year
-N.end <- rowSums(abund[59,2:7])
-vpa.abund <- rowSums(abund[,2:7])
+years <- age.mat$year
+N.end <- rowSums(abund[nrow(abund),2:8])
+vpa.abund <- rowSums(abund[,3:8]) # 
 #dec.mod <- lm(log(vpa.abund)~years)
 #summ.dm <- summary(dec.mod)
 #dec.rate <- summ.dm$coefficients[2,1]
 
 # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
 recruits <- abund[,2]
-ssn <- abund[,2:7]*age.mat[,c(-1,-ncol(age.mat))]
+# This is the number of spawners
+ssn <- abund[,2:8]*age.mat[,c(-1,-ncol(age.mat))]
+# To get biomass of spawners
 ssb <- ssn*weight.age[,c(-1,-ncol(weight.age))]
+# Total biomass by year in number/kg or 1000's per tonne
 tot.ssb <- rowSums(ssb)
+# The number of recruits per kilogram of SSB
 r.p.ssb <- recruits/tot.ssb
-recs.per.age <- cbind(r.p.ssb*ssb[,1],r.p.ssb*ssb[,2],r.p.ssb*ssb[,3],r.p.ssb*ssb[,4],r.p.ssb*ssb[,5],r.p.ssb*ssb[,6])
+# Number of recruits produced by everyone in each age class
+recs.per.age <- cbind(r.p.ssb*ssb[,1],r.p.ssb*ssb[,2],r.p.ssb*ssb[,3],r.p.ssb*ssb[,4],r.p.ssb*ssb[,5],r.p.ssb*ssb[,6],r.p.ssb*ssb[,7])
+# SO now we want the number of recruits produced by each mom.
 mx <- recs.per.age/ssn/2 # Moms only! Dividing by around 8 really nails it for NS cod for whatever reason :-)
 # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
 
 
-tst <- icm.sim(years = years,mat.age = age.mat[,c(-1,-ncol(age.mat))],nm = prop.nat.mort[,c(-1,-ncol(nat.mort))],
-               w.age = weight.age[,c(-1,-ncol(weight.age))],ages = 1:6,rems = rem,
+tst <- icm.sim(years = years,mat.age = age.mat[,c(-1,-ncol(age.mat))],nm = prop.nat.mort[,c(-1,-ncol(prop.nat.mort))],
+               w.age = weight.age[,c(-1,-ncol(weight.age))],ages = 0:6,rems = rem,
                fecund = mx,N.end =N.end,pop.model = 'exponential',
                n.sims = 5,sd.mat = 0.5,sd.nm = 0.5,sd.wt = 0.5,sd.fecund = 0.5)
 
