@@ -12,3 +12,5 @@ ICM.Rproj
 .Rhistory
 .Rhistory
 Figures
+*.docx
+*.xlsx
