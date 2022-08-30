@@ -1,10 +1,10 @@
 ,Genus,Species,Assessor_ID,unique_ID,Num.x,WA.x,Age,M,Sources,Age comment ,M comment,Weight comment,Catch,Notes
 37,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-Females,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,,
 38,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-males,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,,
-29,Gadus,macrocephalus,AFSC,AFSC_ macrocephalus_BSAI,1,1,3,2,ESB Gadus macrocephalus.pdf + Stark 2007 Fish Bull paper,Calculated from Stark parameters in Table 3,"Table 2.17a has modelled values, Model 17.2",NA,,1 = Table in Assessment Doc
-30,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_EBS,1,1,2,2,ESB Theragra chalcogramma.pdf,Table page 69,Table page 69,NA,,2 = Text or non-standard table in Assessment Doc
-31,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_GOA,1,1,1,2,GOA Theragra chalcogramma.pdf,Note the assessment uses the avearge from 1983-2017 rather than the time varying. For 1975-1983 I entered the average values,Table 1.24 page 110,NA,,3 = other reference
-32,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_AI,1,1,2,2,AI Theragra chalcogrammus.pdf,Page 162 authors state…the assessment uses the average maturity of the Gulf of Alaska pollock stock from 1983-2006,Using M1 (authors preferred model). Table 1A.14 has alternative mortalities that could be explored,NA,,
+29,Gadus,macrocephalus,AFSC,AFSC_ macrocephalus_BSAI,1,1,3,2,ESB Gadus macrocephalus.pdf + Stark 2007 Fish Bull paper,Calculated from Stark parameters in Table 3,"Table 2.17a has modelled values, Model 17.2",NA,,
+30,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_EBS,1,1,2,2,ESB Theragra chalcogramma.pdf,Table page 69,Table page 69,NA,,
+31,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_GOA,1,1,1,2,GOA Theragra chalcogramma.pdf,Note the assessment uses the avearge from 1983-2017 rather than the time varying. For 1975-1983 I entered the average values,Table 1.24 page 110,NA,,
+32,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_AI,1,1,2,2,AI Theragra chalcogrammus.pdf,Page 162 authors stateàthe assessment uses the average maturity of the Gulf of Alaska pollock stock from 1983-2006,Using M1 (authors preferred model). Table 1A.14 has alternative mortalities that could be explored,NA,,
 33,Pleurogrammus,monopterygius,AFSC,AFSC_monopterygius_BSAI,1,1,2,2,BSAI Pleurogrammus monopterygius.pdf,Table 17.9,Table 17.10,NA,,
 39,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Females,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,,
 40,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Males,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,,
@@ -42,8 +42,8 @@
 59,Gadus,morhua,ICES-NWWG,ICES-NWWG_morhua_FAPL5b1,1,1,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,,In thousands and has all data,
 111,Clupea,harengus,ICES-NWWG,ICES_NWWG-Summer,2,2,1,2,NWWG report 2016.pdf,,"M was wrong in database, fixed it","WA was in as grams, converted to KG, also the 2014 value for age 0 was missing, set it = to the 2015 value.","In thousands of indivduals (was in Millions, so I corrected that)","Numbers were in Table 11.3.2.3, given in millions, converted to thousands"
 44,Gadus,morhua,ICES-WGBFAS,"ICES-WGBFAS_morhua_WBS,25-32",1,1,1,1,BS gadus morhua.pdf,,,,In thousands of individuals includes all data,
-45,Clupea,harengus,ICES-WGBFAS,"ICES-WGBFAS_ harengus_BS 25-29,32",1,1,2,1,WGBFAS report 2015.pdf,Table 6.2.8,,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weird…"
-46,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS 28.1,1,1,2,1,WGBFAS report 2015.pdf,,Table 6.3.5,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weird…"
+45,Clupea,harengus,ICES-WGBFAS,"ICES-WGBFAS_ harengus_BS 25-29,32",1,1,2,1,WGBFAS report 2015.pdf,Table 6.2.8,,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weirdà"
+46,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS 28.1,1,1,2,1,WGBFAS report 2015.pdf,,Table 6.3.5,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weirdà"
 51,Sprattus,sprattus,ICES-WGBFAS,ICES-WGBFAS_sprattus_BS 22-32,1,1,1,1,WGBFAS report 2015.pdf,,,,In thousands of individuals includes all data,"Numbers were secrectly in millsion, converted to 1000s"
 52,Solea,solea,ICES-WGBFAS,ICES-WGBFAS_ solea_NS IIIa 22-24,1,1,2,2,WGBFAS report 2015.pdf,"Knife edge, page 193",Page 193,,In thousands of individuals includes all data,
 112,Gadus,morhua,ICES-WGBFAS,"ICES-WGBFAS_morhua_EBS,25-32",0,1,0,0,WGBFAS report 2015.pdf,,,,Nill,
