@@ -2,8 +2,7 @@
 # Pacific Cod in Bering Sea from Stark 2007.
 logis.mod <- function(alpha,beta,x){1/(1+exp((alpha + beta*x)))}
 
-x <- 0:10
-alpha = 4.7143
+1482/3alpha = 4.7143
 beta = -0.9654
 
 res <- logis.mod(alpha,beta,x)
@@ -26,3 +25,13 @@ beta3 = -0.965
 
 res3 <- logis.mod(alpha3,beta3,x3)
 res3
+
+# NEFSC Altantic Mackerel
+logis.mod2 <- function(alpha,beta,x){1/(1+exp(-beta*(x - alpha)))}
+
+x4 <- 1:15
+alpha4 <- 1.71
+beta4 <- 2.94
+
+res4 <- logis.mod2(alpha4,beta4,x4)
+res4
