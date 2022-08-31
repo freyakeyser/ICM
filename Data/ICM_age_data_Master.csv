@@ -1,84 +1,103 @@
-,Genus,Species,Assessor_ID,unique_ID,Num.x,WA.x,Age,M,Sources,Age comment ,M comment,Weight comment,Notes
-29,Gadus,macrocephalus,AFSC,AFSC_ macrocephalus_BSAI,1,1,3,2,ESB Gadus macrocephalus.pdf + Stark 2007 Fish Bull paper,Calculated from Stark parameters in Table 3,"Table 2.17a has modelled values, Model 17.2",NA,1 = Table in Assessment Doc
-30,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_EBS,1,1,2,2,ESB Theragra chalcogramma.pdf,Table page 69,Table page 69,NA,2 = Text or non-standard table in Assessment Doc
-31,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_GOA,1,1,1,2,GOA Theragra chalcogramma.pdf,Note the assessment uses the avearge from 1983-2017 rather than the time varying. For 1975-1983 I entered the average values,Table 1.24 page 110,NA,3 = other reference
-32,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_AI,1,1,2,2,AI Theragra chalcogrammus.pdf,Page 162 authors state…the assessment uses the average maturity of the Gulf of Alaska pollock stock from 1983-2006,Using M1 (authors preferred model). Table 1A.14 has alternative mortalities that could be explored,NA,
-33,Pleurogrammus,monopterygius,AFSC,AFSC_monopterygius_BSAI,1,1,2,2,BSAI Pleurogrammus monopterygius.pdf,Table 17.9,Table 17.10,NA,
-39,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Females,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,
-40,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Males,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,
-41,Limanda,aspera,AFSC,AFSC_ aspera_EEBSAI,1,1,2,2,BSAI Limada aspera.pdf,Table 4.10,Shown in summary Table at start of document,NA,
-15,Melanogrammus,aeglefinus,CERT-TRAC,CERT-TRAC_aeglefinus_GB,1,1,2,2,GB Melanogrammus aeglefinus.pdf,Found in Table 27,"In text, page 12 and various other places.",NA,
-4,Gadus,morhua,DFO,DFO_morhua_3PS,1,1,1,0,3PS gadus morhua.pdf,,,,The assessment is a cohort analysis so were removed
-5,Hippoglossoides,platessoides,DFO,DFO_platessoides_4T,1,1,1,2,4T hippoglossoides platessoides.pdf,,"Figure 21 M values extracted using ""Web Digitizer""",,
-6,Melanogrammus,aeglefinus,DFO,DFO_aeglefinus_4X5Y,1,1,0,0,4X5Y Melanogrammus aeglefinus.pdf,,,,Data were from index not model so removed
-2,Gadus,morhua,DFO-GSL,"DFO-GSL_morhua_3Pn, 4RS",1,1,1,2,3Pn_4RS Gadus morhua,,Table 21,,
-3,Gadus,morhua,DFO-GSL,"DFO-GSL_morhua_4T,4VN",1,1,2,2,4T_4VN Gadus morhua,Table 13,"Figure 38 values extraced using ""Web Digitizer"" using VPA model",,
-7,Clupea,harengus,DFO-GSL,DFO-GSL_harengus_4T-Spring,1,1,2,2,4T Clupea harengus,Table 27,Given in line on page 23,,
-8,Clupea,harengus,DFO-GSL,DFO-GSL_harengus_4T-Fall,1,1,2,2,4T Clupea harengus,Table 43,Given in line on page 36,,
-10,Scomber,scombrus,DFO-QC,DFO-QC_scombrus_4T,1,1,1,2,4T_Scomber_scombrus,,Table 8,,
-69,Melanogrammus,aeglefinus,ICES-AFWG,"ICES-AFWG_aeglefinus_NEA 1,2",1,1,,,AFWG report 2017.pdf,,,,
-70,Gadus,morhua ,ICES-AFWG,"ICES-AFWG_ morhua _NEA 1,2",1,1,,,AFWG report 2017.pdf,,,,
-71,Gadus,morhua,ICES-AFWG,"ICES-AFWG_morhua_COASTNOR 1,2",1,1,,,AFWG report 2017.pdf,,,,
-60,Ammodytes,dubius,ICES-HAWG,ICES-HAWG_dubius_NS,1,1,,,HAWG report 2016.pdf,,,,
-63,Clupea,harengus,ICES-HAWG,"ICES-HAWG_harengus_CS 6a,7b,7c",1,1,,,HAWG report 2016.pdf,,,,
-64,Clupea,harengus,ICES-HAWG,ICES-HAWG_harengus_WBS 22-24,1,1,,,HAWG report 2016.pdf,,,,
-65,Clupea,harengus,ICES-HAWG,"ICES-HAWG_harengus_ NS-IV 3a,7d",1,1,,,HAWG report 2016.pdf,,,,
-54,Pollachius,virens,ICES-NWWG,ICES-NWWG_virens_FA5a,1,1,,,NWWG report 2016.pdf,,,,
-55,Pollachius,virens,ICES-NWWG,ICES-NWWG_virens_FA5b,1,1,,,NWWG report 2016.pdf,,,,
-56,Melanogrammus,aeglefinus,ICES-NWWG,ICES-NWWG_aeglefinus_ICE5a,1,1,,,NWWG report 2016.pdf,,,,
-57,Melanogrammus,aeglefinus,ICES-NWWG,ICES-NWWG_aeglefinus_FA5b,1,1,,,NWWG report 2016.pdf,,,,
-58,Gadus,morhua,ICES-NWWG,ICES-NWWG_morhua_ICE5a,1,1,,,NWWG report 2016.pdf,,,,
-59,Gadus,morhua,ICES-NWWG,ICES-NWWG_morhua_FAPL5b1,1,1,,,NWWG report 2016.pdf,,,,
-44,Gadus,morhua,ICES-WGBFAS,"ICES-WGBFAS_morhua_WBS,25-32",1,1,,,BS gadus morhua.pdf,,,,
-45,Clupea,harengus,ICES-WGBFAS,"ICES-WGBFAS_ harengus_BS 25-29,32",1,1,,,WGBFAS report 2015.pdf,,,,
-46,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS 28.1,1,1,,,WGBFAS report 2015.pdf,,,,
-51,Sprattus,sprattus,ICES-WGBFAS,ICES-WGBFAS_sprattus_BS 22-32,1,1,,,WGBFAS report 2015.pdf,,,,
-52,Solea,solea,ICES-WGBFAS,ICES-WGBFAS_ solea_NS IIIa 22-24,1,1,,,WGBFAS report 2015.pdf,,,,
-83,Pleuronectes,platessa,ICES-WGCSE,ICES-WGCSE_platessa_IS7e,1,1,,,WGSCE report 2017.pdf,,,,
-84,Pleuronectes,platessa,ICES-WGCSE,ICES-WGCSE_ platessa_IS27.7a,1,1,,,WGSCE report 2017.pdf,,,,
-86,Melanogrammus,aeglefinus,ICES-WGCSE,ICES-WGCSE_aeglefinus_ROCK6b,1,1,,,WGSCE report 2017.pdf,,,,
-87,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_ morhua_CS7e-k,1,1,,,WGCSE report 2017.pdf,,,,
-88,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_morhua_IS7a,1,1,,,WGCSE report 2017.pdf,,,,
-89,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_morhua_NS6a,1,1,,,WGCSE report 2017.pdf,,,,
-74,Sardina,pilchardus,ICES-WGHANSA,ICES-WGHANSA_pilchardus_SP8abd,1,1,,,WGHANSAreport 2017.pft,,,,
-91,Pleuronectes,platessa,ICES-WGNSSK,ICES-WGNSSK_platessa_NS 7d,1,1,,,WGNSSK report 2017.pdf,,,,
-92,Pleuronectes,platessa,ICES-WGNSSK,"ICES-WGNSSK_ platessa_NS 4,20",1,1,,,WGNSSK report 2017.pdf,,,,
-93,Pollachius,virens,ICES-WGNSSK,"ICES-WGNSSK_virens_NS 4,6,3a",1,1,,,WGNSSK report 2017.pdf,,,,
-94,Solea,solea,ICES-WGNSSK,ICES-WGNSSK_solea_NS 7d.,1,1,,,WGNSSK report 2017.pdf,,,,
-96,Merlangius,merlangus,ICES-WGNSSK,ICES-WGNSSK_merlangus_NS 4-7d,1,1,,,WGNSSK report 2017.pdf,,,,
-97,Scopthalmus,maximus,ICES-WGNSSK,ICES-WGNSSK_maximus_NS 4,1,1,,,WGNSSK report 2017.pdf,,,,
-98,Melanogrammus,aeglefinus,ICES-WGNSSK,"ICES-WGNSSK_aeglefinus_NS 4-3a20,6a",1,1,,,WGNSSK report 2016.pdf,,,,
-99,Melanogrammus,aeglefinus,ICES-WGNSSK,ICES-WGNSSK_aeglefinus_NS 4-6a-20,1,1,,,WGNSSK report 2017.pdf,,,,
-100,Gadus,morhua,ICES-WGNSSK,"ICES-WGNSSK_morhua_4-7d,20",1,1,,,"4_7d,20 Gadus morhua.pdf",,,,
-77,Merlangius,merlangus,ICES-WGSCE,ICES-WGSCE_merlangus_CS27.6a,1,1,,,WGSCE report 2017.pdf,,,,
-79,Solea,solea,ICES-WGSCE,"ICES-WGSCE_ solea_CS7f,7g",1,1,,,WGSCE report 2017.pdf,,,,
-80,Solea,solea,ICES-WGSCE,ICES-WGSCE_solea_IS7e,1,1,,,WGSCE report 2017.pdf,,,,
-81,Dicentrarchus,labrax,ICES-WGSCE,"ICES-WGSCE_labrax_IS6a,7b,7j",1,1,,,WGSCE report 2017.pdf,,,,
-101,Micromesistius,poutassou,ICES-WGWIDE,"ICES-WGWIDE_ poutassou_NEA 1-9,12,14",1,1,,,WGWIDE report 2018.pdf,,,,
-102,Clupea,harengus,ICES-WGWIDE,"ICES-WGWIDE_ harengus_NEA 1,2,5,4a,14a",1,1,,,WGWIDE report 2018.pdf,,,,
-16,Scomber,scombrus,NEFSC,NEFSC_scombrus_NWA,1,1,2,1,NWA Scomber scombrus.pdf,Figure A7 using model parameters provided.,,,
-18,Pollachius,virens,NEFSC,NEFSC_ virens_5YZ,1,1,2,2,GB Pollachius virenus,Table C16,Table C16,,Catch was caluclated using Biomass and F
-19,Hippoglossoides,platessoides,NEFSC,NEFSC_platessoides_5YZ,1,1,2,2,GOM  Hippoglossoides platessoides 2019.pdf,Table 12,Table 12,,
-20,Pseudopleuronectes,americanus,NEFSC,NEFSC_ americanus_5Z,1,1,2,2,GB Pseudopleuronectes americanus.pdf,Table A28,Inline text page 5,,
-13,Gadus,morhua,NEFSC-GARMIII,NEFSC-GARMIII_morhua_GB,1,1,1,1,5Z Gadus morhua.pdf,,,,
-14,Melanogrammus,aeglefinus,NEFSC-GARMIII,NEFSC-GARMIII_aeglefinus_5Y,1,1,2,2,GOM Melanogrammus aeglefinus,Table A.7,Inline text page 34,,
-22,Limanda,ferruginea,NEFSC-GARMIII,"NEFSC-GARMIII_ferruginea_SNE, MA",1,1,2,1,SNE MA Limada ferrugina.pdf,"Figure B11, using the Female values",,,
-23,Urophycis,tenuis,NEFSC-GARMIII,"NEFSC-GARMIII_tenuis_GOM, GB",1,1,2,2,"GOM,GB Urophycis tenuis.pdf ",Table B65,Inline text page 524,,
-24,Paralichthys,dentatus,NEFSC-GARMIII,NEFSC-GARMIII_dentatus_MA,1,1,2,2,North Car Paralichthys dentatus.pdf,Table Page 42,Inline text page 23,,
-25,Morone,saxatilis,NEFSC-GARMIII,"NEFSC-GARMIII_saxatilis_GOM, CHATT",1,1,2,2,GOM CHATT Morone saxatilis.pdf,Table Page 540,Table Page 540,,
-26,Glyptocephalus,cynoglossus,NEFSC-GARMIII,NEFSC-GARMIII_cynoglossus_5Y,1,1,2,2,"MAINE, NH Glyptocephalus cynoglossus.pdf",Table B1,"Table B2a, says preferred is 0.2",,
-12,Gadus,morhua,NEFSC-SAW,NEFSC-SAW_morhua_GOM,1,1,2,2,GOM Gadus morhua.pdf,"Figure A.14 using the Females, extracted from figure",Page 21 says Base is 0.2,,
-17,Stenotomus,chrysops,NEFSC-SAW,NEFSC-SAW_chrysops_USATL,1,1,2,2,USATL Stenotomus chrysops,Table Page 27,Page 16,,
-11,Gadus,morhua,NEFSC-TRAC-CERT,NEFSC-TRAC-CERT_morhua_GB,1,1,2,2,GB 5Ze Gadus morhua.pdf + Yang 2015/03 TRAC doc,Age Maturity is from Yang Res Doc,"M is noted in text, using the 0.8+ model, A",,
-27,Gadus,macrocephalus,AFSC,AFSC_macrocephalus_GOA,1,2,2,2,GOA Gadus macrocephalus.pdf,Logistic Model parameters kinda on Page 185 but need to go to Stark 2007 for my parameterization of the model,Shown in summary Table at start of document,"From Table 2.15, using Season 2 as it seems intermediate to the other Season options.",
-28,Gadus,macrocephalus,AFSC,AFSC_macrocephalus_AL to (AI),1,2,2,2,AI Gadus macrocephalus.pdf,"Logistic model parameters are on Page 566, these are same as Bering Sea stock",Shown in summary Table at start of document,From Table 2A.13,
-34,Sebastes,alutus,AFSC,AFSC_alutus_BSAI,1,0,0,2,BSAI Sebastes alutus.pdf,Age-at-Maturity model used but no parrmeters provided,In summary table at the top,Weight at Age used but data not provided,
-35,Atheresthes,stomias,AFSC,AFSC_stomias_BSAI-Females,1,2,2,2,BSAI Atheresthes stomas.pdf,"Age at Maturity from Stark 2011, Stark paper looked at only females (Table 6.7)",In summary table at the top,In a non-standard table (Table 6.7),
-36,Atheresthes,stomias,AFSC,AFSC_stomias_BSAI-Males,1,2,2,2,BSAI Atheresthes stomas.pdf,"Age at Maturity from Zimmerman 1997 (note typo in text) (Table 6.7), though says for females it's the only study with males included. Looked in Zimmerman paper and I have no idea how they got this info, but going with it..",In summary table at the top,In a non-standard table (Table 6.7),
-37,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-Females,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,
-38,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-males,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,
-68,Pollachius,virens,ICES-AFWG,"ICES-AFWG_virens_NEA 1,2",1,0,,,AFWG report 2017.pdf,,,,
-72,Melanogrammus,aeglefinus,ICES-AFWG,ICES-AFWG_aeglefinus_IS7bc-ek,1,0,,,WGSCE report 2017.pdf,,,,
-90,Trisopterus,esmarkii,ICES-WGNSSK,"ICES-WGNSSK_esmarkii_NS 4, 3aN",1,0,,,WGNSSK report 2017.pdf,,,,
-76,Merlangius,merlangus,ICES-WGSCE,ICES-WGCSE_merlangus_CS7a,1,0,,,WGSCE report 2017.pdf,,,,
-83,Gadus,morhua,DFO,DFO_morhua_2J3KL,1,1,3,1,2J3KL Gadus morhua.pdf,"From Cadigan 2015 CJFAS paper, Table 3",,,"The Catch was estimated using the F at age data, so -log(F) * Biomass"
+,Genus,Species,Assessor_ID,unique_ID,Num.x,WA.x,Age,M,Sources,Age comment ,M comment,Weight comment,Catch,Notes
+37,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-Females,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,,
+38,Pleuronectes,quadrituberculatus,AFSC,AFSC_quadrituberculatus_BSAI-males,1,0,0,0,BSAI Pleuronectes quadrituberculatus.pdf,Didn't look given no W/A data,Didn't look given no W/A data,Provided in a figure so couldn't extract data,,
+29,Gadus,macrocephalus,AFSC,AFSC_ macrocephalus_BSAI,1,1,3,2,ESB Gadus macrocephalus.pdf + Stark 2007 Fish Bull paper,Calculated from Stark parameters in Table 3,"Table 2.17a has modelled values, Model 17.2",NA,,
+30,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_EBS,1,1,2,2,ESB Theragra chalcogramma.pdf,Table page 69,Table page 69,NA,,
+31,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_GOA,1,1,1,2,GOA Theragra chalcogramma.pdf,Note the assessment uses the avearge from 1983-2017 rather than the time varying. For 1975-1983 I entered the average values,Table 1.24 page 110,NA,,
+32,Theragra,chalcogramma,AFSC,AFSC_chalcogramma_AI,1,1,2,2,AI Theragra chalcogrammus.pdf,Page 162 authors stateàthe assessment uses the average maturity of the Gulf of Alaska pollock stock from 1983-2006,Using M1 (authors preferred model). Table 1A.14 has alternative mortalities that could be explored,NA,,
+33,Pleurogrammus,monopterygius,AFSC,AFSC_monopterygius_BSAI,1,1,2,2,BSAI Pleurogrammus monopterygius.pdf,Table 17.9,Table 17.10,NA,,
+39,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Females,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,,
+40,Lepidopsetta,polyxystra,AFSC,AFSC_polyxystra_EEBSAI-Males,1,1,2,2,BSAI Lepidopsetta polyxystra.pdf,Table 8.8,Shown in summary Table at start of document,NA,,
+41,Limanda,aspera,AFSC,AFSC_ aspera_EEBSAI,1,1,2,2,BSAI Limada aspera.pdf,Table 4.10,Shown in summary Table at start of document,NA,,
+27,Gadus,macrocephalus,AFSC,AFSC_macrocephalus_GOA,1,2,2,2,GOA Gadus macrocephalus.pdf,Logistic Model parameters kinda on Page 185 but need to go to Stark 2007 for my parameterization of the model,Shown in summary Table at start of document,"From Table 2.15, using Season 2 as it seems intermediate to the other Season options.",,
+28,Gadus,macrocephalus,AFSC,AFSC_macrocephalus_AL to (AI),1,2,2,2,AI Gadus macrocephalus.pdf,"Logistic model parameters are on Page 566, these are same as Bering Sea stock",Shown in summary Table at start of document,From Table 2A.13,,
+34,Sebastes,alutus,AFSC,AFSC_alutus_BSAI,1,0,0,2,BSAI Sebastes alutus.pdf,Age-at-Maturity model used but no parrmeters provided,In summary table at the top,Weight at Age used but data not provided,,
+35,Atheresthes,stomias,AFSC,AFSC_stomias_BSAI-Females,1,2,2,2,BSAI Atheresthes stomas.pdf,"Age at Maturity from Stark 2011, Stark paper looked at only females (Table 6.7)",In summary table at the top,In a non-standard table (Table 6.7),,
+36,Atheresthes,stomias,AFSC,AFSC_stomias_BSAI-Males,1,2,2,2,BSAI Atheresthes stomas.pdf,"Age at Maturity from Zimmerman 1997 (note typo in text) (Table 6.7), though says for females it's the only study with males included. Looked in Zimmerman paper and I have no idea how they got this info, but going with it..",In summary table at the top,In a non-standard table (Table 6.7),,
+15,Melanogrammus,aeglefinus,CERT-TRAC,CERT-TRAC_aeglefinus_GB,1,1,2,2,GB Melanogrammus aeglefinus.pdf,Found in Table 27,"In text, page 12 and various other places.",NA,,
+4,Gadus,morhua,DFO,DFO_morhua_3PS,1,1,1,0,3PS gadus morhua.pdf,,,,,The assessment is a cohort analysis so were removed
+6,Melanogrammus,aeglefinus,DFO,DFO_aeglefinus_4X5Y,1,1,0,0,4X5Y Melanogrammus aeglefinus.pdf,,,,,Data were from index not model so removed
+83,Gadus,morhua,DFO,DFO_morhua_2J3KL,1,1,3,1,2J3KL Gadus morhua.pdf,"From Cadigan 2015 CJFAS paper, Table 3",,,,"The Catch was estimated using the F at age data, so -log(F) * Biomass"
+5,Hippoglossoides,platessoides,DFO,DFO_platessoides_4T,1,1,1,2,4T hippoglossoides platessoides.pdf,,"Figure 21 M values extracted using ""Web Digitizer""",,,
+2,Gadus,morhua,DFO-GSL,"DFO-GSL_morhua_3Pn, 4RS",1,1,1,2,3Pn_4RS Gadus morhua,,Table 21,,,
+3,Gadus,morhua,DFO-GSL,"DFO-GSL_morhua_4T,4VN",1,1,2,2,4T_4VN Gadus morhua,Table 13,"Figure 38 values extraced using ""Web Digitizer"" using VPA model",,,
+7,Clupea,harengus,DFO-GSL,DFO-GSL_harengus_4T-Spring,1,1,2,2,4T Clupea harengus,Table 27,Given in line on page 23,,,
+8,Clupea,harengus,DFO-GSL,DFO-GSL_harengus_4T-Fall,1,1,2,2,4T Clupea harengus,Table 43,Given in line on page 36,,,
+10,Scomber,scombrus,DFO-QC,DFO-QC_scombrus_4T,1,1,1,2,4T_Scomber_scombrus,,Table 8,,,
+69,Melanogrammus,aeglefinus,ICES-AFWG,"ICES-AFWG_aeglefinus_NEA 1,2",1,1,1,1,AFWG report 2017.pdf,,,,In thousands and has all data,
+70,Gadus,morhua ,ICES-AFWG,"ICES-AFWG_ morhua _NEA 1,2",1,1,3,1,AFWG report 2017.pdf,"Table 3.11, data was partially in here, but was missing 1946-83",,,In thousands and has all data,"The first 40 years of Age at maturity was missing, the rest was there."
+71,Gadus,morhua,ICES-AFWG,"ICES-AFWG_morhua_COASTNOR 1,2",1,1,1,2,AFWG report 2017.pdf,,Inline text Page 58,,In thousands and has all data,The Catch is estimated using Numbers from Table 2.1c in 1000s
+68,Pollachius,virens,ICES-AFWG,"ICES-AFWG_virens_NEA 1,2",1,3,1,2,AFWG report 2017.pdf,I imputed the maturity from 1970 to 1984 to be 1985 values,Inline text Page 269,"They forgot to put the W at Age table in, using the data from the 2020 Assessment",In thousands and has all data,Table 5.7.1 is where it becomes clear these are in 1000s.
+103,Sebastes,mentella,ICES-AFWG,ICES-AFWG-DEEP1-2,1,1,1,2,AFWG report 2017.pdf,,,Note that the W@age only starts at Age 6 but the model has numbers for age 2 onwards.,In thousands and has all data,"The Numbers in the age 13-19 age groups was missing, I've added them. Also probably have to start model from Age 6 as 2-5 Numbers don't have corresponding catch (could assume 0) or Weights (tricky!)"
+110,Sebastes,norvegicus,ICES-AFWG,ICES-AFWG-DEEP1-2,3,1,2,1,AFWG report 2017.pdf,Buried in Table 7.8,,,In thousands and has all data,"I included the F estimates, with those the W/A, and the catch data we can get to Biomass and Numbers, neither of which are provided in detail.  That said, we are provided with ""Total Numbers"", which is really all we need to do what we need to do, so I added a column for that."
+60,Ammodytes,dubius,ICES-HAWG,ICES-HAWG_dubius_NS,1,1,1,3,HAWG report 2016.pdf,,"Table 11.2.10, added up the half year mortalities, not perfect but fine",,"In millions, converted to thousands","Num was in millions, converted to 1000s"
+63,Clupea,harengus,ICES-HAWG,"ICES-HAWG_harengus_CS 6a,7b,7c",1,1,1,1,HAWG report 2016.pdf,,,,In thousands and has all data,
+64,Clupea,harengus,ICES-HAWG,ICES-HAWG_harengus_WBS 22-24,1,1,1,1,HAWG report 2016.pdf,,,,In thousands and has all data,
+65,Clupea,harengus,ICES-HAWG,"ICES-HAWG_harengus_ NS-IV 3a,7d",1,1,1,1,HAWG report 2016.pdf,,,,In thousands and has all data,
+54,Pollachius,virens,ICES-NWWG,ICES-NWWG_virens_FA5a,1,2,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,,"Catch in document in Millions, converted to 1000s by DK",Numbers converted to thousands from millions too
+55,Pollachius,virens,ICES-NWWG,ICES-NWWG_virens_FA5b,1,2,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,"Weight in Table 8.3, was in grams, converted to KG",Catch in thousands,
+56,Melanogrammus,aeglefinus,ICES-NWWG,ICES-NWWG_aeglefinus_ICE5a,1,1,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,Converted to kg by DK,"In numbers, DK converted to thousands of indivduals",
+57,Melanogrammus,aeglefinus,ICES-NWWG,ICES-NWWG_aeglefinus_FA5b,1,2,3,2,NWWG report 2016.pdf,"In the very ugly Table 5.6, so I extracted from the 2020 NWWG report, spot check indicates values are same.",Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,Set the 1957-1975 WA = 1976 value as was clearly done in the 2020 NWWG report,"In thousands, note that I extracted values from 2020 NWWG due to formatting issues with 2016 document, numbers largely identical, though the last few years of data wiggle by around 1%.",
+58,Gadus,morhua,ICES-NWWG,ICES-NWWG_morhua_ICE5a,1,1,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,,"Catch in document in Millions, converted to 1000s by DK",Had to convert numbers to thousands from millions too
+59,Gadus,morhua,ICES-NWWG,ICES-NWWG_morhua_FAPL5b1,1,1,1,2,NWWG report 2016.pdf,,Mentioned sparingly in text for all NWWG stocks.  Went with 0.2 for all stocks unless otherwise indicated.  The NWWG 2020 document tended to agree with this where natural mortality is mentioned for these stocks.,,In thousands and has all data,
+111,Clupea,harengus,ICES-NWWG,ICES_NWWG-Summer,2,2,1,2,NWWG report 2016.pdf,,"M was wrong in database, fixed it","WA was in as grams, converted to KG, also the 2014 value for age 0 was missing, set it = to the 2015 value.","In thousands of indivduals (was in Millions, so I corrected that)","Numbers were in Table 11.3.2.3, given in millions, converted to thousands"
+44,Gadus,morhua,ICES-WGBFAS,"ICES-WGBFAS_morhua_WBS,25-32",1,1,1,1,BS gadus morhua.pdf,,,,In thousands of individuals includes all data,
+45,Clupea,harengus,ICES-WGBFAS,"ICES-WGBFAS_ harengus_BS 25-29,32",1,1,2,1,WGBFAS report 2015.pdf,Table 6.2.8,,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weirdà"
+46,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS 28.1,1,1,2,1,WGBFAS report 2015.pdf,,Table 6.3.5,,In thousands of individuals includes all data,"Numbers were in 10-4, so made them into 1000s, weirdà"
+51,Sprattus,sprattus,ICES-WGBFAS,ICES-WGBFAS_sprattus_BS 22-32,1,1,1,1,WGBFAS report 2015.pdf,,,,In thousands of individuals includes all data,"Numbers were secrectly in millsion, converted to 1000s"
+52,Solea,solea,ICES-WGBFAS,ICES-WGBFAS_ solea_NS IIIa 22-24,1,1,2,2,WGBFAS report 2015.pdf,"Knife edge, page 193",Page 193,,In thousands of individuals includes all data,
+112,Gadus,morhua,ICES-WGBFAS,"ICES-WGBFAS_morhua_EBS,25-32",0,1,0,0,WGBFAS report 2015.pdf,,,,Nill,
+113,Gadus,morhua,ICES-WGBFAS,ICES-WGBFAS_morhua_Kattegat,0,1,1,0,WGBFAS report 2015.pdf,,,,In thousands of individuals includes all data,Sure we could pretend M = 0.2 and do something with these data.
+114,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS-30,0,3,1,2,WGBFAS report 2015.pdf,,Page 397,"Table was supposed to be in the document but was missing, in the 2021 WGBFAS report 30 and 31 are combined, so I just used the 30 W@age here.",In thousands of individuals includes all data,Total numbers from model not available in 2015 document and by 2021 30 and 31 are combined in assessment
+115,Clupea,harengus,ICES-WGBFAS,ICES-WGBFAS_harengus_BS-31,0,1,1,2,WGBFAS report 2015.pdf,,Page 422,Weights converted to kg from g,In thousands of individuals includes all data,Total numbers from model not available in 2015 document and by 2021 30 and 31 are combined in assessment
+83,Pleuronectes,platessa,ICES-WGCSE,ICES-WGCSE_platessa_IS7e,1,1,2,2,WGSCE report 2017.pdf,From 2016 stock annex.  Page 10,Page 379 of 2022 assessment says M is same as 'a,,In thousands has all data,
+84,Pleuronectes,platessa,ICES-WGCSE,ICES-WGCSE_ platessa_IS27.7a,1,1,2,2,WGSCE report 2017.pdf,2017 stock annex page 4,2017 stock annex page 5,,In thousands now has all data,"Was missing discards so added those in, Table 25.3.1 and 25.3.2"
+86,Melanogrammus,aeglefinus,ICES-WGCSE,ICES-WGCSE_aeglefinus_ROCK6b,1,1,2,2,WGSCE report 2017.pdf,2017 stock annex page 7,2017 stock annex page 7,,In thousands has all data,
+87,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_ morhua_CS7e-k,1,1,2,2,WGCSE report 2017.pdf,"Had to go to 2020 stock annex, using maturity ogive on page 7 from table.","Had to go to 2020 stock annex, using values from 2012 WG, see page 8",,In thousands has all data,
+88,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_morhua_IS7a,1,1,1,2,WGCSE report 2017.pdf,,Found in the 2017 stock annex Page 8,,In thousands has all data,
+89,Gadus,morhua,ICES-WGCSE,ICES-WGCSE_morhua_NS6a,1,1,2,2,WGCSE report 2017.pdf,"used 2019 value from the 2022 document, see Page 14 of the document for detail",Table page 51,,In thousands has all data,
+74,Sardina,pilchardus,ICES-WGHANSA,ICES-WGHANSA_pilchardus_SP8abd,1,1,1,2,WGHANSAreport 2017.pdf,,Page 175,,"In numbers in tables, converted to 1000s. Has all data","Catch and total numbers were in 'numbers', converted to 1000's to line up with other stocks."
+91,Pleuronectes,platessa,ICES-WGNSSK,ICES-WGNSSK_platessa_NS 7d,1,1,2,2,WGNSSK report 2017.pdf,Page 655,Page 655,,In thousands now has all data,"Catch was in landings only, so I added in discards which start in 2006"
+92,Pleuronectes,platessa,ICES-WGNSSK,"ICES-WGNSSK_ platessa_NS 4,20",1,1,2,2,WGNSSK report 2017.pdf,Table 14.2.9,Table 14.2.9,,"Was the landings instead of total catch, replaced with Table 14.2.2. In thousands",
+93,Pollachius,virens,ICES-WGNSSK,"ICES-WGNSSK_virens_NS 4,6,3a",1,1,2,2,WGNSSK report 2017.pdf,Page 703,Page 703,,In thousands and has all data,
+94,Solea,solea,ICES-WGNSSK,ICES-WGNSSK_solea_NS 7d.,2,2,3,2,WGNSSK report 2020.pdf,Page 904,Page 904,Table 18.5,In thousands had to be calculated from F and Num data,Numbers in thousands from Table 18.15 using WGNSSK 2020
+96,Merlangius,merlangus,ICES-WGNSSK,ICES-WGNSSK_merlangus_NS 4-7d,1,1,2,1,WGNSSK report 2017.pdf,Table 23.1.12.,,,In thousands has all data,
+97,Scopthalmus,maximus,ICES-WGNSSK,ICES-WGNSSK_maximus_NS 4,1,1,1,1,WGNSSK report 2017.pdf,,,,"In thousands has all data, is using actual catch not model predicted",
+98,Melanogrammus,aeglefinus,ICES-WGNSSK,"ICES-WGNSSK_aeglefinus_NS 4-3a20,6a",0,0,0,0,WGNSSK report 2016.pdf,,,,,"Duplicated stock, removed from DB"
+99,Melanogrammus,aeglefinus,ICES-WGNSSK,ICES-WGNSSK_aeglefinus_NS 4-6a-20,1,1,2,1,WGNSSK report 2017.pdf,Page 233,,,In thousands and has all data,
+100,Gadus,morhua,ICES-WGNSSK,"ICES-WGNSSK_morhua_4-7d,20",2,2,2,2,WGNSSK report 2020.pdf,Table 4.5a,Table 4.5b,Table 4.3c,"Table 4.10, includes all data and in thousands, used modeled removals","The stock wasn't in the database, I think because all the tables were images instead of text?  I decided to use the 2020 document for this stock and pull it all in. Had to OCR Numbers, F, and modeled removals"
+90,Trisopterus,esmarkii,ICES-WGNSSK,"ICES-WGNSSK_esmarkii_NS 4, 3aN",1,2,2,2,WGNSSK report 2017.pdf,Table 12.2.6,"Table 12.2.6, table has quarterly numbers, so multiply by 4 to get annual M","Weights given quarterly, using the data for Q3 ",Converted from millions to thousands.  Note fishery was closed in 2005 so I entered 0's for these years (,Changed the Num data to be the .5 so that we have age 0 data. All numbers turned into 1000s
+77,Merlangius,merlangus,ICES-WGCSE,ICES-WGCSE_merlangus_CS27.6a,1,1,2,3,WGSCE report 2017.pdf,Page 1205,"Calculated using formula on Page 1205. I think the assessment uses average value, but this is fine IMHO.",,In thousands has all data,
+79,Solea,solea,ICES-WGCSE,"ICES-WGCSE_ solea_CS7f,7g",1,1,2,2,WGSCE report 2017.pdf,"See page 1041, using f/g value",Page 1041,,In thousands has all data,
+80,Solea,solea,ICES-WGCSE,ICES-WGCSE_solea_IS7e,1,1,2,2,WGSCE report 2017.pdf,Stock Annex Page 7,Stock Annex Page 7,,In thousands has all data,
+81,Dicentrarchus,labrax,ICES-WGCSE,"ICES-WGCSE_labrax_IS6a,7b,7j",1,1,2,2,WGSCE report 2017.pdf,In Table 10.1.1. on 880 (note table numbering is busted),In Table 10.1.1. on 880 (note table numbering is busted),,In thousands has all data,"Note that I am using the maturity and mortality ogives for the neighbouring 4b-c, 7a and 7d-k stock as there isn't information specific to this stock for these."
+76,Merlangius,merlangus,ICES-WGCSE,ICES-WGCSE_merlangus_CS7a,1,2,2,2,WGSCE report 2017.pdf,Table 40.7,Table 40.7,"Table 40.7, using Matrix 1 because the age 1 data isn't 0",In thousands now has all data,"Was missing discardd, so added those in , Table 40.4 and 40.5"
+101,Micromesistius,poutassou,ICES-WGWIDE,"ICES-WGWIDE_ poutassou_NEA 1-9,12,14",1,1,2,2,WGWIDE report 2018.pdf,Table 2.3.5.1,Table 2.3.5.1,,In thousands and has all data,
+102,Clupea,harengus,ICES-WGWIDE,"ICES-WGWIDE_ harengus_NEA 1,2,5,4a,14a",1,1,2,2,WGWIDE report 2018.pdf,Table 4.4.5.1,Page 156,,In thousands and has all data,
+16,Scomber,scombrus,NEFSC,NEFSC_scombrus_NWA,1,1,2,1,NWA Scomber scombrus.pdf,Figure A7 using model parameters provided.,,,,
+18,Pollachius,virens,NEFSC,NEFSC_ virens_5YZ,1,1,2,2,GB Pollachius virenus,Table C16,Table C16,,,Catch was caluclated using Biomass and F
+19,Hippoglossoides,platessoides,NEFSC,NEFSC_platessoides_5YZ,1,1,2,2,GOM  Hippoglossoides platessoides 2019.pdf,Table 12,Table 12,,,
+20,Pseudopleuronectes,americanus,NEFSC,NEFSC_ americanus_5Z,1,1,2,2,GB Pseudopleuronectes americanus.pdf,Table A28,Inline text page 5,,,
+13,Gadus,morhua,NEFSC-GARMIII,NEFSC-GARMIII_morhua_GB,1,1,1,1,5Z Gadus morhua.pdf,,,,,
+22,Limanda,ferruginea,NEFSC-GARMIII,"NEFSC-GARMIII_ferruginea_SNE, MA",1,1,2,1,SNE MA Limada ferrugina.pdf,"Figure B11, using the Female values",,,,
+14,Melanogrammus,aeglefinus,NEFSC-GARMIII,NEFSC-GARMIII_aeglefinus_5Y,1,1,2,2,GOM Melanogrammus aeglefinus,Table A.7,Inline text page 34,,,
+23,Urophycis,tenuis,NEFSC-GARMIII,"NEFSC-GARMIII_tenuis_GOM, GB",1,1,2,2,"GOM,GB Urophycis tenuis.pdf ",Table B65,Inline text page 524,,,
+24,Paralichthys,dentatus,NEFSC-GARMIII,NEFSC-GARMIII_dentatus_MA,1,1,2,2,North Car Paralichthys dentatus.pdf,Table Page 42,Inline text page 23,,,
+25,Morone,saxatilis,NEFSC-GARMIII,"NEFSC-GARMIII_saxatilis_GOM, CHATT",1,1,2,2,GOM CHATT Morone saxatilis.pdf,Table Page 540,Table Page 540,,,
+26,Glyptocephalus,cynoglossus,NEFSC-GARMIII,NEFSC-GARMIII_cynoglossus_5Y,1,1,2,2,"MAINE, NH Glyptocephalus cynoglossus.pdf",Table B1,"Table B2a, says preferred is 0.2",,,
+12,Gadus,morhua,NEFSC-SAW,NEFSC-SAW_morhua_GOM,1,1,2,2,GOM Gadus morhua.pdf,"Figure A.14 using the Females, extracted from figure",Page 21 says Base is 0.2,,,
+17,Stenotomus,chrysops,NEFSC-SAW,NEFSC-SAW_chrysops_USATL,1,1,2,2,USATL Stenotomus chrysops,Table Page 27,Page 16,,,
+11,Gadus,morhua,NEFSC-TRAC-CERT,NEFSC-TRAC-CERT_morhua_GB,1,1,2,2,GB 5Ze Gadus morhua.pdf + Yang 2015/03 TRAC doc,Age Maturity is from Yang Res Doc,"M is noted in text, using the 0.8+ model, A",,,
+,Pleuronectes,platessa,ICES-WGCSE,ICES-WGCSE_platessa_IS7f-g,0,1,2,2,WGCSE report 2017.pdf,Page 789,Page 788,,In thousands has all data,Model didn't converge so no Numbers
+,Melanogrammus,aeglefinus,ICES-WGCSE,ICES-WGCSE_aeglefinus_CS7a,0,1,2,2,WGSCE report 2017.pdf,Stock Annex Page 8,Stock Annex Page 8,,In thousands has all data,
+,Melanogrammus,aeglefinus,ICES-WGCSE,ICES-WGCSE_aeglefinus_ISbc-ek,1,2,2,2,WGSCE report 2017.pdf,Stock Annex page 4,Stock Annex page 4,"Table 7.4.4, I used Matrix 2 as I believe that's the weight at time of spawning",In thousands has all data,"Was missing discards, so added those in, Tables 7.4.3a and Table 7.4.3b"
+,Solea,solea,ICES-WGCSE,ICES-WGCSE_solea_IS7hk,0,1,2,2,WGSCE report 2017.pdf,Page 1177,Page 1177,,In thousands has all data,
+,Engraulis,mordax,ICES-WGHANSA,ICES-WGHANSA_mordax_SP9a,0,1,1,2,WGHANSAreport 2017.pdf,,Page 126,,In thousands and has all data,
+,Trachurus,trachurus,ICES-WGHANSA,ICES-WGHANSA_trachurus_SP9a,0,1,2,2,WGHANSAreport 2017.pdf,Page 271,Page 271,,In thousands and has all data,
+,Solea,solea,ICES-WGNSSK,ICES-WGNSSK_solea_NS4,3,3,3,3,WGNSSK report 2020.pdf,Table 17.4.1,Table 17.4.1 but in text notes that 1963 used 0.9 (Page 846),Table 17.3.1,"In thousands, includes discards from 2002 owards",Moved to 2020 report as all the data we want is in there.
+,,,,,,,,,,,,,,
+Legend,,,,,,,,,,,,,,
+0 indicates we don't have that data,,,,,,,,,,,,,,
+1 indicated data are same as in the original ASD,,,,,,,,,,,,,,
+2 indicates data that have been added from the assessment report,,,,,,,,,,,,,,
+3 indicates data that have been addded in some convoluted way that should be noted in the notes,,,,,,,,,,,,,,
