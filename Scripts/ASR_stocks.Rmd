@@ -9,11 +9,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-The stocks chosen for testing were those with the most complete data.     
-
-Some catch information was missing for certain years. These years are marked with "?" in the plots that follow. The median annual catch was assumed for missing years.     
-
-Catch data for _Sprattus sprattus_ (European sprat) was manually converted to be on the 1000s scale, in order to align with abundance data.          
+The data is now avilable to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
 
 
 ```{r, echo=F, message=F, warning=F, fig.width=6, fig.height=4}
@@ -33,11 +29,15 @@ library(ggthemes)
 #   file.remove(paste0(getwd(),"/",basename(fun)))
 # }
 
-source("./functions/backwards_sim.R")
+source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
 
 # Choose 5 ICES stocks that we have the necessary data for
-ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
+#ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
+ASR <- read.csv("D:/Github/ICM/Data/ICM_data_NE_atlantic_stocks.csv")
 datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
+
+# Replace 0's in Num.tot with NA so the rest of this works as Freya designed it to...
+ASR$Num.tot[ASR$Num.tot == 0] <- NA
 # we want:
 # Year, Num, WA, Catch, AM, NM, StockID, Management, Area, Order, Family, Genus, Species
 ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
@@ -45,8 +45,11 @@ ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
                  grep(x=names(ASR), "Catch"),
                  grep(x=names(ASR), "AM"),
                  grep(x=names(ASR), "NM"))]
+# Making all the data numberic that should be numeric
 ASRdat <- apply(X = ASRdat, 2, as.numeric)
+# Getting the species info back
 ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
+# And binding it all back together
 ASR_trim <- cbind(ASRsp, ASRdat)
 
 # need a unique ID for stock
@@ -54,14 +57,14 @@ ASR_trim <- cbind(ASRsp, ASRdat)
 ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
 
 ASR_long <- ASR_trim %>%
-  pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year")) %>%
+  pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Model","Case","Notes")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
 
 # summary plots for ALL stocks
 for (i in unique(ASR_long$Stock)) {
   ASR_sub <- ASR_long %>%
-    select(Year, Stock, type, age, value) %>%
-    filter(Stock==i)
+    dplyr::select(Year, Stock, type, age, value) %>%
+    dplyr::filter(Stock==i)
   maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
   maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
   minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
@@ -73,46 +76,51 @@ for (i in unique(ASR_long$Stock)) {
     guides(x =  guide_axis(angle = 90)) 
   print(p1)
   
-  if(!dir.exists(paste0("../Figures/", i))) dir.create(paste0("../Figures/", i))
+  if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
   
-  png(filename=paste0("../Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
+  png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
   print(p1)
   dev.off()
 }
 
+
+
 Stocks <- ASR_long %>%
-  filter(!is.na(value)) %>%
-  group_by(Stock, type) %>%
-  summarize(count=length(unique(value))) %>%
-  group_by(Stock) %>%
-  summarize(types=length(unique(type))) %>%
-  filter(types==5) %>%
-  select(Stock)
+                    dplyr::filter(!is.na(value)) %>%
+                    dplyr::group_by(Stock, type) %>%
+                    dplyr::summarize(count=length(unique(value))) %>%
+                    dplyr::group_by(Stock) %>%
+                    dplyr::summarize(types=length(unique(type))) %>%
+                    dplyr::filter(types==5) %>%
+                    dplyr::select(Stock)
 
 ASR_stocks <- ASR_long %>%
-  filter(Stock %in% Stocks$Stock) %>%
-  filter(!is.na(value)) %>%
-  arrange(Stock, Year, type, as.numeric(age))
+                        dplyr::filter(Stock %in% Stocks$Stock) %>%
+                        dplyr::filter(!is.na(value)) %>%
+                        dplyr::arrange(Stock, Year, type, as.numeric(age))
 
-Stocks <- ASR_stocks %>%
-  group_by(Stock, Species, type) %>%
-  summarize(ages=length(unique(age)),
-            years=length(unique(Year))) %>%
-  arrange(-years, -ages) %>%
-  filter(!Species=="morhua") %>%
-  distinct(Stock) %>%
-  pull(Stock)
-
-print(Stocks)
-
-
+# Stocks <- ASR_stocks %>%
+#                       dplyr::group_by(Stock, Species, type) %>%
+#                       dplyr::summarize(ages=length(unique(age)),
+#                                 years=length(unique(Year))) %>%
+#                       dplyr::arrange(-years, -ages) %>%
+#                       dplyr::filter(!Species=="morhua") %>%
+#                       dplyr::distinct(Stock) %>%
+#                       dplyr::pull(Stock)
+# 
+# print(Stocks)
+Stocks <- Stocks$Stock
+# Going to remove Sebastes norvegicus because we can't get fecundity as the only data we have is total numbers.
+Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
+# Esmarki doesn't work great as it is assessed using a quarterly modle.
+Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
 # Bring in the data
 # Handy import function from the rio package... tricky part was getting the right filename here...
 for(i in Stocks){
   print(i)
   ASR_sub <- ASR_long %>%
-    select(Year, Stock, type, age, value) %>%
-    filter(Stock==i)
+    dplyr::select(Year, Stock, type, age, value) %>%
+    dplyr::filter(Stock==i)
 
   # maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
   # maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
@@ -126,13 +134,13 @@ for(i in Stocks){
   #         ggtitle(i)
   # )
   
-  age.mat <- ASR_sub %>% filter(type=="AM") %>% rename(AM=value) %>% select(-type)
-  nat.mort <-  ASR_sub %>% filter(type=="NM") %>% rename(NM=value) %>% select(-type)
-  abund <- ASR_sub %>% filter(type=="Num") %>% rename(Num=value) %>% select(-type)
-  weight.age <- ASR_sub %>% filter(type=="WA") %>% rename(WA=value) %>% select(-type)
-  removals <- ASR_sub %>% filter(type=="Catch") %>% rename(Catch=value) %>% select(-type)
+  age.mat <- ASR_sub %>% dplyr::filter(type=="AM") %>% dplyr::rename(AM=value) %>% dplyr::select(-type)
+  nat.mort <-  ASR_sub %>% dplyr::filter(type=="NM") %>% dplyr::rename(NM=value) %>% dplyr::select(-type)
+  abund <- ASR_sub %>% dplyr::filter(type=="Num") %>% dplyr::rename(Num=value) %>% dplyr::select(-type)
+  weight.age <- ASR_sub %>% dplyr::filter(type=="WA") %>% dplyr::rename(WA=value) %>% dplyr::select(-type)
+  removals <- ASR_sub %>% dplyr::filter(type=="Catch") %>% dplyr::rename(Catch=value) %>% dplyr::select(-type)
 
-  if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
+ # if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
   
   data <- age.mat %>%
     full_join(nat.mort) %>%
@@ -147,7 +155,7 @@ for(i in Stocks){
   data$prop.nat.mort <- 1-exp(-data$NM)
   #prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))] <- 1-exp(-prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))])
 
-  rem <- data %>% group_by(Year) %>% summarize(rem=sum(Catch)) %>% pull(rem)
+  rem <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(rem=sum(Catch,na.rm=T)) %>% dplyr::pull(rem)
   
   missing_rem<- NULL
   if(any(is.na(rem))) {
@@ -160,7 +168,7 @@ for(i in Stocks){
   N.end <- sum(data[data$Year==max(years),]$Num)
   #N.end <- rowSums(abund[nrow(abund),-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
   #vpa.abund <- rowSums(abund[,-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
-  vpa.abund <- data %>% group_by(Year) %>% summarize(vpa=sum(Num)) %>% pull(vpa)
+  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(vpa=sum(Num)) %>% pull(vpa)
 
   # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
   #minage
@@ -182,12 +190,13 @@ for(i in Stocks){
   data$recs.per.age <- data$ssb*data$r.p.ssb
   # mx
   data$mx <- data$recs.per.age/data$ssn/2 # Moms only! Dividing by around 8 really nails it for NS cod for whatever reason :-)
+  data$mx[is.nan(data$mx)] <- 0 # if we don't have any spawners in an age class in a year their fecundity is 0
   # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
 
-  age.mat <- data %>% select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% select(-Year)
-  prop.nat.mort <- data %>% select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% select(-Year)
-  weight.age <- data %>% select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% select(-Year)
-  mx <- data %>% select("Year", "age", "mx") %>% pivot_wider(names_from=age, values_from = mx) %>% select(-Year) %>% as.data.frame()
+  age.mat <- data %>% dplyr::select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% dplyr::select(-Year)
+  prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% dplyr::select(-Year)
+  weight.age <- data %>% dplyr::select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% dplyr::select(-Year)
+  mx <- data %>% dplyr::select("Year", "age", "mx") %>% pivot_wider(names_from=age, values_from = mx) %>% dplyr::select(-Year) %>% as.data.frame()
 
   tst <- icm.sim(years = years,
                  mat.age = age.mat,
@@ -198,7 +207,7 @@ for(i in Stocks){
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 5,
+                 n.sims = 1000,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -248,13 +257,13 @@ for(i in Stocks){
   print(p3)
   print(p4)
   
-  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
+  png(filename=paste0("D:/Github/ICM/Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
   print(p2)
   dev.off()
-  png(filename=paste0("../Figures/", i, "/runs_vs_vpa_ribbon_", i, ".png"), height=4, width=6, res=400, units="in")
+  png(filename=paste0("D:/Github/ICM/Figures/", i, "/runs_vs_vpa_ribbon_", i, ".png"), height=4, width=6, res=400, units="in")
   print(p3)
   dev.off()
-  png(filename=paste0("../Figures/", i, "/growth_", i, ".png"), height=4, width=6, res=400, units="in")
+  png(filename=paste0("D:/Github/ICM/Figures/", i, "/growth_", i, ".png"), height=4, width=6, res=400, units="in")
   print(p4)
   dev.off()
 }
