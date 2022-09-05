@@ -1,10 +1,10 @@
 ---
 title: "ICM testing"
 output:
-  word_document: 
-    reference_docx: template.docx
-  html_document: default
   pdf_document: default
+  html_document: default
+  word_document: 
+    #reference_docx: template.docx
 editor_options:
   chunk_output_type: console
 ---
@@ -33,7 +33,9 @@ source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
 
 # Choose 5 ICES stocks that we have the necessary data for
 #ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
-ASR <- read.csv("D:/Github/ICM/Data/ICM_data_NE_atlantic_stocks.csv")
+ASR1 <- read.csv("D:/Github/ICM/Data/ICM_data_NE_atlantic_stocks.csv")
+ASR <- read.csv("D:/Github/ICM/Data/ICM_data_NW_atlantic_stocks.csv")
+ASR <- rbind(ASR1,ASR)
 datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
 
 # Replace 0's in Num.tot with NA so the rest of this works as Freya designed it to...
@@ -57,7 +59,7 @@ ASR_trim <- cbind(ASRsp, ASRdat)
 ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
 
 ASR_long <- ASR_trim %>%
-  pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Model","Case","Notes")) %>%
+  pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
 
 # summary plots for ALL stocks
@@ -111,9 +113,9 @@ ASR_stocks <- ASR_long %>%
 # print(Stocks)
 Stocks <- Stocks$Stock
 # Going to remove Sebastes norvegicus because we can't get fecundity as the only data we have is total numbers.
-Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
+#Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
 # Esmarki doesn't work great as it is assessed using a quarterly modle.
-Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
+#Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
 # Bring in the data
 # Handy import function from the rio package... tricky part was getting the right filename here...
 for(i in Stocks){
@@ -207,7 +209,7 @@ for(i in Stocks){
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 1000,
+                 n.sims = 500,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
