@@ -9,7 +9,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-The data is now avilable to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
+The data is now available to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
 
 
 ```{r, echo=F, message=F, warning=F, fig.width=6, fig.height=4}
@@ -47,7 +47,7 @@ ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
                  grep(x=names(ASR), "Catch"),
                  grep(x=names(ASR), "AM"),
                  grep(x=names(ASR), "NM"))]
-# Making all the data numberic that should be numeric
+# Making all the data numeric that should be numeric
 ASRdat <- apply(X = ASRdat, 2, as.numeric)
 # Getting the species info back
 ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
@@ -67,10 +67,11 @@ for (i in unique(ASR_long$Stock)) {
   ASR_sub <- ASR_long %>%
     dplyr::select(Year, Stock, type, age, value) %>%
     dplyr::filter(Stock==i)
-  maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
-  maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
-  minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
+  maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
+  maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
+  minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
   forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
   p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
         theme_bw() + 
@@ -157,16 +158,17 @@ for(i in Stocks){
   data$prop.nat.mort <- 1-exp(-data$NM)
   #prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))] <- 1-exp(-prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))])
 
-  rem <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(rem=sum(Catch,na.rm=T)) %>% dplyr::pull(rem)
+  rem <- data %>% dplyr::group_by(Year,.drop=F) %>% dplyr::summarize(rem=sum(Catch,na.rm=T)) #%>% dplyr::pull(rem)
   
   missing_rem<- NULL
-  if(any(is.na(rem))) {
-    missing_rem <- unique(data$Year)[which(is.na(rem))]
-    rem[is.na(rem)] <- median(rem, na.rm=T)
+  if(any(is.na(rem$rem))) 
+  {
+    missing_rem <- unique(data$Year)[which(is.na(rem$rem))]
+    rem$rem[is.na(rem$rem)] <- median(rem$rem, na.rm=T)
   }
   
   #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
-  years <- data %>% pull(Year) %>% unique() %>% sort()
+  years <- data %>% dplyr::pull(Year) %>% unique() %>% sort()
   N.end <- sum(data[data$Year==max(years),]$Num)
   #N.end <- rowSums(abund[nrow(abund),-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
   #vpa.abund <- rowSums(abund[,-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
@@ -182,34 +184,61 @@ for(i in Stocks){
   #ssn
   data$ssn <- data$Num * data$AM
   #ssb
-  data$ssb <- data$ssn * data$WA
+  data$ssb <- data$ssn * data$WA #I need to figure out how to line this up with the number of recruits for the right years in the data object.... got it right for the overall r.p.ssb below.
   #tot.ssb
   annual <- data %>% group_by(Year) %>% summarize(tot.ssb = sum(ssb)) %>% left_join(annual)
-  #r.p.ssb
-  annual$r.p.ssb <- annual$recruits/annual$tot.ssb
+  #r.p.ssb This needs to be offset by the age of recruits
+  annual$r.p.ssb <- c(rep(NA,minage),annual$recruits[(minage+1):nrow(annual)]/annual$tot.ssb[1:(nrow(annual)-minage)])
   # recs.per.age
   data <- left_join(data, annual)
-  data$recs.per.age <- data$ssb*data$r.p.ssb
+  # So I need to make an offset SSB in the 'data' object to line up with the correct r.p.ssb field.  This is probably gonna suck...
+  tmp <- NULL
+  for(j in 1:length(years))
+  {
+    tst <- data %>% dplyr::filter(Year == years[j]) %>% dplyr::select(ssb,ssn,Year,age)
+    tst$Year <- tst$Year + minage
+    names(tst) <- c("ssb.offset","ssn.offset","Year","age")
+    tmp[[j]] <- tst
+  }
+  # Unpack the list
+  ssb.off <- do.call('rbind',tmp)
+  # And merge it with the data object
+  data <- left_join(data,ssb.off,by=c("Year","age"))
+  data$recs.per.age <- data$ssb.offset*data$r.p.ssb
   # mx
-  data$mx <- data$recs.per.age/data$ssn/2 # Moms only! Dividing by around 8 really nails it for NS cod for whatever reason :-)
+  # Some of the stocks are just the males and females, so these are already half the population.  Probably can just not include the male stocks in the end.
+  # This works because 'males' is also in 'females'
+  if(grepl("males",i)) data$mx <- data$recs.per.age/data$ssn.offset 
+  if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn.offset/2 # Moms only! 
   data$mx[is.nan(data$mx)] <- 0 # if we don't have any spawners in an age class in a year their fecundity is 0
+  # Easier to remove the years where we don't have recs.per.age...
+  #data <- data %>% dplyr::filter(Year %in% years[(minage+1):length(years)])
   # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
-
+  
   age.mat <- data %>% dplyr::select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% dplyr::select(-Year)
-  prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% dplyr::select(-Year)
+  prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% dplyr::select(-Year) %>% as.data.frame
   weight.age <- data %>% dplyr::select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% dplyr::select(-Year)
   mx <- data %>% dplyr::select("Year", "age", "mx") %>% pivot_wider(names_from=age, values_from = mx) %>% dplyr::select(-Year) %>% as.data.frame()
+  # For the years of mx without SSB info to inform them
+  if(minage >0 ) 
+  {
+    mx.fill <- as.data.frame(matrix(rep(colMeans(mx,na.rm=T),minage),nrow=minage,byrow=T),colnames = names(mx))
+    names(mx) <- names(mx.fill)
+   # mx <- rbind(mx[(minage+1):nrow(mx),],mx.fill) # or is it
+    mx <- rbind(mx.fill,mx[(minage+1):nrow(mx),]) # I think this is right!
+  }
+  source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
 
-  tst <- icm.sim(years = years,
+  tst <- icm.sim(years,
                  mat.age = age.mat,
                  nm = prop.nat.mort,
                  w.age = weight.age,
                  ages = minage:maxage,
-                 rems = rem,
+                 rems = rem$rem,
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 500,
+                 n.sims = 5,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -218,7 +247,7 @@ for(i in Stocks){
   #Combine the data
   did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
   # Here get the Upper and lower 50% quantiles to make a functional boxplot
-  quants <- did.it.work %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
+  quants <- did.it.work %>% dplyr::filter(sim != "VPA") %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
                                                                         med = median(abund),
                                                                         U.50 = quantile(abund,probs=c(0.75)))
 
@@ -241,23 +270,23 @@ for(i in Stocks){
           geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           xlab("") + ylab("Abundance (1000s)") +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
+          theme_few() + theme(legend.position = 'none') + #geom_vline()
           ggtitle(i)+
           geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
   # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
   p4 <- ggplot(tst$r) +
           geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
           xlab("") +
-          ylab("Estimated growth rate (r)") +
+          ylab("Lotka r") +
           #scale_y_continuous(breaks = seq(0,1.5,by=0.1)) +
           #scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
           scale_color_viridis_c(end = 0.75) +
           ggtitle(i)
   
-  print(p2)
-  print(p3)
-  print(p4)
+  #print(p2)
+  #print(p3)
+  #print(p4)
   
   png(filename=paste0("D:/Github/ICM/Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
   print(p2)

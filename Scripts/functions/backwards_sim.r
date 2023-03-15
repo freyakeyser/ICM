@@ -61,6 +61,9 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
   
+  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
+  
+  
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
   
   #Initialize a bunch of objects
@@ -93,10 +96,10 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                     sd.mat = sd.mat,sd.nm = sd.nm,sd.wt = sd.wt,sd.fecund = sd.fecund)   
       #browser()
     }
-    
+    #browser()
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
-    r.vec[[i]] <- data.frame(r = tmp,years = years[-1],n.sims=i)
+    r.vec[[i]] <- data.frame(r = tmp,years = years[],n.sims=i)
 
   }
   #unwrap your r vector
@@ -117,11 +120,12 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     # if you use the logistic growth model the K estimated for the population.
     for(y in n.years:2)
     {
-      
+      #browser()
       # DK Note: So for our removals time series, we put the removals between t+1 and t 
       # down as year t+1.  We can change this, but that's how this is set up at the moment.
       removals.next <- rems[y-1]
-      r.up <- r.tmp$r[y-1] # This is only a vector of 58 so gotta reduce index by 1.
+      #browser()
+      r.up <- r.tmp$r[y] # This vector is one less than the data
       # The exponential model
       if(pop.model == 'exponential') 
       {
