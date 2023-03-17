@@ -3,8 +3,6 @@
 # All the data you need to make it dance...
 # years:          The years you are running the backwards calculation for
 # n.sims:         The number of simulations you are running
-# fwd.n.years:    Number of years forward you want to run the simulation
-
 # mat.age         Age at maturity if one value it is the age at 50% maturity, if a vector it is the age at maturities for each age(or age/year), if a matrix we want this to be unique for each simulation
 #                 we could also let this vary by year, but we'll need to go 3-D array or something for that# ages:           What are the ages you are using this is used to calculate max age, which may not be ideal with plus group stocks.
 
@@ -125,7 +123,7 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # down as year t+1.  We can change this, but that's how this is set up at the moment.
       removals.next <- rems[y-1]
       #browser()
-      r.up <- r.tmp$r[y] # This vector is one less than the data
+      r.up <- r.tmp$r[y] # 
       # The exponential model
       if(pop.model == 'exponential') 
       {

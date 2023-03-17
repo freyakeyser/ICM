@@ -12,12 +12,13 @@ editor_options:
 The data is now available to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
 
 
-```{r, echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+```{r, prep-data,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 # OK, so using the ICES assessments here's what we get for North Sea cod.
 library(readxl)
 library(tidyverse)
 library(rio)
 library(ggthemes)
+library(cowplot)
 
 # # OK, lets give this a spin...
 # funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
@@ -62,29 +63,29 @@ ASR_long <- ASR_trim %>%
   pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
 
-# summary plots for ALL stocks
-for (i in unique(ASR_long$Stock)) {
-  ASR_sub <- ASR_long %>%
-    dplyr::select(Year, Stock, type, age, value) %>%
-    dplyr::filter(Stock==i)
-  maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
-  maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-  minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-  forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
-  forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
-  p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
-        geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
-        theme_bw() + 
-        ggtitle(i) +
-    guides(x =  guide_axis(angle = 90)) 
-  print(p1)
-  
-  if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
-  
-  png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
-  print(p1)
-  dev.off()
-}
+# summary plots for ALL stocks, this is already run, so lets not keep running it
+# for (i in unique(ASR_long$Stock)) {
+#   ASR_sub <- ASR_long %>%
+#     dplyr::select(Year, Stock, type, age, value) %>%
+#     dplyr::filter(Stock==i)
+#   maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
+#   maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
+#   minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
+#   forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+#   forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
+#   p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+#         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+#         theme_bw() + 
+#         ggtitle(i) +
+#     guides(x =  guide_axis(angle = 90)) 
+#   print(p1)
+#   
+#   if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
+#   
+#   png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
+#   print(p1)
+#   dev.off()
+# }
 
 
 
@@ -117,9 +118,13 @@ Stocks <- Stocks$Stock
 #Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
 # Esmarki doesn't work great as it is assessed using a quarterly modle.
 #Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
-# Bring in the data
-# Handy import function from the rio package... tricky part was getting the right filename here...
-for(i in Stocks){
+
+back.res <- NULL
+back.ts <- NULL
+back.ts.quants <- NULL
+tuned.res <- NULL
+for(i in Stocks)
+{
   print(i)
   ASR_sub <- ASR_long %>%
     dplyr::select(Year, Stock, type, age, value) %>%
@@ -169,6 +174,7 @@ for(i in Stocks){
   
   #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
   years <- data %>% dplyr::pull(Year) %>% unique() %>% sort()
+  
   N.end <- sum(data[data$Year==max(years),]$Num)
   #N.end <- rowSums(abund[nrow(abund),-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
   #vpa.abund <- rowSums(abund[,-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
@@ -219,6 +225,50 @@ for(i in Stocks){
   prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% dplyr::select(-Year) %>% as.data.frame
   weight.age <- data %>% dplyr::select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% dplyr::select(-Year)
   mx <- data %>% dplyr::select("Year", "age", "mx") %>% pivot_wider(names_from=age, values_from = mx) %>% dplyr::select(-Year) %>% as.data.frame()
+  
+  # Dealing with some annoying NAs...
+  if(i == "AFSC_BSAI-Males_Pleuronectes_quadrituberculatus")
+  {
+    age.mat[length(years),] <- age.mat[length(years)-1,]
+    prop.nat.mort[length(years),] <- prop.nat.mort[length(years)-1,]
+    weight.age[length(years),] <- weight.age[length(years)-1,]
+    mx[length(years),13:23] <- mx[length(years),12]
+  }
+  
+  if(i == "DFO_2J3KL_Gadus_morhua")
+  {
+    age.mat[,8:10] <- 1
+    prop.nat.mort[,8:10] <- prop.nat.mort[,7]
+    weight.age[12:14,9:10] <- weight.age[12:14,8]
+    weight.age[15,10] <- weight.age[15,9]
+    mx[12:16,9:10] <- mx[12:16,8]
+    mx[17,10] <- mx[17,9]
+  }
+  
+  if(i == "DFO_4T-Spring_Clupea_harengus")
+  {
+    age.mat[6:7,10] <- 1
+    prop.nat.mort[6:7,10] <- prop.nat.mort[6:7,9]
+    weight.age[6:7,10] <- weight.age[6:7,9]
+    mx[6:9,10] <- mx[6:9,9]
+  }
+  
+  if(i == "ICES-HAWG_CS 6a- 7b-7c_Clupea_harengus") 
+  {
+    age.mat[30,8] <- 1
+    prop.nat.mort[30,8] <- prop.nat.mort[30,7]
+    weight.age[30,8] <- weight.age[29,8]
+    mx[30:31,8] <- mx[30:31,9]
+  }
+  
+  if(i == "ICES-WGCSE_IS6a-7b-7j_Dicentrarchus _labrax")
+  {
+    age.mat[c(14,27,40),5] <- age.mat[1,5]
+    prop.nat.mort[c(14,27,40),5] <- prop.nat.mort[1,5]
+    weight.age[c(14,27,40),5] <- weight.age[c(13,26,39),5]
+    mx[c(14,16,27,29,40,42),5] <- mx[c(14,16,27,29,40,42),6]
+  }
+  
   # For the years of mx without SSB info to inform them
   if(minage >0 ) 
   {
@@ -227,6 +277,9 @@ for(i in Stocks){
    # mx <- rbind(mx[(minage+1):nrow(mx),],mx.fill) # or is it
     mx <- rbind(mx.fill,mx[(minage+1):nrow(mx),]) # I think this is right!
   }
+
+  
+
   source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
 
   tst <- icm.sim(years,
@@ -238,7 +291,7 @@ for(i in Stocks){
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 5,
+                 n.sims = 500,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -251,8 +304,12 @@ for(i in Stocks){
                                                                         med = median(abund),
                                                                         U.50 = quantile(abund,probs=c(0.75)))
 
-  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
+  back.res[[i]] <- tst
+  back.ts[[i]] <- did.it.work
+  back.ts.quants[[i]] <- quants
   
+  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
+
   # All the results in a plot
   p2 <- ggplot() +
           geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
@@ -263,6 +320,7 @@ for(i in Stocks){
           theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
           ggtitle(i) +
           geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
   # Same thing but functional boxplots
   p3 <- ggplot() +
           geom_line(data=quants, aes(x=years,y= med)) +
@@ -273,6 +331,8 @@ for(i in Stocks){
           theme_few() + theme(legend.position = 'none') + #geom_vline()
           ggtitle(i)+
           geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_ribbon_", i, ".png"), base_width = 6,base_height = 4)
+
   # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
   p4 <- ggplot(tst$r) +
           geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
@@ -283,19 +343,126 @@ for(i in Stocks){
           theme_few() + theme(legend.position = 'none') +
           scale_color_viridis_c(end = 0.75) +
           ggtitle(i)
+  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/lokta_r_", i, ".png"), base_width = 6,base_height = 4)
+
+
+
+# Now run the tuning sims
+
+  nm = prop.nat.mort
+
+  source("D:/Github/ICM/Scripts/functions/tuning_sim.R")
+  N.end <- vpa.abund[length(vpa.abund)]
+  tunes <- tune.sim(years,
+                    n.steps = 100,
+                    abund.ts = vpa.abund,
+                    mat.age = age.mat,
+                    nm = prop.nat.mort,
+                    w.age = weight.age,
+                    ages = minage:maxage,
+                    rems = rem$rem,
+                    fecund = mx,
+                    N.end = N.end,
+                    pop.model = 'exponential')
+
+  tuned.res[[i]] <- tunes
+ 
+  # Comparing our new time series with the old
+  p2 <- ggplot() +
+          geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+          geom_line(data=tunes$res, aes(x=year,y=vpa.n),color='black') +
+          xlab("") +
+          ylab("Abundance (1000s)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') +
+          ggtitle(i) #+
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/tunded_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
   
-  #print(p2)
-  #print(p3)
-  #print(p4)
+  # Comparing the absolute miss from the tuned time series
+   p3 <- ggplot() +
+          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.n),color='red') +
+          xlab("") +
+          ylab("Difference in abundance (1000s)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) 
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_N_", i, ".png"), base_width = 6,base_height = 4)
+
+  # What percentage (mean) difference
+   p4 <- ggplot() +
+          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.n),color='red') +
+          xlab("") +
+          ylab("Difference in abundance (%)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) #+ ylim(c(-100,100))
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_N_", i, ".png"), base_width = 6,base_height = 4)
+
+     # Difference in m's
+   p5 <- ggplot() +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.m),color='red') +
+          xlab("") +
+          ylab("Difference in natural mortality (Proportional)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) #+ ylim(c(-100,100))
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p5, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_m_", i, ".png"), base_width = 6,base_height = 4)
+     # % Difference in m's
+   p6 <- ggplot() +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.m),color='red') +
+          xlab("") +
+          ylab("Difference in natural mortality (%)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) #+ ylim(c(-100,100))
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p6, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_m_", i, ".png"), base_width = 6,base_height = 4)
+
+   p7 <- ggplot() +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=mn.m),color='blue') +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=vpa.m),color='black') +
+          xlab("") +
+          ylab("Natural mortality (Proportional)") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') +
+          ggtitle(i) #+
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p7, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Nat_M_", i, ".png"), base_width = 6,base_height = 4)
+ 
+     p8 <- ggplot() +
+          geom_line(data=tunes$res[-1,], aes(x=year,y=r),color='blue') +
+          xlab("") +
+          ylab("Lotka r") +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+          theme_few() + theme(legend.position = 'none') +
+          ggtitle(i) #+
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p8, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Lotka_r_", i, ".png"), base_width = 6,base_height = 4)
+     
   
-  png(filename=paste0("D:/Github/ICM/Figures/", i, "/runs_vs_vpa_", i, ".png"), height=4, width=6, res=400, units="in")
-  print(p2)
-  dev.off()
-  png(filename=paste0("D:/Github/ICM/Figures/", i, "/runs_vs_vpa_ribbon_", i, ".png"), height=4, width=6, res=400, units="in")
-  print(p3)
-  dev.off()
-  png(filename=paste0("D:/Github/ICM/Figures/", i, "/growth_", i, ".png"), height=4, width=6, res=400, units="in")
-  print(p4)
-  dev.off()
 }
+saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
+saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
+saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
+saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
 ```
+
+
+
+```{r, forward-sims-n-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+```
+
+
