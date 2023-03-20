@@ -11,8 +11,7 @@ editor_options:
 
 The data is now available to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
 
-
-```{r, prep-data,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+```{r, load-stuff,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 # OK, so using the ICES assessments here's what we get for North Sea cod.
 library(readxl)
 library(tidyverse)
@@ -20,22 +19,14 @@ library(rio)
 library(ggthemes)
 library(cowplot)
 
-# # OK, lets give this a spin...
-# funs <- c("https://raw.githubusercontent.com/Dave-Keith/ICM/main/Scripts/functions/backwards_sim.r")
-# # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-# for(fun in funs) 
-# {
-#   download.file(fun,destfile = basename(fun))
-#   source(paste0(getwd(),"/",basename(fun)))
-#   file.remove(paste0(getwd(),"/",basename(fun)))
-# }
-
 source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
+source("D:/Github/ICM/Scripts/functions/tuning_sim.R")
 
 # Choose 5 ICES stocks that we have the necessary data for
 #ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
 ASR1 <- read.csv("D:/Github/ICM/Data/ICM_data_NE_atlantic_stocks.csv")
 ASR <- read.csv("D:/Github/ICM/Data/ICM_data_NW_atlantic_stocks.csv")
+
 ASR <- rbind(ASR1,ASR)
 datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
 
@@ -54,7 +45,6 @@ ASRdat <- apply(X = ASRdat, 2, as.numeric)
 ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
 # And binding it all back together
 ASR_trim <- cbind(ASRsp, ASRdat)
-
 # need a unique ID for stock
 #table(ASR_trim$Management, ASR_trim$Species)
 ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
@@ -63,31 +53,9 @@ ASR_long <- ASR_trim %>%
   pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
 
-# summary plots for ALL stocks, this is already run, so lets not keep running it
-# for (i in unique(ASR_long$Stock)) {
-#   ASR_sub <- ASR_long %>%
-#     dplyr::select(Year, Stock, type, age, value) %>%
-#     dplyr::filter(Stock==i)
-#   maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
-#   maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-#   minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-#   forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
-#   forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
-#   p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
-#         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
-#         theme_bw() + 
-#         ggtitle(i) +
-#     guides(x =  guide_axis(angle = 90)) 
-#   print(p1)
-#   
-#   if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
-#   
-#   png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
-#   print(p1)
-#   dev.off()
-# }
+```
 
-
+```{r, prep-data,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 
 Stocks <- ASR_long %>%
                     dplyr::filter(!is.na(value)) %>%
@@ -114,15 +82,22 @@ ASR_stocks <- ASR_long %>%
 # 
 # print(Stocks)
 Stocks <- Stocks$Stock
+
 # Going to remove Sebastes norvegicus because we can't get fecundity as the only data we have is total numbers.
 #Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
 # Esmarki doesn't work great as it is assessed using a quarterly modle.
 #Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
 
-back.res <- NULL
-back.ts <- NULL
-back.ts.quants <- NULL
-tuned.res <- NULL
+years.tmp <- NULL
+pnm.tmp <- NULL
+waa.tmp <- NULL
+ages.tmp <- NULL
+rem.tmp <- NULL
+mx.tmp <- NULL
+NE.tmp <- NULL
+vpa.tmp <- NULL
+am.tmp <- NULL
+mr.tmp <- NULL
 for(i in Stocks)
 {
   print(i)
@@ -277,16 +252,48 @@ for(i in Stocks)
    # mx <- rbind(mx[(minage+1):nrow(mx),],mx.fill) # or is it
     mx <- rbind(mx.fill,mx[(minage+1):nrow(mx),]) # I think this is right!
   }
+  years.tmp[[i]] <- years
+  pnm.tmp[[i]] <- prop.nat.mort
+  waa.tmp[[i]] <- weight.age
+  ages.tmp[[i]] <- minage:maxage
+  rem.tmp[[i]] <- rem
+  mx.tmp[[i]] <- mx
+  NE.tmp[[i]] <- N.end
+  vpa.tmp[[i]] <- vpa.abund
+  am.tmp[[i]] <- age.mat
+  mr.tmp[[i]] <- missing_rem
+} #end input data loop
 
+save(years.tmp,pnm.tmp,waa.tmp,ages.tmp,rem.tmp,mx.tmp,NE.tmp,vpa.tmp,mr.tmp,am.tmp,Stocks,ASR_stocks,ASR_long,file = "D:/Github/ICM/Results/model_inputs.Rdata")
+
+```
+
+```{r, run-mods,echo=F, message=F, warning=F}
+
+load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+
+back.res <- NULL
+back.ts <- NULL
+back.ts.quants <- NULL
+tuned.res <- NULL
+for(i in Stocks)
+{
+  years <- years.tmp[[i]]
+  prop.nat.mort <- pnm.tmp[[i]] 
+  weight.age <- waa.tmp[[i]] 
+  ages <- ages.tmp[[i]] 
+  rem <- rem.tmp[[i]] 
+  mx <- mx.tmp[[i]] 
+  N.end <- NE.tmp[[i]] 
+  vpa.abund <- vpa.tmp[[i]] 
+  age.mat <- am.tmp[[i]]
   
-
-  source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
 
   tst <- icm.sim(years,
                  mat.age = age.mat,
                  nm = prop.nat.mort,
                  w.age = weight.age,
-                 ages = minage:maxage,
+                 ages = ages,
                  rems = rem$rem,
                  fecund = mx,
                  N.end = N.end,
@@ -308,9 +315,53 @@ for(i in Stocks)
   back.ts[[i]] <- did.it.work
   back.ts.quants[[i]] <- quants
   
+
+# Now run the tuning sims
+
+  N.end <- vpa.abund[length(vpa.abund)]
+  tunes <- tune.sim(years,
+                    n.steps = 100,
+                    abund.ts = vpa.abund,
+                    mat.age = age.mat,
+                    nm = prop.nat.mort,
+                    w.age = weight.age,
+                    ages = ages,
+                    rems = rem$rem,
+                    fecund = mx,
+                    N.end = N.end,
+                    pop.model = 'exponential')
+
+  tuned.res[[i]] <- tunes
+} # end i in Stocks look
+# Save all these
+saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
+saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
+saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
+saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+```
+
+
+```{r, make-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+
+# Now we can run the figures separately.
+tuned.res <- readRDS(file = "D:/Github/ICM/Results/tuned_fits.Rds")
+back.ts <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
+back.ts.quants <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+back.res <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
+load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+
+for(i in Stocks)
+{
+  # Unpack the lists
+  tunes <- tuned.res[[i]] 
+  did.it.work <- back.ts[[i]] 
+  quants <- back.ts.quants[[i]] 
+  missing_rem <- mr.tmp[[i]] 
+  tst <- back.res[[i]]
+  
   did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
 
-  # All the results in a plot
+    # All the results in a plot
   p2 <- ggplot() +
           geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
           xlab("") +
@@ -346,27 +397,7 @@ for(i in Stocks)
   save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/lokta_r_", i, ".png"), base_width = 6,base_height = 4)
 
 
-
-# Now run the tuning sims
-
-  nm = prop.nat.mort
-
-  source("D:/Github/ICM/Scripts/functions/tuning_sim.R")
-  N.end <- vpa.abund[length(vpa.abund)]
-  tunes <- tune.sim(years,
-                    n.steps = 100,
-                    abund.ts = vpa.abund,
-                    mat.age = age.mat,
-                    nm = prop.nat.mort,
-                    w.age = weight.age,
-                    ages = minage:maxage,
-                    rems = rem$rem,
-                    fecund = mx,
-                    N.end = N.end,
-                    pop.model = 'exponential')
-
-  tuned.res[[i]] <- tunes
- 
+  
   # Comparing our new time series with the old
   p2 <- ggplot() +
           geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
@@ -410,7 +441,7 @@ for(i in Stocks)
    p5 <- ggplot() +
           geom_line(data=tunes$res[-1,], aes(x=year,y=diff.m),color='red') +
           xlab("") +
-          ylab("Difference in natural mortality (Proportional)") +
+          ylab("Difference in natural mortality (Instantaneous)") +
           #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') + 
@@ -433,7 +464,7 @@ for(i in Stocks)
           geom_line(data=tunes$res[-1,], aes(x=year,y=mn.m),color='blue') +
           geom_line(data=tunes$res[-1,], aes(x=year,y=vpa.m),color='black') +
           xlab("") +
-          ylab("Natural mortality (Proportional)") +
+          ylab("Natural mortality (Instantaneous)") +
           #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
@@ -452,12 +483,33 @@ for(i in Stocks)
           #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
   save_plot(plot = p8, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Lotka_r_", i, ".png"), base_width = 6,base_height = 4)
      
-  
 }
-saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
-saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
-saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
-saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+
+
+# summary plots for ALL stocks, this is already run, so lets not keep running it
+# for (i in unique(ASR_long$Stock)) {
+#   ASR_sub <- ASR_long %>%
+#     dplyr::select(Year, Stock, type, age, value) %>%
+#     dplyr::filter(Stock==i)
+#   maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
+#   maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
+#   minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
+#   forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+#   forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
+#   p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
+#         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
+#         theme_bw() + 
+#         ggtitle(i) +
+#     guides(x =  guide_axis(angle = 90)) 
+#   print(p1)
+#   
+#   if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
+#   
+#   png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
+#   print(p1)
+#   dev.off()
+# }
+
 ```
 
 
