@@ -3,8 +3,6 @@
 # All the data you need to make it dance...
 # years:          The years you are running the backwards calculation for
 # n.sims:         The number of simulations you are running
-# fwd.n.years:    Number of years forward you want to run the simulation
-
 # mat.age         Age at maturity if one value it is the age at 50% maturity, if a vector it is the age at maturities for each age(or age/year), if a matrix we want this to be unique for each simulation
 #                 we could also let this vary by year, but we'll need to go 3-D array or something for that# ages:           What are the ages you are using this is used to calculate max age, which may not be ideal with plus group stocks.
 
@@ -61,6 +59,9 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
   
+  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
+  
+  
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
   
   #Initialize a bunch of objects
@@ -93,10 +94,10 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                     sd.mat = sd.mat,sd.nm = sd.nm,sd.wt = sd.wt,sd.fecund = sd.fecund)   
       #browser()
     }
-    
+    #browser()
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
-    r.vec[[i]] <- data.frame(r = tmp,years = years[-1],n.sims=i)
+    r.vec[[i]] <- data.frame(r = tmp,years = years[],n.sims=i)
 
   }
   #unwrap your r vector
@@ -117,11 +118,12 @@ icm.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     # if you use the logistic growth model the K estimated for the population.
     for(y in n.years:2)
     {
-      
+      #browser()
       # DK Note: So for our removals time series, we put the removals between t+1 and t 
       # down as year t+1.  We can change this, but that's how this is set up at the moment.
       removals.next <- rems[y-1]
-      r.up <- r.tmp$r[y-1] # This is only a vector of 58 so gotta reduce index by 1.
+      #browser()
+      r.up <- r.tmp$r[y] # 
       # The exponential model
       if(pop.model == 'exponential') 
       {

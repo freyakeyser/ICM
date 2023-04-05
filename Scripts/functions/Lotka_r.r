@@ -21,12 +21,13 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
                   #                         4) if using the 'eggs' method to estimate fecundity. (L.inf,K, t0, a.fec.len,b.fec.len)
 ) 
 {
-  
+  if(is.character(nat.mort)[1]) nm.c <- nat.mort else nm.c <- "Using data"
+  if(is.character(fecund)[1]) fecund.c <- fecund else fecund.c <- "Using data"
   # Some warning messages if you didn't include something you needed...
   #if(nat.mort == "Jensen Maturity")  stop("maybe)
-  if(nat.mort == "Jensen K" & is.null(K))   stop("You need to specify K from von B to use Jensen's K method")
+  if(nm.c == "Jensen K" & is.null(K))   stop("You need to specify K from von B to use Jensen's K method")
   #if(nat.mort == "Then_hoenig")     stop("maybe)
-  if(nat.mort == "Then_pauly")
+  if(nm.c == "Then_pauly")
   {
     if(is.null(L.inf) | is.null(K)) stop("You need to specify K and L infinity from von B to use the Then-Pauly method")
   }
@@ -36,7 +37,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(is.null(L.inf) | is.null(K) | is.null(t0)) stop("You need to specify K, L infinity, and t0 if weight at age vector isn't specified")
   }
   
-  if(fecund == 'eggs')
+  if(fecund.c == 'eggs')
   {
     if(is.null(L.inf) | is.null(K) | is.null(t0) | is.null(a.fec.len) | is.null(b.fec.len)) stop("You need to specify K, L infinity, t0, a.fec.len, and b.fec.len if you are using the 'eggs' method")
     if(min(ages) > 0) stop(paste("If using the eggs fecundity option your ages must range from 0 to", max(ages),"you also need a natural mortality estimate for age 0"))
@@ -59,7 +60,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     # Add some uncertainty to the age at 50% maturity then fit the maturity ogive
     age.at.50.mat <- rlnorm(1,log(age.at.50.mat),sd.mat)
     if(mat.K <= -50) print(paste("Note that you are assuming knife edge selectivity here with 50% maturity at age", age.mat))
-    if(nat.mort == "Jensen Maturity") age.at.50.mat <- age.mat
+    if(nm.c == "Jensen Maturity") age.at.50.mat <- age.mat
     # This gets us a hypothetical maturity ogive, the default (mat.K = -50) is essentially knife edge maturity
     mat.ogive <- 1/(1+exp(-(mat.K)*(age.at.50.mat-ages)))
     
@@ -72,13 +73,12 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(!is.vector(age.mat)) 
     {
       mat.ogive <- as.data.frame(age.mat) # Get it set up, then overwrite it with the uncertainty
-      
       for(i in 1:nrow(age.mat)) mat.ogive[i,] <- rlnorm(length(age.mat[i,]),as.numeric(log(age.mat[i,])),sd.nm)
     }
     
     
     # If we are doing Jensen Natural mortality method we need age at 50% maturity, which we can estimate from the maturity ogive using a gam
-    if(nat.mort == "Jensen Maturity") 
+    if(nm.c == "Jensen Maturity") 
     {
       library(mgcv)
       mod <- gam(mat.ogive~s(ages)) # Fit a simple little GAM to estimate age at 50% maturity
@@ -97,7 +97,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(!is.vector(wt.at.age)) for(i in 1:nrow(wt.at.age)) W.age[i,] <- rlnorm(length(wt.at.age[i,]),as.numeric(log(wt.at.age[i,])),sd.wt)
   }
   
-  if(is.null(wt.at.age) | fecund =='eggs')
+  if(is.null(wt.at.age) | fecund.c == 'eggs')
   {
     L.age <- L.inf*(1-exp(-K*(ages-t0))) # Need this for both eggs case and missing weight case.
     # We can get weight at age now... this is in grams
@@ -124,11 +124,11 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     # If we have one number, turn that into a vector
     if(is.numeric(nat.mort)) nat.mort <- rep(nat.mort,max.age)
     # if we have a character string then we pick our option of interest...
-    if(nat.mort == "Jensen Maturity") nat.mort <- rep(1.65/(age.at.50.mat),max.age)
-    if(nat.mort == "Jensen K")        nat.mort <- rep(1.5*K,max.age)
-    if(nat.mort == "Then_hoenig")     nat.mort <- rep(4.899*max.age^-0.916,max.age)
-    if(nat.mort == "Then_pauly")      nat.mort <- rep(4.118*K^0.73*L.inf^-0.33,max.age)
-    if(nat.mort == "Peterson")        nat.mort <- 1.92*(W.age)^-0.25
+    if(nm.c == "Jensen Maturity") nat.mort <- rep(1.65/(age.at.50.mat),max.age)
+    if(nm.c == "Jensen K")        nat.mort <- rep(1.5*K,max.age)
+    if(nm.c == "Then_hoenig")     nat.mort <- rep(4.899*max.age^-0.916,max.age)
+    if(nm.c == "Then_pauly")      nat.mort <- rep(4.118*K^0.73*L.inf^-0.33,max.age)
+    if(nm.c == "Peterson")        nat.mort <- 1.92*(W.age)^-0.25
     
     if(is.vector(nat.mort)) nat.mort <- rlnorm(length(nat.mort),nat.mort,sd.nm)
   }
@@ -140,7 +140,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   {
     # if you said it's based on egg production using fecundity-length relationship
     # This seems to go a bit high...
-    if(fecund == 'eggs') 
+    if(fecund.c == 'eggs') 
     {
       mx.t <- a.fec.len*L.age^b.fec.len
       mx.t <- rlnorm(length(mx.t),as.numeric(log(mx.t)),sd.fecund)
@@ -148,7 +148,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     
     
     # Alternatively we can get it from SPR formulation
-    if(fecund == "SPR")
+    if(fecund.c == "SPR")
     {
       spr <- sbpr(age=ages,
                   ssbwgt=W.age,
@@ -162,17 +162,14 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
       # note that give all the inputs already have variation attributed to them, there is no need in the SPR to add in more variability.
     } # end if(fecund == "SPR")
   } # end if(is.character(fecund))  
-  
   # Or if we directly had an estimate of fecundity (number of recruits per individual)
   if(!is.character(fecund)) 
   { 
     mx.t <- fecund
     spr <- NULL
     if(is.null(nrow(fecund))) mx.t <- rlnorm(length(mx.t),mx.t,sd.fecund)
-    if(nrow(mx.t) > 1) for(i in 1:nrow(mx.t)) mx.t[i,] <- rlnorm(length(mx.t[i,]),as.numeric(log(mx.t[i,])),sd.fecund)
-    
+    if(nrow(mx.t) > 1) for(m in 1:nrow(mx.t)) mx.t[m,] <- rlnorm(length(mx.t[m,]),as.numeric(log(mx.t[m,])),sd.fecund)
   }
-  
   # remove columns associated with NAs in mx, and remove NAs from mx
   if(any(is.na(colSums(mx)))) {
     ages <- ages[-which(is.na(colSums(mx)))]
@@ -180,10 +177,12 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     mx <- mx[-which(is.na(colSums(mx)))]
     mx.t <- mx.t[-which(is.na(colSums(mx.t)))]
   }
+  mx.tmp <- NULL
+  lx.tmp <- NULL
   
   # Now run this through all the yrs 
-  for(j in 1:(n.yrs-1))
-  {
+  for(j in 1:(n.yrs))
+  { 
     # Get the r estimate for each year if we are running through a bunch of years
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
@@ -192,14 +191,17 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     # Set the first age class to be 1
     lx<-1
     # And get cumulative survivorship for the stock
-    for(i in 2:(length(si))) lx[i]<-lx[i-1]*si[i-1]
-    #browser()
+    for(s in 2:(length(si))) lx[s]<-lx[s-1]*si[s-1]
+
     if(!is.null(nrow(mx.t))) mx <- mx.t[j,] else mx <- mx.t
-    
     # Now we are cooking!
     junk<-nlminb(start = 0.1, obj = eulerlotka)
     res[j,] <- c(yrs[j],junk$par)
+    mx.tmp[[j]] <- mx
+    lx.tmp[[j]] <- lx
   } # end for(j in 1:(n.yrs-1))
   
-  return(list(res=res,mx=mx,lx=lx,spr = spr,mat.ogive = mat.ogive,wt.at.age = W.age,nat.mort = nat.mort))
+  mx.mat <- do.call("rbind",mx.tmp)
+  lx.mat <- do.call('rbind',lx.tmp)
+  return(list(res=res,mx=mx.mat,lx=lx.mat,spr = spr,mat.ogive = mat.ogive,wt.at.age = W.age,nat.mort = nat.mort))
 }
