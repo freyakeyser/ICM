@@ -86,7 +86,7 @@ tune.sim<-function(years,tune.par=0.01,tuner="m", n.steps = 30,
     nm.lst <- NULL
     for(y in 1:n.years)
     {
-      # let's just make 15 steps around the mean either way, changing m by 5% every time....
+      # let's just make X steps around the mean either way, changing m by 5% every time....
       nm.vary <- NULL
       count <- 0
       for(s in (n.steps/2):1) 
@@ -181,7 +181,6 @@ tune.sim<-function(years,tune.par=0.01,tuner="m", n.steps = 30,
         r.vec$lotka.n[r.vec$s == ss & r.vec$year == years[y]] <- pop.next[ss]
         r.vec$diff.n[r.vec$s == ss & r.vec$year == years[y]] <- pop.next[ss] - abund.ts[y-1]
         r.vec$per.diff.n[r.vec$s == ss & r.vec$year == years[y]] <- 100*((pop.next[ss] - abund.ts[y-1])/abund.ts[y-1])
-        
         # Then we find the minimum and that becomes or model of choice and we've retained the summary of the natural mortality from that simulation
         
       }
@@ -198,24 +197,7 @@ tune.sim<-function(years,tune.par=0.01,tuner="m", n.steps = 30,
     res.final <- do.call('rbind',res)
     res.final$diff.m <- res.final$mn.m - res.final$vpa.m
     res.final$per.diff.m <- 100*((res.final$mn.m - res.final$vpa.m)/res.final$vpa.m)
-    #browser()
-    #Pop$abund[Pop$sim == i]<-Pop.vec
-    
-    ### calc removals (increase due to r plus amount population declined by):   
-    # removals[i,]<-Pop.vec-(Pop.vec/exp(r.vec[i]))+(Pop.vec*(decl.rate[i])) WRONG
-    
-    ## removals in final year of population decline to calculate forward exploitation rate   
-    #rem<- removals[n.years]
-    
-    #print(Pop.vec)
-    #B1.vec[i]<-lm(log(Pop.vec)~years)$coef[2]  ## logic check
-    
-    
-    #calculate exploitation
-    #junk<-c()
-    #for(y in 1:n.years) junk[y]<-u.calc(nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],age.mat.vec[i],sel,rem*0.7,Pop.vec[y])
-    #mean.u.vec[i]<-mean(junk) 
-  #} #end backwards projection
+
 
     return(list(res=res.final))
 }

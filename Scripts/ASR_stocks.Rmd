@@ -275,6 +275,9 @@ load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
 back.res <- NULL
 back.ts <- NULL
 back.ts.quants <- NULL
+for.res <- NULL
+for.ts <- NULL
+for.ts.quants <- NULL
 tuned.res <- NULL
 for(i in Stocks)
 {
@@ -289,7 +292,7 @@ for(i in Stocks)
   age.mat <- am.tmp[[i]]
   
 
-  tst <- icm.sim(years,
+  tst <- back.sim(years,
                  mat.age = age.mat,
                  nm = prop.nat.mort,
                  w.age = weight.age,
@@ -298,7 +301,7 @@ for(i in Stocks)
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 500,
+                 n.sims = 2,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -315,8 +318,44 @@ for(i in Stocks)
   back.ts[[i]] <- did.it.work
   back.ts.quants[[i]] <- quants
   
+  
 
-# Now run the tuning sims
+    
+################# Now run as a forward simulation
+  N.start <- vpa.abund[1] 
+
+  tst <- for.sim(years,
+                 mat.age = age.mat,
+                 nm = prop.nat.mort,
+                 w.age = weight.age,
+                 ages = ages,
+                 rems = rem$rem, # rep(0,nrow(rem)),
+                 fecund = mx,
+                 N.start = N.start,
+                 pop.model = 'exponential', K = 2e6,
+                 n.sims = 2,
+                 sd.mat = 0.5,
+                 sd.nm = 0.5,
+                 sd.wt = 0.5,
+                 sd.fecund = 0.5)
+
+  #Combine the data
+  did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
+  # Here get the Upper and lower 50% quantiles to make a functional boxplot
+  quants <- did.it.work %>% dplyr::filter(sim != "VPA") %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
+                                                                        med = median(abund),
+                                                                        U.50 = quantile(abund,probs=c(0.75)))
+
+  for.res[[i]] <- tst
+  for.ts[[i]] <- did.it.work
+  for.ts.quants[[i]] <- quants  
+  
+  
+ggplot(quants) + geom_line(aes(x=years,y=med))
+  
+  
+  
+########################## Now run the tuning sims
 
   N.end <- vpa.abund[length(vpa.abund)]
   tunes <- tune.sim(years,
@@ -333,11 +372,14 @@ for(i in Stocks)
 
   tuned.res[[i]] <- tunes
 } # end i in Stocks look
+
+
+
 # Save all these
-saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
-saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
-saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
-saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+# saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
+# saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
+# saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
+# saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
 ```
 
 
@@ -515,6 +557,62 @@ for(i in Stocks)
 
 
 ```{r, forward-sims-n-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
+# Now we have to forward project the stocks, I think it makes the most sense to do this using the tuned data at the moment
+# So we assume the fecundity data and the tuned natural mortality data for the stocks is a reasonable representation of the future
+load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+
+back.res <- NULL
+back.ts <- NULL
+back.ts.quants <- NULL
+for.res <- NULL
+for.ts <- NULL
+for.ts.quants <- NULL
+tuned.res <- NULL
+for(i in Stocks)
+{
+  years <- years.tmp[[i]]
+  prop.nat.mort <- pnm.tmp[[i]] 
+  weight.age <- waa.tmp[[i]] 
+  ages <- ages.tmp[[i]] 
+  rem <- rem.tmp[[i]] 
+  mx <- mx.tmp[[i]] 
+  N.end <- NE.tmp[[i]] 
+  vpa.abund <- vpa.tmp[[i]] 
+  age.mat <- am.tmp[[i]]
+ 
+################# Now run as a forward simulation
+  N.start <- vpa.abund[length(vpa.abund)] 
+  years <- 2025:2075
+  # For the forward simulations I'm setting it up so we feed in the mean vector or a character, we'll then create a vector of mx's with variablitity
+  st.time <- Sys.time()
+  tst <- for.sim(years,
+                 mat.age = age.mat,
+                 nm = prop.nat.mort,
+                 w.age = weight.age,
+                 ages = ages,
+                 rems = c(0.1,0.2), # This is set up as a fishing mortality that averages 0.1 with an sd of 0.2)
+                 fecund = mx,
+                 N.start = N.start,
+                 pop.model = 'exponential', sim = 'project', proj.sim = 'sample',
+                 n.sims = 30,
+                 sd.mat = 0.1,
+                 sd.nm = 0.1,
+                 sd.wt = 0.1,
+                 sd.fecund = 0.1)
+  Sys.time() - st.time
+  #Combine the data
+  did.it.work <- data.frame(abund = tst$Pop$abund,years = c(tst$Pop$years),sim = tst$Pop$sim)
+  # Here get the Upper and lower 50% quantiles to make a functional boxplot
+  quants <- tst$Pop %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
+                                                                   med = median(abund),
+                                                                   U.50 = quantile(abund,probs=c(0.75)))
+
+  for.res[[i]] <- tst
+  for.ts[[i]] <- tst$Pop
+  for.ts.quants[[i]] <- quants  
+  
+ggplot(quants) + geom_line(aes(x=years,y=med))  + geom_ribbon(aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue')
+
 ```
 
 
