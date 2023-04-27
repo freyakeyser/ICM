@@ -301,7 +301,7 @@ for(i in Stocks)
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 2,
+                 n.sims = 500,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -321,58 +321,58 @@ for(i in Stocks)
   
 
     
-################# Now run as a forward simulation
-  N.start <- vpa.abund[1] 
-
-  tst <- for.sim(years,
-                 mat.age = age.mat,
-                 nm = prop.nat.mort,
-                 w.age = weight.age,
-                 ages = ages,
-                 rems = rem$rem, # rep(0,nrow(rem)),
-                 fecund = mx,
-                 N.start = N.start,
-                 pop.model = 'exponential', K = 2e6,
-                 n.sims = 2,
-                 sd.mat = 0.5,
-                 sd.nm = 0.5,
-                 sd.wt = 0.5,
-                 sd.fecund = 0.5)
-
-  #Combine the data
-  did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
-  # Here get the Upper and lower 50% quantiles to make a functional boxplot
-  quants <- did.it.work %>% dplyr::filter(sim != "VPA") %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
-                                                                        med = median(abund),
-                                                                        U.50 = quantile(abund,probs=c(0.75)))
-
-  for.res[[i]] <- tst
-  for.ts[[i]] <- did.it.work
-  for.ts.quants[[i]] <- quants  
+# ################# Now run as a forward simulation
+#   N.start <- vpa.abund[1] 
+# 
+#   tst <- for.sim(years,
+#                  mat.age = age.mat,
+#                  nm = prop.nat.mort,
+#                  w.age = weight.age,
+#                  ages = ages,
+#                  rems = rem$rem, # rep(0,nrow(rem)),
+#                  fecund = mx,
+#                  N.start = N.start,
+#                  pop.model = 'exponential', K = 2e6,
+#                  n.sims = 2,
+#                  sd.mat = 0.5,
+#                  sd.nm = 0.5,
+#                  sd.wt = 0.5,
+#                  sd.fecund = 0.5)
+# 
+#   #Combine the data
+#   did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
+#   # Here get the Upper and lower 50% quantiles to make a functional boxplot
+#   quants <- did.it.work %>% dplyr::filter(sim != "VPA") %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
+#                                                                         med = median(abund),
+#                                                                         U.50 = quantile(abund,probs=c(0.75)))
+# 
+#   for.res[[i]] <- tst
+#   for.ts[[i]] <- did.it.work
+#   for.ts.quants[[i]] <- quants  
   
   
-ggplot(quants) + geom_line(aes(x=years,y=med))
-  
-  
-  
-########################## Now run the tuning sims
 
-  N.end <- vpa.abund[length(vpa.abund)]
-  tunes <- tune.sim(years,
-                    n.steps = 100,
-                    abund.ts = vpa.abund,
-                    mat.age = age.mat,
-                    nm = prop.nat.mort,
-                    w.age = weight.age,
-                    ages = ages,
-                    rems = rem$rem,
-                    fecund = mx,
-                    N.end = N.end,
-                    pop.model = 'exponential')
-
-  tuned.res[[i]] <- tunes
+  
+  
+  
+# ########################## Now run the tuning sims
+# 
+#   N.end <- vpa.abund[length(vpa.abund)]
+#   tunes <- tune.sim(years,
+#                     n.steps = 100,
+#                     abund.ts = vpa.abund,
+#                     mat.age = age.mat,
+#                     nm = prop.nat.mort,
+#                     w.age = weight.age,
+#                     ages = ages,
+#                     rems = rem$rem,
+#                     fecund = mx,
+#                     N.end = N.end,
+#                     pop.model = 'exponential')
+# 
+#   tuned.res[[i]] <- tunes
 } # end i in Stocks look
-
+# 
 
 
 # Save all these

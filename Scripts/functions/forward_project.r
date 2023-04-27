@@ -11,8 +11,6 @@
  
 for.proj <- function(option = "exponential",pop.last,r,removals.next,K,fishery.timing = 'beginning')
 {
-
-  
   ### So rolling with the easy peasy continuous time exponential
   ### simple exponential population growth, in this formulation with the removals I think I'm saying the removals happen right at the outset
   if(option == 'exponential') 

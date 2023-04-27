@@ -85,6 +85,7 @@ back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL
                     a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
                     a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                     sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
+      browser()
     } # end if(i == 1)
       
     if(i > 1)

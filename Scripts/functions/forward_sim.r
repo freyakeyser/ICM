@@ -48,22 +48,8 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
-  # Download the function to go from inla to sf
-  funs <- c("https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/Lotka_r.r",
-            "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/backwards_project.r"
-  )
-  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
-  for(fun in funs) 
-  {
-    download.file(fun,destfile = basename(fun))
-    source(paste0(getwd(),"/",basename(fun)))
-    file.remove(paste0(getwd(),"/",basename(fun)))
-  }
-  
-  source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
-  
-  st.time <- Sys.time()
-  require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
+
+  #st.time <- Sys.time()
   
   #Initialize a bunch of objects
   n.years<-length(years)
@@ -77,6 +63,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   #Calculate r for your example
   for(i in 1:n.sims)
   {
+    #browser()
     # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
       junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,sim =sim,proj.sim = proj.sim,
@@ -85,10 +72,9 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #browser()
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
-    r.vec[[i]] <- data.frame(r = tmp,years = years[],n.sims=i)
-
+    r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i)# How I have it set up the last entry should be an NA  as we don't use that
   }
-  print(Sys.time() - st.time)
+  
   st.time2 <- Sys.time()
   #unwrap your r vector
   r.vec <- do.call('rbind',r.vec)
@@ -103,7 +89,10 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     
     # Get the final year estimate of your population
     Pop.vec[1] <- pop.last <- N.start  # Assuming this is our known starting point, could add uncertainty to this as well if we want to.
+    removals <- NA
     r.tmp <- r.vec[r.vec$n.sims == i,]
+    #browser()
+    #r.store <- r.vec[r.vec$n.sims == i,-1] # We don't use the first r value 
     #Now run your model backwards with the r from the Lotka function and
     # if you use the logistic growth model the K estimated for the population.
     for(y in 2:n.years)
@@ -113,21 +102,41 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(sim == 'retro') removals.next <- rems[y]
       if(sim == 'project') 
       {
-        fm <- summary(rlnorm(1,log(rems[1]),rems[2]))
-        removals.next <- fm*pop.last
-      }
-      #browser()
-      r.up <- r.tmp$r[y] # 
+        fm <- rlnorm(1,log(rems[1]),rems[2])
+        
+        # Adding in harvest controls, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
+        # This is all stuff we can tweak.
+        if(pop.last < 0.2*K) removals.next <- 0.1*fm*pop.last
+        if(pop.last >= 0.2*K) removals.next <- fm*pop.last
+        
+      } 
+      r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
       # The exponential model
       if(pop.model == 'exponential') 
       {
         exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+        if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- exp.res$Pop.current
       }
+      # So this one is the exponential, but when above whatever bound you have set the population growth rate averages 0 with a little uncertainty
+      if(pop.model == 'bounded_exp') 
+      {
+        if(pop.last > K & r.up > 0) 
+        {
+          r.up <- rlnorm(1,0,0.02)-1
+          r.vec[r.vec$n.sims == i,] <- r.up
+        }
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+        if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
+        pop.last <- exp.res$Pop.current
+        
+      }
+      
       # If you are running the logistic model
       if(pop.model == 'logistic')
       {
         log.res <- for.proj(option = "logistic",pop.last = pop.last,K=K,r=r.up,removals = removals.next)
+        if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- min(log.res$Pop.current)
       }
       if(pop.model == 'dec.rate')
@@ -135,14 +144,16 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
         # This needs way more thought than it's been given by DK!
         #removals[i,]<-(-1+exp(r.vec[i])+dec.rate[i]) ## redone with Jamie.
         pop.last <- pop.last + pop.last*(r.up+dec.rate[i])
+        if(pop.last < 0) pop.last =0 # don't let it drop below 0
       }
       #browser() 
       Pop.vec[y] <- pop.last
+      removals[y-1] <- removals.next
 
     } #Loop through all the years.
-    
+    #browser()
     Pop$abund[Pop$sim == i]<-Pop.vec
-    
+    Pop$removals[Pop$sim == i]<- c(removals,NA)
     ### calc removals (increase due to r plus amount population declined by):   
     # removals[i,]<-Pop.vec-(Pop.vec/exp(r.vec[i]))+(Pop.vec*(decl.rate[i])) WRONG
     
@@ -158,7 +169,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #for(y in 1:n.years) junk[y]<-u.calc(nat.mort.vec[i],juv.mult.vec[i],max.age.vec[i],age.mat.vec[i],sel,rem*0.7,Pop.vec[y])
     #mean.u.vec[i]<-mean(junk) 
   } #end backwards projection
-  print(Sys.time() - st.time2)
+  #print(Sys.time() - st.time2)
     return(list(Pop=Pop,r = r.vec))
 }
   
