@@ -14,7 +14,7 @@
 # sel             The selectivity of the stock.  Currently this is set up as a single number and it is tweaked in the code, we'll need to make this more complex.
 
 # rems            Projected removals.  Currently this is set up so that you provide the mean and sd of fishing mortality for the forward projections.  Will need to generalize this.
-
+#                 also added an option to make F a function of R from the euler-lotka model, this give general stability in the model.
 # N               Population size in a given year
 
 # u:              Exploitation rate (annual not instantaneous), currently set up to be 1 value.
@@ -22,7 +22,7 @@
 # pop.model:      What method you going to use to get the population growth modeled for the backwards model.  You can use exponential model, logistic model, 
 #or a dec.rate (decline rate) model.
 
-# What we need for the Lotka.r function...
+# What we need for the Lotka.r function... 
 # fecund:      How are you estimating fecundity. If a vector it is the number of recruits produced by the average individual in the age classes. 
 #              If a matrix the rows are different simulations. Also have options to set fecund = 'eggs' which we can use if we can get an estimate of egg mortality
 #              fecund = 'SPR' uses the spawner per recruit metric, to get this to work we need to know how many recruits there are in a given year
@@ -95,6 +95,23 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #r.store <- r.vec[r.vec$n.sims == i,-1] # We don't use the first r value 
     #Now run your model backwards with the r from the Lotka function and
     # if you use the logistic growth model the K estimated for the population.
+    
+    # Now we can calculate removals.
+    #browser()
+    if(is.numeric(rems[1])) fm <- c(NA,rlnorm((n.years-1),log(rems[1]),rems[2]))
+    if(rems[[1]] == "R_based")
+    {
+      #browser()
+      # So here we harvest some percentage of the long term R estimate for the stock
+      # Going to rescale r to be instantaneous, won't have much different for most stocks
+      # but will help keep F reasonable for the highly productive stocks
+      # Note that I'm using this as proportional removals hereafter (rescaling back properly would lead to fm values > 1 for some stocks)
+      r.insta <- 1-exp(median(-r.tmp$r,na.rm=T))
+      if(r.insta < 0) r.insta <- 0.02 # If this negative, make mortality like 2% for this scenario.
+      mn.fm <- rems[[2]]*r.insta
+      sd.r <- sd(1-exp(-r.tmp$r),na.rm=T) # This is a bit weird because of the negatives, so will need to think on that.
+      fm <- c(NA,rlnorm((n.years-1),log(mn.fm),sd.r))
+    }
     for(y in 2:n.years)
     {
       #browser()
@@ -102,12 +119,12 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(sim == 'retro') removals.next <- rems[y]
       if(sim == 'project') 
       {
-        fm <- rlnorm(1,log(rems[1]),rems[2])
+        
         
         # Adding in harvest controls, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is all stuff we can tweak.
-        if(pop.last < 0.2*K) removals.next <- 0.1*fm*pop.last
-        if(pop.last >= 0.2*K) removals.next <- fm*pop.last
+        if(pop.last < 0.2*K) removals.next <- 0.1*fm[y]*pop.last
+        if(pop.last >= 0.2*K) removals.next <- fm[y]*pop.last
         
       } 
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
@@ -127,6 +144,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
           r.vec[r.vec$n.sims == i,] <- r.up
         }
         exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+        #browser()
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- exp.res$Pop.current
         

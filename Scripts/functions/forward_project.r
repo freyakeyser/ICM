@@ -18,7 +18,7 @@ for.proj <- function(option = "exponential",pop.last,r,removals.next,K,fishery.t
     if(fishery.timing == 'end')
     {
     Pop.current <- (pop.last)*((1+r))
-    Pop.current<- Pop.current-removals.next 
+    Pop.current<- Pop.current-removals.next  
     }
     if(fishery.timing =='beginning') Pop.current <- (pop.last-removals.next)*((1+r))
   }

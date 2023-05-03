@@ -1,13 +1,18 @@
 # OK, here's I'm going to try and develop a multi=species projection model for the North Sea, we have 10 stocks with good data, the retro fits aren't perfect
 # But they mostly aren't a disaster either.  All have a reasonable length of time series as well.
+
+#################  Section 1 Loading #################  Section 1 Loading #################  Section 1 Loading  ###############################################
 library(tidyverse)
 library(GGally)
 library(cowplot)
+library(ggthemes)
+# Set the base plot theme
+theme_set(theme_few(base_size = 14))
 
 # Download the function to go from inla to sf
-funs <- c("https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/Lotka_r.r",
-          "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/forwrd_sim.r",
-          "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/forwrd_project.r"
+funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_sim.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
 )
 # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
 for(fun in funs) 
@@ -18,15 +23,11 @@ for(fun in funs)
 }
 
 #source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
-
-
-
-
-
 load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
 
-# Subset to the north sea stocks.  I need years, end abundance, natural mortality, and mx
 
+
+# Subset to the north sea stocks.  I need years, end abundance, natural mortality, and mx
 Stocks <- names(years.tmp)[grep("WGNSSK",names(years.tmp))]
 # I'm going to reorder the stocks here so the correlation bit below flows better. Kinda a-posteriorying this :-P 
 Stocks <- c("ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus", "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii",
@@ -40,73 +41,18 @@ vpa.ns <- vpa.tmp[Stocks]
 ages.ns <- ages.tmp[Stocks]
 waa.ns <- waa.tmp[Stocks]
 mat.ns <- am.tmp[Stocks]
+rem.ns <- rem.tmp[Stocks]
+
+########################### End Section 1 Loading  ###################################### End Section 1 Loading ###############################################
 
 
-# Now I'm going to need to align these so they all start and end in the same year. Looks like we have data from 1990:2016 for all stocks
-# Which is shorter than I hoped, but oh well.  Off to do some fancy stick handling
-yrs.all <- 1990:2016 # Could automate this...
-i <- Stocks[1]
-yrs.sub <- NULL
-nm.sub <- NULL
-mx.sub <- NULL
-vpa.sub <- NULL
-ages.sub <- NULL
-waa.sub <- NULL
-mat.sub <- NULL
-mx.sum <- NULL
-for(i in Stocks)
-{
-  # Subset data
-  yrs.t <- yrs.ns[[i]]
-  nm.t <- nm.ns[[i]]
-  mx.t <- mx.ns[[i]]
-  vpa.t <- vpa.ns[[i]]
-  ages.t <- ages.ns[[i]]
-  waa.t <- waa.ns[[i]]
-  mat.t <- mat.ns[[i]]
-  # Pick the right data to subset
-  sel <- which(yrs.t %in% yrs.all)
-  yrs.t <- yrs.t[sel]
-  nm.t <- nm.t[sel,]
-  mx.t <- mx.t[sel,]
-  vpa.t <- vpa.t[sel]
-  waa.t <- waa.t[sel,]
-  mat.t <- mat.t[sel,]
-  # Now pop back into an object
-  yrs.sub[[i]] <- yrs.t
-  nm.sub [[i]] <- nm.t
-  mx.sub[[i]] <- mx.t
-  vpa.sub[[i]] <- vpa.t
-  ages.sub[[i]] <- ages.t
-  waa.sub[[i]] <- waa.t
-  mat.sub[[i]] <- mat.t
-  #I might want to make this a weighted average at some point, but this is probably fine for the moment
-  mx.sum[[i]] <- as.numeric(rowSums(mx.t,na.rm=T))
-}  
-  
-# Now we can look for correlations between fecundity for the different stocks. Going to leave it at that for the moment because Nat.M is irregularly variable over time.
-tst <- do.call('rbind',mx.sum)
 
-tst <- t(tst)
-colnames(tst) <- c("Melanogrammus aeglefinus","Trisopterus esmarkii",
-                   "Pollachius virens", "Gadus morhua", "Scopthalmus maximus",
-                   "Pleuronectes platessa 7d", "Pleuronectes platessa 4,20", "Solea solea 7d", "Solea solea 4",
-                   "Merlangius merlangus")
-tst <- data.frame(tst)
-# Now with this we can set up a matrix to make all the stocks mx's depend on each other!
-cor.mat <- cor(tst)
 
-p <- ggpairs(data = tst)
 
-save_plot("D:/Github/ICM/Figures/NS_fecundity_correlation_plot.png",p,base_width = 20,base_height = 20)
 
-# So then what do we do? We could take the mx values and start running simulations on the populations
-# So from correlation matrix Cod is positively correlated with virens and maximus (these 3 lump)
-# platessa 7d is positively correlated with platessa 4,20, solea 4 and 7d ( these 4 lump)
-# leaves a weak + correlation with aeglinfuns and esmarkii
-# While merlengus isn't correlated with anyone.
-# 
+########################## Section 2 Parameters ########################## Section 2 Parameters ########################## Section 2 Parameters
 
+yrs.all <- 1990:2016 # These are the years we have data for all 10 stocks
 n.yrs.proj <- 100
 n.sims <- 1000
 sd.nm <- 0.1
@@ -118,12 +64,118 @@ c.effect <- round(0.25*n.yrs.proj) # The year in which the climate effect starts
 climate.mx.effect <- 0.01
 climate.nm.effect <- 0.01
 
+
+
+
+########################## Section 3 Inter-Species Correlation ########################## Section 3 Inter-Species Correlation ########################## 
+
+
+yrs.sub <- NULL
+nm.sub <- NULL
+mx.sub <- NULL
+vpa.sub <- NULL
+ages.sub <- NULL
+waa.sub <- NULL
+mat.sub <- NULL
+mx.sum <- NULL
+fm.sub <- NULL
+for(i in Stocks)
+{
+  # Subset data
+  yrs.t <- yrs.ns[[i]]
+  nm.t <- nm.ns[[i]]
+  mx.t <- mx.ns[[i]]
+  vpa.t <- vpa.ns[[i]]
+  ages.t <- ages.ns[[i]]
+  waa.t <- waa.ns[[i]]
+  mat.t <- mat.ns[[i]]
+  rem.t <- rem.ns[[i]]
+  # Pick the right data to subset
+  sel <- which(yrs.t %in% yrs.all)
+  yrs.t <- yrs.t[sel]
+  nm.t <- nm.t[sel,]
+  mx.t <- mx.t[sel,]
+  vpa.t <- vpa.t[sel]
+  waa.t <- waa.t[sel,]
+  mat.t <- mat.t[sel,]
+  rem.t <- rem.t[sel,]
+  fm.t <- data.frame(years = rem.t$Year,fm = rem.t$rem/vpa.t, stock =i)
+  # Now pop back into an object
+  yrs.sub[[i]] <- yrs.t
+  nm.sub [[i]] <- nm.t
+  mx.sub[[i]] <- mx.t
+  vpa.sub[[i]] <- vpa.t
+  ages.sub[[i]] <- ages.t
+  waa.sub[[i]] <- waa.t
+  mat.sub[[i]] <- mat.t
+  fm.sub[[i]] <- fm.t
+  #I might want to make this a weighted average at some point, but this is probably fine for the moment
+  mx.sum[[i]] <- as.numeric(rowSums(mx.t,na.rm=T))
+}  
+  
+# Now we can look for correlations between fecundity for the different stocks. Going to leave it at that for the moment because Nat.M is irregularly variable over time.
+mx.cor.dat <- do.call('rbind',mx.sum)
+
+mx.cor.dat <- t(mx.cor.dat)
+# Make the names nice for the plot
+colnames(mx.cor.dat) <- c("Melanogrammus aeglefinus","Trisopterus esmarkii",
+                   "Pollachius virens", "Gadus morhua", "Scopthalmus maximus",
+                   "Pleuronectes platessa 7d", "Pleuronectes platessa 4,20", "Solea solea 7d", "Solea solea 4",
+                   "Merlangius merlangus")
+mx.cor.dat <- data.frame(mx.cor.dat)
+# Now with this we can set up a matrix to make all the stocks mx's depend on each other!
+mx.cor.mat <- cor(mx.cor.dat)
+
+p.mx.cor <- ggpairs(data = mx.cor.dat)
+save_plot("D:/Github/ICM/Figures/NS_sims/NS_fecundity_correlation_plot.png",p.mx.cor,base_width = 22,base_height = 22)
+
+# So from correlation matrix Cod is positively correlated with virens and maximus (these 3 lump)
+# platessa 7d is positively correlated with platessa 4,20, solea 4 and 7d ( these 4 lump)
+# leaves a weak + correlation with aeglinfuns and esmarkii
+# While merlengus isn't correlated with anyone.
+# 
+
+# Final thing here is getting fishing mortality estimates by stock, we can use these to project under a business as usual case
+# Then tweak around these as we see fit.
+
+fm.ts <- do.call("rbind",fm.sub) 
+fm.ts$stock <- factor(fm.ts$stock,levels= Stocks)
+# Now I wonder if fishing is correlated between some stocks...
+fm.cor.ts <- fm.ts %>% tidyr::pivot_wider(names_from = stock,values_from = fm)
+colnames(fm.cor.ts) <- c('years',"Melanogrammus aeglefinus","Trisopterus esmarkii",
+                          "Pollachius virens", "Gadus morhua", "Scopthalmus maximus",
+                          "Pleuronectes platessa 7d", "Pleuronectes platessa 4,20", "Solea solea 7d", "Solea solea 4",
+                          "Merlangius merlangus")
+fm.cor.mat <- cor(fm.cor.ts[,-1])
+
+p.fm.cor <- ggpairs(data = fm.cor.ts)
+
+save_plot("D:/Github/ICM/Figures/NS_sims/NS_fm_correlation_plot.png",p.fm.cor,base_width = 22,base_height = 22)
+
+
+
+# OK, so I'm going to base past fishing mortality on what was observed in the past
+ggplot(fm.ts) + geom_line(aes(x=years,y=fm,group=stock,color=stock))
+# So get the mean/variance, on the log scale since we'll need to log-normal distro this
+# because there are some 0's in the data we have to take mean the log of that, rather than vice versa.
+
+fish.mort <- fm.ts %>% dplyr::group_by(stock) %>% dplyr::summarise(mn = mean(fm,na.rm=T),
+                                                                   sd = sd(fm,na.rm=T))
+fish.mort$stock <- Stocks
+fish.mort <- fish.mort[,c(2,3,1)] # reorder for below
+
+
+
+############### Section 4 Multi-species model of North Sea ############### Section 4 Multi-species model of North Sea ############### Section 4 Multi-species model of North Sea
+
+
+
 # These 4 stocks are the ones we use to get the correlation for each 'functional group' (which I define as the ones that are correlated with each other)
 focal.stocks <- c("ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus", 
                   "ICES-WGNSSK_NS 4-6- 3a_Pollachius_virens",
                   "ICES-WGNSSK_NS 7d_Pleuronectes_platessa",
                   "ICES-WGNSSK_NS 4-7d_Merlangius_merlangus")
-#sd.cor <- 0.01
+
 tmp.mx <- NULL
 tmp.nm <- NULL
 tmp.mat <- NULL
@@ -137,9 +189,6 @@ ts.unpack <- NULL
 r.unpack <- NULL
 
 
-###################
-## OK NOW TO SET THIS UP SO WE LOOP THROUGH MULTIPLE SIMULATIONS!!!
-#################
 
 # So everything will need to get wrapped up in a simulation loop
 for(j in 1:n.sims)
@@ -150,6 +199,7 @@ st.time <- Sys.time()
 samp.mx <- round(runif(n.yrs.proj,1,nrow(mx.sub[[1]])))
 samp.nm <- round(runif(n.yrs.proj,1,nrow(mx.sub[[1]])))
 
+# Now get the fecundity and natural mortality matricies for the simulations
 for(i in Stocks)
 {
   mx.tp <- NULL
@@ -167,12 +217,12 @@ for(i in Stocks)
   # Calculate this for all the natural mortality bits as we don't build any correlation into this (yet)...
   nm.dev[[i]] <-  rlnorm(n.yrs.proj,0,sd.mx)
   
-  # This is bit hacky, but given I know the correlations ahead of doing this and I know the order of the stocks feeding into this, I'll be hacky.
+  # This is bit hacky, but these if's will get us the inter-stock fecundity correlations
   if(i == "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii")
   {
-    row.sel <- which(row.names(cor.mat) == "Trisopterus.esmarkii")
-    col.sel <- which(row.names(cor.mat) =="Melanogrammus.aeglefinus")
-    corr <- cor.mat[row.sel,col.sel]
+    row.sel <- which(row.names(mx.cor.mat) == "Trisopterus.esmarkii")
+    col.sel <- which(row.names(mx.cor.mat) =="Melanogrammus.aeglefinus")
+    corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
     mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
@@ -181,10 +231,10 @@ for(i in Stocks)
   # More hacky
   if(i %in% c("ICES-WGNSSK_NS 4-7d,20_Gadus_morhua","ICES-WGNSSK_NS4 _Scopthalmus_maximus"))
   {
-    if(i == "ICES-WGNSSK_NS 4-7d,20_Gadus_morhua") row.sel <- which(row.names(cor.mat) == "Gadus.morhua")
-    if(i == "ICES-WGNSSK_NS4 _Scopthalmus_maximus") row.sel <- which(row.names(cor.mat) == "Scopthalmus.maximus")
-    col.sel <- which(row.names(cor.mat) =="Pollachius.virens")
-    corr <- cor.mat[row.sel,col.sel]
+    if(i == "ICES-WGNSSK_NS 4-7d,20_Gadus_morhua") row.sel <- which(row.names(mx.cor.mat) == "Gadus.morhua")
+    if(i == "ICES-WGNSSK_NS4 _Scopthalmus_maximus") row.sel <- which(row.names(mx.cor.mat) == "Scopthalmus.maximus")
+    col.sel <- which(row.names(mx.cor.mat) =="Pollachius.virens")
+    corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS 4-6- 3a_Pollachius_virens"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
     mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
@@ -193,11 +243,11 @@ for(i in Stocks)
   # Final hacky section of this hacky section
   if(i %in% c("ICES-WGNSSK_NS 4,20_Pleuronectes_platessa","ICES-WGNSSK_NS 7d._Solea_solea","ICES-WGNSSK_NS4 _Solea_solea"))
   {
-    if(i == "ICES-WGNSSK_NS 4,20_Pleuronectes_platessa") row.sel <- which(row.names(cor.mat) == "Pleuronectes.platessa.4.20")
-    if(i == "ICES-WGNSSK_NS 7d._Solea_solea") row.sel <- which(row.names(cor.mat) == "Solea.solea.7d")
-    if(i == "ICES-WGNSSK_NS4 _Solea_solea") row.sel <- which(row.names(cor.mat) == "Solea.solea.4")
-    col.sel <- which(row.names(cor.mat) =="Pleuronectes.platessa.7d")
-    corr <- cor.mat[row.sel,col.sel]
+    if(i == "ICES-WGNSSK_NS 4,20_Pleuronectes_platessa") row.sel <- which(row.names(mx.cor.mat) == "Pleuronectes.platessa.4.20")
+    if(i == "ICES-WGNSSK_NS 7d._Solea_solea") row.sel <- which(row.names(mx.cor.mat) == "Solea.solea.7d")
+    if(i == "ICES-WGNSSK_NS4 _Solea_solea") row.sel <- which(row.names(mx.cor.mat) == "Solea.solea.4")
+    col.sel <- which(row.names(mx.cor.mat) =="Pleuronectes.platessa.7d")
+    corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS 7d_Pleuronectes_platessa"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
     mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
@@ -223,28 +273,11 @@ for(i in Stocks)
     ce.nm <-  (climate.nm.effect/10)*(1:(n.yrs.proj-c.effect)) # So we'll say this is instantaneous rate.
     tmp.insta.nm <- -log(1-tmp.nm[[i]])
     tmp.nm[[i]][c.effect:n.yrs.proj,] <- 1-exp(-(tmp.insta.nm[c.effect:n.yrs.proj,] + ce.nm*tmp.nm[[i]][c.effect:n.yrs.proj,]))
-    
-  }
-  
-  
+  } # end if(c.effect < n.yrs.proj)
 }  # end for(i in Stocks)
 
 # OK, so I have everything I need now to run the simulations forward.
 
-# So the key here is setting up a good fishing mortality scenario for each stock...
-# But I have set it up so that if Abundance drops below 20% of K then F declines to 10% of the mean, basically
-# allowing for incidental mortality from other fisheries.
-fish.mort <- list(c(0.11,0.1),
-                  c(0.35,0.1),
-                  c(0.15,0.1),
-                  c(0.3,0.1),
-                  c(0.15,0.1),
-                  c(0.175,0.1),
-                  c(0.175,0.1),
-                  c(0.06,0.1),
-                  c(0.1,0.1),
-                  c(0.175,0.1))
-names(fish.mort) <- Stocks
 res.ts <- NULL
 res.r <- NULL
 for(s in Stocks)
@@ -259,14 +292,14 @@ for(s in Stocks)
   ages <- tmp.age[[s]]
   N.start <- vpa.abund[length(vpa.abund)]
   K <- max(vpa.abund)
-  fm <- fish.mort[[s]] # Mean and variance, is log-normally distributed.
+  fm <- unlist(fish.mort[fish.mort$stock == s,1:2]) # Mean and variance, is log-normally distributed.
   
   tst <- for.sim(years,
                  mat.age = age.mat,
                  nm = prop.nat.mort,
                  w.age = weight.age,
                  ages = ages,
-                 rems =  fm,
+                 rems =  list("R_based",1), #fm,
                  fecund = mx,
                  N.start = N.start,
                  pop.model = 'bounded_exp', K = K,
@@ -297,8 +330,6 @@ print(signif(timer,digits=2))
 ts.final <- do.call("rbind",ts.unpack)
 ts.final$fm <- ts.final$removals/ts.final$abund
 r.final <- do.call("rbind",r.unpack)
-windows(11,11)
-ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim,color=sim)) + facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) + scale_color_viridis_b()
 
 quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25),na.rm=T),
                                                                           med = median(abund,na.rm=T),
@@ -306,7 +337,27 @@ quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 =
                                                                           fml.50 = quantile(fm,probs=c(0.25),na.rm=T),
                                                                           fm = median(fm,na.rm=T),
                                                                           fmu.50 = quantile(fm,probs=c(0.75),na.rm=T))
-windows(11,11)
-ggplot(quants) + geom_line(aes(x=years,y=med)) + facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) +
-                  geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') 
+# If happy save the 3 objects
+# saveRDS(object = ts.final,file = paste0("D:/Github/ICM/Results/NS_climate_starts_at_year_",c.effect,
+#                                           "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,
+#                                          "_time_series_projections.Rds"))
+# 
+# saveRDS(object = quants,file = paste0("D:/Github/ICM/Results/NS_climate_starts_at_year_",c.effect,
+#                                       "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,
+#                                       "_time_series_quantiles.Rds"))
+# 
+# saveRDS(object = r.final,file = paste0("D:/Github/ICM/Results/NS_climate_starts_at_year_",c.effect,
+#                                        "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,
+#                                        "_r_projections.Rds"))
 
+
+# Two simple plots.
+p.sims <- ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim),alpha=0.02) +
+                             facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) + scale_x_continuous(breaks = seq(2010,2200,by=10)) 
+save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_all_realizations_climate_starts_at_year_",c.effect,
+                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims,base_height = 12,base_width = 20)
+
+p.sims.quants <- ggplot(quants) + geom_line(aes(x=years,y=med)) + facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) +
+                                  geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') 
+save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_quantiles_climate_starts_at_year_",c.effect,
+                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims.quants,base_height = 12,base_width = 20)
