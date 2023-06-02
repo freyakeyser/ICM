@@ -151,9 +151,7 @@ for(i in Stocks)
   years <- data %>% dplyr::pull(Year) %>% unique() %>% sort()
   
   N.end <- sum(data[data$Year==max(years),]$Num)
-  #N.end <- rowSums(abund[nrow(abund),-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
-  #vpa.abund <- rowSums(abund[,-which(names(abund) %in% c("Year", "Stock", "type"))], na.rm=T)
-  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(vpa=sum(Num)) %>% pull(vpa)
+  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(vpa=sum(Num,na.rm=T)) %>% pull(vpa)
 
   # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
   #minage
@@ -168,6 +166,9 @@ for(i in Stocks)
   data$ssb <- data$ssn * data$WA #I need to figure out how to line this up with the number of recruits for the right years in the data object.... got it right for the overall r.p.ssb below.
   #tot.ssb
   annual <- data %>% group_by(Year) %>% summarize(tot.ssb = sum(ssb)) %>% left_join(annual)
+  
+  #tst <- data %>% group_by(Year) %>% summarize(tot.ssn = sum(ssn)) %>% left_join(annual)
+
   #r.p.ssb This needs to be offset by the age of recruits
   annual$r.p.ssb <- c(rep(NA,minage),annual$recruits[(minage+1):nrow(annual)]/annual$tot.ssb[1:(nrow(annual)-minage)])
   # recs.per.age
@@ -294,7 +295,7 @@ for(i in Stocks)
 
   tst <- back.sim(years,
                  mat.age = age.mat,
-                 nm = prop.nat.mort,
+                 nm = -(log(1-prop.nat.mort)),
                  w.age = weight.age,
                  ages = ages,
                  rems = rem$rem,
@@ -326,7 +327,7 @@ for(i in Stocks)
 # 
 #   tst <- for.sim(years,
 #                  mat.age = age.mat,
-#                  nm = prop.nat.mort,
+#                  nm = -(log(1-prop.nat.mort)),
 #                  w.age = weight.age,
 #                  ages = ages,
 #                  rems = rem$rem, # rep(0,nrow(rem)),
@@ -356,30 +357,30 @@ for(i in Stocks)
   
   
 # ########################## Now run the tuning sims
-# 
-#   N.end <- vpa.abund[length(vpa.abund)]
-#   tunes <- tune.sim(years,
-#                     n.steps = 100,
-#                     abund.ts = vpa.abund,
-#                     mat.age = age.mat,
-#                     nm = prop.nat.mort,
-#                     w.age = weight.age,
-#                     ages = ages,
-#                     rems = rem$rem,
-#                     fecund = mx,
-#                     N.end = N.end,
-#                     pop.model = 'exponential')
-# 
-#   tuned.res[[i]] <- tunes
+#
+   N.end <- vpa.abund[length(vpa.abund)]
+   tunes <- tune.sim(years,
+                     n.steps = 100,
+                     abund.ts = vpa.abund,
+                     mat.age = age.mat,
+                     nm = -(log(1-prop.nat.mort)),
+                     w.age = weight.age,
+                     ages = ages,
+                     rems = rem$rem,
+                     fecund = mx,
+                     N.end = N.end,
+                     pop.model = 'exponential')
+
+   tuned.res[[i]] <- tunes
 } # end i in Stocks look
-# 
+
 
 
 # Save all these
-# saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
-# saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
-# saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
-# saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+ saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
+ saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
+ saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
+ saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
 ```
 
 
@@ -587,7 +588,7 @@ for(i in Stocks)
   st.time <- Sys.time()
   tst <- for.sim(years,
                  mat.age = age.mat,
-                 nm = prop.nat.mort,
+                 nm = -(log(1-prop.nat.mort)),
                  w.age = weight.age,
                  ages = ages,
                  rems = c(0.1,0.2), # This is set up as a fishing mortality that averages 0.1 with an sd of 0.2)
@@ -610,7 +611,7 @@ for(i in Stocks)
   for.res[[i]] <- tst
   for.ts[[i]] <- tst$Pop
   for.ts.quants[[i]] <- quants  
-  
+}  
 ggplot(quants) + geom_line(aes(x=years,y=med))  + geom_ribbon(aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue')
 
 ```

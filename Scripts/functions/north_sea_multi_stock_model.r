@@ -61,8 +61,8 @@ sd.mx <- 0.1
 # or natural mortality terms by 1% or 0.5% a decade, based on how I code things below.  Lots of scope to
 # do whatever the heck we wanted here.
 c.effect <- round(0.25*n.yrs.proj) # The year in which the climate effect starts, 
-climate.mx.effect <- 0.01
-climate.nm.effect <- 0.01
+climate.mx.effect <- 0
+climate.nm.effect <- 0
 
 
 
@@ -296,10 +296,10 @@ for(s in Stocks)
   
   tst <- for.sim(years,
                  mat.age = age.mat,
-                 nm = prop.nat.mort,
+                 nm = -(log(1-prop.nat.mort)),
                  w.age = weight.age,
                  ages = ages,
-                 rems =  list("R_based",1), #fm,
+                 rems =  list("R_based",0.5), #fm,
                  fecund = mx,
                  N.start = N.start,
                  pop.model = 'bounded_exp', K = K,

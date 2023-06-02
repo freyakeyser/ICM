@@ -72,12 +72,15 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #browser()
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
+    
     r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i)# How I have it set up the last entry should be an NA  as we don't use that
+    browser()
   }
-  
-  st.time2 <- Sys.time()
+  #browser() 
+  #print(st.time2 <- Sys.time())
   #unwrap your r vector
   r.vec <- do.call('rbind',r.vec)
+  
   #temp.r.vec<-r.vec[r.vec>0 & r.vec<r.cutoff]
   #r.vec<-temp.r.vec[1:n.sims]
   ############################################################
@@ -106,6 +109,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # Going to rescale r to be instantaneous, won't have much different for most stocks
       # but will help keep F reasonable for the highly productive stocks
       # Note that I'm using this as proportional removals hereafter (rescaling back properly would lead to fm values > 1 for some stocks)
+     
       r.insta <- 1-exp(median(-r.tmp$r,na.rm=T))
       if(r.insta < 0) r.insta <- 0.02 # If this negative, make mortality like 2% for this scenario.
       mn.fm <- rems[[2]]*r.insta
@@ -119,14 +123,14 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(sim == 'retro') removals.next <- rems[y]
       if(sim == 'project') 
       {
-        
-        
+
         # Adding in harvest controls, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is all stuff we can tweak.
         if(pop.last < 0.2*K) removals.next <- 0.1*fm[y]*pop.last
         if(pop.last >= 0.2*K) removals.next <- fm[y]*pop.last
         
       } 
+     
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
       # The exponential model
       if(pop.model == 'exponential') 
@@ -138,10 +142,10 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # So this one is the exponential, but when above whatever bound you have set the population growth rate averages 0 with a little uncertainty
       if(pop.model == 'bounded_exp') 
       {
+        #browser()
         if(pop.last > K & r.up > 0) 
         {
           r.up <- rlnorm(1,0,0.02)-1
-          r.vec[r.vec$n.sims == i,] <- r.up
         }
         exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
         #browser()
@@ -164,9 +168,11 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
         pop.last <- pop.last + pop.last*(r.up+dec.rate[i])
         if(pop.last < 0) pop.last =0 # don't let it drop below 0
       }
+      #browser()
+      r.vec$r[r.vec$n.sims == i][y-1] <- r.up # Replace it with the realized r.vec
       #browser() 
       Pop.vec[y] <- pop.last
-      removals[y-1] <- removals.next
+      removals[y-1] <- removals.next 
 
     } #Loop through all the years.
     #browser()
@@ -188,6 +194,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #mean.u.vec[i]<-mean(junk) 
   } #end backwards projection
   #print(Sys.time() - st.time2)
+
     return(list(Pop=Pop,r = r.vec))
 }
   

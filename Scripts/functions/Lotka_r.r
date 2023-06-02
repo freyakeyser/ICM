@@ -228,7 +228,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
         nat.mort[y,] <- nat.mort[y,]*nm.deva  
       } # end for(y in 1:n.yrs) loop
      } # end if(proj.sim == 'dist')
-      
+
   }
   
   ################################### END PROJECTION SECTION ################################### END PROJECTION SECTION################################### END PROJECTION SECTION
@@ -246,7 +246,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
     # Convert to survivorship vector
-    si <- 1-lx
+    si <- 1-lx 
     # Set the first age class to be 1
     lx<-1
     # And get cumulative survivorship for the stock
@@ -258,6 +258,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     res[j,] <- c(yrs[j],junk$par)
     mx.tmp[[j]] <- mx
     lx.tmp[[j]] <- lx
+    #browser()
   } # end for(j in 1:(n.yrs-1))
   
   mx.mat <- do.call("rbind",mx.tmp)

@@ -40,7 +40,7 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K,fishery.
     # Get our parameter for the logistic model
     if(fishery.timing == 'beginning') par <- pop.next
     if(fishery.timing == 'end') par <- pop.next <- pop.next + removals.next
-    # Ha, we can use this to solve for N in the previous year
+    # Ha, we can use this to solve for N in the previous year 
     #I'm hung up on which of these to use, they give almost the same answer, but not quite, but going with the 1+r version since
     # we are in discrete time here.
     #logistic.n.last <- function(N.last) sum((exp(r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K) - pop.next))^2

@@ -80,12 +80,13 @@ back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
     if(i == 1)
     {
+      
       junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
-                    L.inf = L.inf,K = K,t0 = t0, 
+                    L.inf = L.inf,K = K,t0 = t0,  
                     a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
                     a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                     sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
-      browser()
+      #browser()
     } # end if(i == 1)
       
     if(i > 1)
