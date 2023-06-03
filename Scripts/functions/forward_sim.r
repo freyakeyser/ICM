@@ -74,7 +74,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
     
     r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i)# How I have it set up the last entry should be an NA  as we don't use that
-    browser()
+    #browser()
   }
   #browser() 
   #print(st.time2 <- Sys.time())
