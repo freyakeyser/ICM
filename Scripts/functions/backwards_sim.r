@@ -59,7 +59,7 @@ back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
   
-  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
+  #source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
   
   
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
