@@ -23,25 +23,11 @@ for(fun in funs)
 }
 
 #source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
-load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+#load(file = "C:/Users/Owner/Documents/Github/ICM/Results/model_inputs.Rdata")
+#load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
 
-
-
-# Subset to the north sea stocks.  I need years, end abundance, natural mortality, and mx
-Stocks <- names(years.tmp)[grep("WGNSSK",names(years.tmp))]
-# I'm going to reorder the stocks here so the correlation bit below flows better. Kinda a-posteriorying this :-P 
-Stocks <- c("ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus", "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii",
-            "ICES-WGNSSK_NS 4-6- 3a_Pollachius_virens", "ICES-WGNSSK_NS 4-7d,20_Gadus_morhua", "ICES-WGNSSK_NS4 _Scopthalmus_maximus",
-            "ICES-WGNSSK_NS 7d_Pleuronectes_platessa", "ICES-WGNSSK_NS 4,20_Pleuronectes_platessa","ICES-WGNSSK_NS 7d._Solea_solea","ICES-WGNSSK_NS4 _Solea_solea",
-            "ICES-WGNSSK_NS 4-7d_Merlangius_merlangus")
-yrs.ns <- years.tmp[Stocks]
-nm.ns <- pnm.tmp[Stocks] # Proportional natural mortality here.
-mx.ns <- mx.tmp[Stocks]
-vpa.ns <- vpa.tmp[Stocks]
-ages.ns <- ages.tmp[Stocks]
-waa.ns <- waa.tmp[Stocks]
-mat.ns <- am.tmp[Stocks]
-rem.ns <- rem.tmp[Stocks]
+load(file = paste0(loc,"/Results/NS_tuned_sim_results.RData"))
 
 ########################### End Section 1 Loading  ###################################### End Section 1 Loading ###############################################
 
@@ -53,8 +39,8 @@ rem.ns <- rem.tmp[Stocks]
 ########################## Section 2 Parameters ########################## Section 2 Parameters ########################## Section 2 Parameters
 
 yrs.all <- 1990:2016 # These are the years we have data for all 10 stocks
-n.yrs.proj <- 100
-n.sims <- 1000
+n.yrs.proj <- 25
+n.sims <- 100
 sd.nm <- 0.1
 sd.mx <- 0.1
 # Now we can make a super simple or complex climate effect.  As proof of concept this will change either the fecundity
@@ -82,14 +68,14 @@ fm.sub <- NULL
 for(i in Stocks)
 {
   # Subset data
-  yrs.t <- yrs.ns[[i]]
-  nm.t <- nm.ns[[i]]
-  mx.t <- mx.ns[[i]]
-  vpa.t <- vpa.ns[[i]]
-  ages.t <- ages.ns[[i]]
-  waa.t <- waa.ns[[i]]
-  mat.t <- mat.ns[[i]]
-  rem.t <- rem.ns[[i]]
+  yrs.t <- years.tmp[[i]]
+  nm.t <- pnm.tmp[[i]]
+  mx.t <- mx.tmp[[i]]
+  vpa.t <- vpa.tmp[[i]]
+  ages.t <- ages.tmp[[i]]
+  waa.t <- waa.tmp[[i]]
+  mat.t <- am.tmp[[i]]
+  rem.t <- rem.tmp[[i]]
   # Pick the right data to subset
   sel <- which(yrs.t %in% yrs.all)
   yrs.t <- yrs.t[sel]
@@ -127,7 +113,7 @@ mx.cor.dat <- data.frame(mx.cor.dat)
 mx.cor.mat <- cor(mx.cor.dat)
 
 p.mx.cor <- ggpairs(data = mx.cor.dat)
-save_plot("D:/Github/ICM/Figures/NS_sims/NS_fecundity_correlation_plot.png",p.mx.cor,base_width = 22,base_height = 22)
+#save_plot("D:/Github/ICM/Figures/NS_sims/NS_fecundity_correlation_plot.png",p.mx.cor,base_width = 22,base_height = 22)
 
 # So from correlation matrix Cod is positively correlated with virens and maximus (these 3 lump)
 # platessa 7d is positively correlated with platessa 4,20, solea 4 and 7d ( these 4 lump)
@@ -148,9 +134,9 @@ colnames(fm.cor.ts) <- c('years',"Melanogrammus aeglefinus","Trisopterus esmarki
                           "Merlangius merlangus")
 fm.cor.mat <- cor(fm.cor.ts[,-1])
 
-p.fm.cor <- ggpairs(data = fm.cor.ts)
+p.fm.cor <- ggpairs(data = fm.cor.ts[,-1])
 
-save_plot("D:/Github/ICM/Figures/NS_sims/NS_fm_correlation_plot.png",p.fm.cor,base_width = 22,base_height = 22)
+save_plot("C:/Users/Owner/Documents/Github/ICM/Figures/NS_sims/NS_fm_correlation_plot.png",p.fm.cor,base_width = 22,base_height = 22)
 
 
 
@@ -354,10 +340,110 @@ quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 =
 # Two simple plots.
 p.sims <- ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim),alpha=0.02) +
                              facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) + scale_x_continuous(breaks = seq(2010,2200,by=10)) 
-save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_all_realizations_climate_starts_at_year_",c.effect,
-                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims,base_height = 12,base_width = 20)
+#save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_all_realizations_climate_starts_at_year_",c.effect,
+#                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims,base_height = 12,base_width = 20)
 
 p.sims.quants <- ggplot(quants) + geom_line(aes(x=years,y=med)) + facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) +
                                   geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') 
-save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_quantiles_climate_starts_at_year_",c.effect,
-                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims.quants,base_height = 12,base_width = 20)
+#save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_quantiles_climate_starts_at_year_",c.effect,
+#                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims.quants,base_height = 12,base_width = 20)
+
+
+
+### Section in progress, getting the K's and the bimoasses ##
+
+load(file = "C:/Users/Owner/Documents/Github/ICM/Results/model_inputs.Rdata")
+
+
+Stocks <- Stocks[grep("WGNSSK",Stocks)]
+# Haddock in NS is busted before 1972, not sure why, but I'm chucking all that data here in a very sloppy way
+
+# So lets look at total abundance and total biomass in the system by year...
+
+years.ns <- NULL
+vpa.ns <- NULL
+bm.ns <- NULL
+num.ns <- NULL
+waa.ns <- NULL
+pnm.ns <- NULL
+rem.ns <- NULL
+mx.ns <- NULL
+am.ns <- NULL
+for(i in  Stocks)
+{
+years.ns[[i]] <- years.tmp[[i]]
+vpa.ns[[i]] <- vpa.tmp[[i]]
+num.ns[[i]] <- ASR_long %>% dplyr::filter(Stock == i,type == "Num")
+num.ns[[i]] <- num.ns[[i]] %>% dplyr::filter(age != "tot")
+waa.ns[[i]] <- ASR_long %>% dplyr::filter(Stock == i,type == "WA")
+bm.ns[[i]] <- data.frame(Year = num.ns[[i]]$Year,Stock = num.ns[[i]]$Stock,age = num.ns[[i]]$age,
+                         bm = num.ns[[i]]$value*waa.ns[[i]]$value,
+                         num = num.ns[[i]]$value)
+pnm.ns[[i]] <- pnm.tmp[[i]]
+rem.ns[[i]] <- rem.tmp[[i]]
+mx.ns[[i]] <- mx.tmp[[i]]
+am.ns[[i]] <- am.tmp[[i]]
+}
+
+ns.had <- "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus"
+years.ns[[ns.had]] <- years.ns[[ns.had]][-1:-7]
+pnm.ns[[ns.had]] <- pnm.ns[[ns.had]][-1:-7,]
+waa.ns[[ns.had]] <- waa.ns[[ns.had]][-1:-7,]
+#ages.ns[[ns.had]] <- ages.ns[[ns.had]][-1:-7]
+rem.ns[[ns.had]] <- rem.ns[[ns.had]][-1:-7,]
+mx.ns[[ns.had]] <- mx.ns[[ns.had]][-1:-7,]
+bm.ns[[ns.had]] <- bm.ns[[ns.had]] %>% filter(Year >= 1972)
+vpa.ns[[ns.had]] <- vpa.ns[[ns.had]][-1:-7]
+am.ns[[ns.had]] <- am.ns[[ns.had]][-1:-7,]
+
+ns.sole <- "ICES-WGNSSK_NS4 _Solea_solea"
+years.ns[[ns.sole]] <- years.ns[[ns.sole]][-1:-7]
+pnm.ns[[ns.sole]] <- pnm.ns[[ns.sole]][-1:-7,]
+waa.ns[[ns.sole]] <- waa.ns[[ns.sole]][-1:-7,]
+#ages.ns[[ns.sole]] <- ages.ns[[ns.sole]][-1:-7]
+rem.ns[[ns.sole]] <- rem.ns[[ns.sole]][-1:-7,]
+mx.ns[[ns.sole]] <- mx.ns[[ns.sole]][-1:-7,]
+bm.ns[[ns.sole]] <- bm.ns[[ns.sole]] %>% filter(Year >= 1971)
+vpa.ns[[ns.sole]] <- vpa.ns[[ns.sole]][-1:-7]
+am.ns[[ns.sole]] <- am.ns[[ns.sole]][-1:-7,]
+
+bm.tst <- do.call("rbind",bm.ns)
+
+bm.tot <- bm.tst %>% dplyr::group_by(Stock,Year) %>% dplyr::summarise(bm = sum(bm,na.rm=T),
+                                                                      num = sum(num,na.rm=T))
+
+eco.bm <- bm.tot %>% dplyr::group_by(Year) %>% dplyr::summarise(num = sum(num),bm = sum(bm))
+
+# Now all stocks start in 1990 so need to consider that...
+bm.final <- left_join(bm.tot,eco.bm,by=c("Year"))
+names(bm.final) <- c("Stock","Year","bm.stock","num.stock","num.total","bm.total")
+# Get proportions...
+bm.final <- bm.final %>% dplyr::mutate(bm.prop = bm.stock/bm.total,
+                                          num.prop = num.stock/num.total)
+bm.final <- bm.final[bm.final$bm.stock > 0,]
+
+what.year <- bm.final %>% dplyr::group_by(Stock) %>% dplyr::summarize(min = min(Year),
+                                                                      max = max(Year))
+first.year <- max(what.year$min)
+last.year <- min(what.year$max)
+
+bm.best <- bm.final %>% dplyr::filter(Year %in% first.year:last.year)
+# So this is our target biomass.  Now we want to divy
+
+
+
+ggplot(bm.best) + geom_line(aes(x=Year,y=bm.total),linewidth=2) + ylim(c(0,max(bm.final$bm.total))) + geom_hline(yintercept = mean(bm.best$bm.total))
+ggplot(bm.best) + geom_line(aes(x=Year,y=num.total)) + ylim(c(0,max(bm.final$num.total))) 
+# Autocorrelation in K.
+pacf(bm.best$bm.total)
+
+ggplot(bm.best) + geom_line(aes(x=Year,y=bm.prop,group = Stock,color=Stock),linewidth=2) #+ ylim(c(0,0.5))
+
+ggplot(bm.best) + geom_bar(aes(x=Year,y=bm.prop,fill=Stock),position="stack",stat = 'identity') #+ ylim(c(0,0.5))
+
+prop.acfs <- NULL
+for(i in Stocks) prop.acfs[[i]] <- pacf(bm.best$bm.prop[bm.best$Stock == i])
+
+catch <- ASR_long %>% dplyr::filter(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Catch")             
+an.num <- num %>% dplyr::filter(age != 'tot') %>% dplyr::group_by(Year) %>% dplyr::summarise(nums = sum(value,na.rm=T))
+num <- ASR_long %>% dplyr::filter(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Num")

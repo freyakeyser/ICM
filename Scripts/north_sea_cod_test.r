@@ -79,7 +79,7 @@ mx <- recs.per.age/ssn/2 # Moms only! Dividing by around 8 really nails it for N
 # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
 
 
-tst <- icm.sim(years = years,mat.age = age.mat[,c(-1,-ncol(age.mat))],nm = prop.nat.mort[,c(-1,-ncol(prop.nat.mort))],
+tst <- back.sim(years = years,mat.age = age.mat[,c(-1,-ncol(age.mat))],nm = prop.nat.mort[,c(-1,-ncol(prop.nat.mort))],
                w.age = weight.age[,c(-1,-ncol(weight.age))],ages = 0:6,rems = rem,
                fecund = mx,N.end =N.end,pop.model = 'exponential',
                n.sims = 5,sd.mat = 0.5,sd.nm = 0.5,sd.wt = 0.5,sd.fecund = 0.5)
