@@ -102,7 +102,6 @@ tune.sim<-function(years,tune.par=0.01,tuner="m", n.steps = 30,
       nm.lst[[as.character(years[y])]] <- nm.vary
     }
   }
-  browser()
   
   #Calculate r for your examples... going to be a lot of lotka.r's all of a sudden isn't there...
   tmp.y <- NULL
