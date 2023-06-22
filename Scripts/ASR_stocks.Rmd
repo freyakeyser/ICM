@@ -18,14 +18,18 @@ library(tidyverse)
 library(rio)
 library(ggthemes)
 library(cowplot)
+loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
 
-source("D:/Github/ICM/Scripts/functions/backwards_sim.R")
-source("D:/Github/ICM/Scripts/functions/tuning_sim.R")
+
+source(paste0(loc,"/Scripts/functions/backwards_sim.R"))
+source(paste0(loc,"/Scripts/functions/tuning_sim.R"))
 
 # Choose 5 ICES stocks that we have the necessary data for
-#ASR <- read_xlsx("../Data/ASR_2018.xlsx", sheet = "ICES")
-ASR1 <- read.csv("D:/Github/ICM/Data/ICM_data_NE_atlantic_stocks.csv")
-ASR <- read.csv("D:/Github/ICM/Data/ICM_data_NW_atlantic_stocks.csv")
+#ASR <- read_xlsx("../Data/ASR_2018.xlsx" sheet = "ICES")
+ASR1 <- read.csv(paste0(loc,"/Data/ICM_data_NE_atlantic_stocks.csv"))
+ASR <- read.csv(paste0(loc,"/Data/ICM_data_NW_atlantic_stocks.csv"))
+
+
 
 ASR <- rbind(ASR1,ASR)
 datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
@@ -118,6 +122,16 @@ for(i in Stocks)
   # )
   
   age.mat <- ASR_sub %>% dplyr::filter(type=="AM") %>% dplyr::rename(AM=value) %>% dplyr::select(-type)
+  # All of the age at maturities are NA in 0 and 1 year olds, so make them 0's, do that carefully just
+  # in case that changes later...
+  am.0s <- length(which((!is.na(age.mat$AM[age.mat$age ==0]))))
+  am.1s <- length(which((!is.na(age.mat$AM[age.mat$age ==1]))))
+  am.2s <- length(which((!is.na(age.mat$AM[age.mat$age ==2]))))
+  if(am.0s == 0) age.mat$AM[age.mat$age ==0] <- 0
+  if(am.1s == 0) age.mat$AM[age.mat$age ==1] <- 0
+  if(am.2s == 0) age.mat$AM[age.mat$age ==2] <- 0
+  
+  #if(am.1s | am.0s | am.2s > 0) print("Stop, you need to check the age at maturity for either age 0 or 1 as there is data in there.")
   nat.mort <-  ASR_sub %>% dplyr::filter(type=="NM") %>% dplyr::rename(NM=value) %>% dplyr::select(-type)
   abund <- ASR_sub %>% dplyr::filter(type=="Num") %>% dplyr::rename(Num=value) %>% dplyr::select(-type)
   weight.age <- ASR_sub %>% dplyr::filter(type=="WA") %>% dplyr::rename(WA=value) %>% dplyr::select(-type)
@@ -131,6 +145,7 @@ for(i in Stocks)
     full_join(weight.age) %>%
     full_join(removals)
 
+  # Aahh??  Is this NA dropping useful data, needed to quick fix the age at maturity data...
   data$available <- apply(is.na(data[, c("AM", "Num", "WA")]), 1, function(x) all(!x==T))
   data <- data[data$available==T,]
 
@@ -265,13 +280,13 @@ for(i in Stocks)
   mr.tmp[[i]] <- missing_rem
 } #end input data loop
 
-save(years.tmp,pnm.tmp,waa.tmp,ages.tmp,rem.tmp,mx.tmp,NE.tmp,vpa.tmp,mr.tmp,am.tmp,Stocks,ASR_stocks,ASR_long,file = "D:/Github/ICM/Results/model_inputs.Rdata")
+save(years.tmp,pnm.tmp,waa.tmp,ages.tmp,rem.tmp,mx.tmp,NE.tmp,vpa.tmp,mr.tmp,am.tmp,Stocks,ASR_stocks,ASR_long,file =  paste0(loc,"/Results/model_inputs.Rdata"))
 
 ```
 
 ```{r, run-mods,echo=F, message=F, warning=F}
 
-load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+load(file = paste0(loc,"/Results/model_inputs.Rdata"))
 
 back.res <- NULL
 back.ts <- NULL
@@ -302,7 +317,7 @@ for(i in Stocks)
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 500,
+                 n.sims = 50,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -357,30 +372,30 @@ for(i in Stocks)
   
   
 # ########################## Now run the tuning sims
-#
-   N.end <- vpa.abund[length(vpa.abund)]
-   tunes <- tune.sim(years,
-                     n.steps = 100,
-                     abund.ts = vpa.abund,
-                     mat.age = age.mat,
-                     nm = -(log(1-prop.nat.mort)),
-                     w.age = weight.age,
-                     ages = ages,
-                     rems = rem$rem,
-                     fecund = mx,
-                     N.end = N.end,
-                     pop.model = 'exponential')
-
-   tuned.res[[i]] <- tunes
+# #
+#    N.end <- vpa.abund[length(vpa.abund)]
+#    tunes <- tune.sim(years,
+#                      n.steps = 100,
+#                      abund.ts = vpa.abund,
+#                      mat.age = age.mat,
+#                      nm = -(log(1-prop.nat.mort)),
+#                      w.age = weight.age,
+#                      ages = ages,
+#                      rems = rem$rem,
+#                      fecund = mx,
+#                      N.end = N.end,
+#                      pop.model = 'exponential')
+# 
+#    tuned.res[[i]] <- tunes
 } # end i in Stocks look
 
 
 
 # Save all these
- saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
- saveRDS(object = back.res,file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
- saveRDS(object = back.ts,file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
- saveRDS(object = back.ts.quants,file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
+# saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
+ saveRDS(object = back.res,file = paste0(loc,"/Results/backwards_sim_results.Rds"))
+ saveRDS(object = back.ts,file = paste0(loc,"/Results/backwards_sim_ts_summaries.Rds"))
+ saveRDS(object = back.ts.quants,file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries.Rds"))
 ```
 
 

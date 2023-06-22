@@ -72,12 +72,13 @@ for(i in Stocks)
   N.end <- NE.tmp[[i]] 
   vpa.abund <- vpa.tmp[[i]] 
   age.mat <- am.tmp[[i]]
-  
-
+  # Esmarkii recruitment collapses in year 27 and it screws the r in that year... model fits easily with this tweak
+  # Which is still an mx of like 0.25 of mean, so still shit recruitment....
+  if(i == Stocks[2]) mx[27,] <- 4*mx[27,] # mx[27,] <- colMeans(mx)
 #
   # N.end <- vpa.abund[length(vpa.abund)]
    tunes <- tune.sim(years,
-                     n.steps = 10,
+                     n.steps = 20,
                      tune.par=0.1,
                      abund.ts = vpa.abund,
                      mat.age = age.mat,
@@ -88,7 +89,8 @@ for(i in Stocks)
                      fecund = mx,
                      N.end = N.end,
                      pop.model = 'exponential',
-                     tuner = "nm")
+                     tuner = "fec",
+                     CC = max(vpa.abund))
 
    tuned.res[[i]] <- tunes
 } # end i in Stocks look

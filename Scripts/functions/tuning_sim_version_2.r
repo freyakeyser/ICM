@@ -43,7 +43,7 @@
 # w.age           The weight of individuals for each age, if a matrix the rows are different simulations
 #                 we could also let this vary by year, but we'll need to go 3-D array or something for that
 # K
-# dec.rate
+# dec.rate  
 
 
 tune.sim<-function(years,tune.par=0.01,tuner="fec", n.steps = 30,
@@ -51,7 +51,7 @@ tune.sim<-function(years,tune.par=0.01,tuner="fec", n.steps = 30,
                    sel,rems,N,u,pop.model = "exp",
                    dec.rate = NULL,
                    L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
-                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
+                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0,CC =1e20)
 {
   # Download the function to go from inla to sf
   funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
@@ -181,19 +181,34 @@ tune.sim<-function(years,tune.par=0.01,tuner="fec", n.steps = 30,
   
         # Need to think here
         r.up <- r.tmp %>% dplyr::filter(year == years[y]) %>% dplyr::pull(r) # Grab the correct value of r
-    
+        # So this one is the exponential, but when above whatever bound you have set the population growth rate averages 0 with a little uncertainty
+        if(pop.model == 'bounded_exp') 
+        {
+          #browser()
+          if(pop.next[y] > CC & r.up > 0) 
+          {
+            r.up <- rlnorm(1,0,0.02)-1
+          }
+          exp.res <- back.proj(option = "exponential",pop.last = pop.next[y] ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+          #browser()
+          if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
+          pop.next[y-1]  <- exp.res$Pop.current
+        } 
         # The exponential model
         if(pop.model == 'exponential') 
         {
           exp.res <- back.proj(option = "exponential",pop.next = pop.next[y],r=r.up,removals = removals.next)
+          if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
           pop.next[y-1] <- exp.res$Pop.current
         } # end exponential
         # If you are running the logistic model
         if(pop.model == 'logistic')
         {
-          log.res <- back.proj(option = "logistic",pop.next = pop.next[y],K=K,r=r.up,removals = removals.next)
-          pop.next <- min(log.res$Pop.current)
-        } #end logistic
+          #browser()
+          log.res <- for.proj(option = "logistic",pop.last = pop.next[y],K=CC,r=r.up,removals = removals.next)
+          if(log.res$Pop.current < 0) log.res$Pop.current =0 # don't let it drop below 0
+          pop.next[y-1]  <- log.res$Pop.current
+        }
         if(pop.model == 'dec.rate')
         {
           # This needs way more thought than it's been given by DK!
@@ -204,23 +219,30 @@ tune.sim<-function(years,tune.par=0.01,tuner="fec", n.steps = 30,
       } # end the years loop.
   res[[ss]] <- data.frame(abund = pop.next,mx = r.tmp,years = years,rem = rems,vpa.abund = abund.ts,scenario= ss)
   # The differences between the ts.
+  #browser()  
   ss.diff[[ss]] <- data.frame(sq.diff = (res[[ss]]$abund - res[[ss]]$vpa.abund)^2,
                               diff = res[[ss]]$abund - res[[ss]]$vpa.abund,
-                              prop.diff = ((res[[ss]]$abund - res[[ss]]$vpa.abund)/res[[ss]]$abund),
+                              prop.diff = ((res[[ss]]$abund - res[[ss]]$vpa.abund)/res[[ss]]$vpa.abund),
+                              prop.dist = ((res[[ss]]$abund - res[[ss]]$vpa.abund)/res[[ss]]$vpa.abund),
                               scenario = ss)
+  # The negative prop distances need replaced with the crazy legs metric....
+  ss.diff[[ss]]$prop.dist[ss.diff[[ss]]$prop.dist < 0] <- (1/(1+ss.diff[[ss]]$prop.dist[ss.diff[[ss]]$prop.dist < 0]))-1
+  # When population goes to 0 make it a huge penalty...
+  ss.diff[[ss]]$prop.dist[is.infinite(ss.diff[[ss]]$prop.dist)] <- 1000
   }# End the SS 
         
    diffs <- do.call('rbind',ss.diff)
-   browser()
+
    # So can I invent a symmetric metric around 0 for a proportion? So typing out loud, a percentage increase of 100% 
    # the same distance as a decline of 50%, so a 1 = -0.5, so we just want the inverse -1?
-   # So for the negatives does this transform do what we want? (1-(1+prop))-1
+   # So for the negatives does this transform do what we want? (1/(1+prop))-1
    squalid <- diffs %>% dplyr::group_by(scenario) %>% dplyr::summarise(ssd = sum(sq.diff),
-                                                                       per.diff = 100*mean(prop.diff))
+                                                                       per.diff = 100*mean(prop.diff),
+                                                                       prop.dist = sum(prop.dist))
    
    # Now select the scenario that works the best
-   browser()
-   pickem <- which(squalid$per.diff == min(squalid$per.diff))
+   #browser() 
+   pickem <- which(squalid$prop.dist == min(squalid$prop.dist))
    res.final <- res[[pickem]]
    ss.diff.final <- ss.diff[[pickem]]
    if(tuner == 'fec') tuning.final <- fec.vary[[pickem]]

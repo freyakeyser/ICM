@@ -37,8 +37,7 @@
 
 # w.age           The weight of individuals for each age, if a matrix the rows are different simulations
 #                 we could also let this vary by year, but we'll need to go 3-D array or something for that
-# CC
-# B0
+# K
 # dec.rate
 # sim
 # proj.sim
@@ -47,8 +46,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   sel,rems = c(0.1,0.2),N,u,pop.model = "exponential", sim = 'retro', proj.sim='dist',
                   dec.rate = NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
-                  sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0,
-                  CC = 1e6,B0 = 1e6)
+                  sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
 
   #st.time <- Sys.time()
@@ -60,7 +58,6 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   rem<-rep(NA,n.years)
   r.vec<-NULL
   B1.vec<-rep(0,n.sims) ### backwards projections 
-  if(length(CC) == 1) CC <- rep(CC,n.years)
   #rems<-matrix(rep(0,n.years*n.sims),n.sims,n.years)
 
   #Calculate r for your example
@@ -96,16 +93,15 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     # Get the final year estimate of your population
     Pop.vec[1] <- pop.last <- N.start  # Assuming this is our known starting point, could add uncertainty to this as well if we want to.
     removals <- NA
-    r.tmp <- r.vec[r.vec$n.sims == i,] 
+    r.tmp <- r.vec[r.vec$n.sims == i,]
     #browser()
     #r.store <- r.vec[r.vec$n.sims == i,-1] # We don't use the first r value 
     #Now run your model backwards with the r from the Lotka function and
     # if you use the logistic growth model the K estimated for the population.
     
     # Now we can calculate removals.
-
-    if(is.numeric(rems[[1]])) fm <- c(NA,rlnorm((n.years-1),log(rems[[1]]),rems[[2]]))
     #browser()
+    if(is.numeric(rems[1])) fm <- c(NA,rlnorm((n.years-1),log(rems[1]),rems[2]))
     if(rems[[1]] == "R_based")
     {
       #browser()
@@ -120,7 +116,6 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       sd.r <- sd(1-exp(-r.tmp$r),na.rm=T) # This is a bit weird because of the negatives, so will need to think on that.
       fm <- c(NA,rlnorm((n.years-1),log(mn.fm),sd.r))
     }
-    #browser()
     for(y in 2:n.years)
     {
       #browser()
@@ -130,9 +125,8 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       {
         # Adding in harvest controls, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is all stuff we can tweak.
-        if(pop.last < 0.2*B0) removals.next <- 0.1*fm[y]*pop.last
-        if(pop.last >= 0.2*B0) removals.next <- fm[y]*pop.last
-        
+        if(pop.last < 0.2*K) removals.next <- 0.1*fm[y]*pop.last
+        if(pop.last >= 0.2*K) removals.next <- fm[y]*pop.last
       } 
      
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
@@ -147,7 +141,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(pop.model == 'bounded_exp') 
       {
         #browser()
-        if(pop.last > CC[y-1] & r.up > 0) 
+        if(pop.last > K & r.up > 0) 
         {
           r.up <- rlnorm(1,0,0.02)-1
         }
@@ -160,10 +154,9 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # If you are running the logistic model
       if(pop.model == 'logistic')
       {
-        #browser()
-        log.res <- for.proj(option = "logistic",pop.last = pop.last,K=CC[y],r=r.up,removals = removals.next)
-        if(log.res$Pop.current < 0) log.res$Pop.current =0 # don't let it drop below 0
-        pop.last <- log.res$Pop.current
+        log.res <- for.proj(option = "logistic",pop.last = pop.last,K=K,r=r.up,removals = removals.next)
+        if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
+        pop.last <- min(log.res$Pop.current)
       }
       if(pop.model == 'dec.rate')
       {
