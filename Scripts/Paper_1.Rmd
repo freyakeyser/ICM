@@ -18,7 +18,7 @@ library(tidyverse)
 library(rio)
 library(ggthemes)
 library(cowplot)
-loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
+loc <- 'D:/GitHub/ICM'
 
 
 source(paste0(loc,"/Scripts/functions/backwards_sim.R"))
@@ -306,8 +306,8 @@ for(i in Stocks)
   N.end <- NE.tmp[[i]] 
   vpa.abund <- vpa.tmp[[i]] 
   age.mat <- am.tmp[[i]]
-  
-  # The first run gives us the mean estimate, I think that's all we need for our first paper
+  # 
+  # # The first run gives us the mean estimate, I think that's all we need for our first paper
   tst <- back.sim(years,
                  mat.age = age.mat,
                  nm = -(log(1-prop.nat.mort)),
@@ -317,11 +317,7 @@ for(i in Stocks)
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 1,
-                 sd.mat = 0.5,
-                 sd.nm = 0.5,
-                 sd.wt = 0.5,
-                 sd.fecund = 0.5)
+                 n.sims = 1)
 
   #Combine the data
   did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
@@ -333,10 +329,8 @@ for(i in Stocks)
   back.res[[i]] <- tst
   back.ts[[i]] <- did.it.work
   back.ts.quants[[i]] <- quants
-  
-  
 
-    
+
 # ################# Now run as a forward simulation
 N.start <- vpa.abund[1]
 
@@ -349,11 +343,11 @@ tst <- for.sim(years,
                fecund = mx,
                N.start = N.start,
                pop.model = 'exponential',
-               n.sims = 2,
-               sd.mat = 0.5,
-               sd.nm = 0.5,
-               sd.wt = 0.5,
-               sd.fecund = 0.5)
+               n.sims = 1,
+               sd.mat = 0,
+               sd.nm = 0,
+               sd.wt = 0,
+               sd.fecund = 0)
 
   #Combine the data
   did.it.work <- data.frame(abund = c(vpa.abund,tst$Pop$abund),years = c(years,tst$Pop$years),sim = c(rep('VPA',length(years)),tst$Pop$sim))
@@ -368,214 +362,68 @@ tst <- for.sim(years,
   
   
 
-  
-  
-  
-########################## Now run the tuning sims
-#
-   N.end <- vpa.abund[length(vpa.abund)]
-   tunes <- tune.sim(years,
-                     n.steps = 100,
-                     abund.ts = vpa.abund,
-                     mat.age = age.mat,
-                     nm = -(log(1-prop.nat.mort)),
-                     w.age = weight.age,
-                     ages = ages,
-                     rems = rem$rem,
-                     fecund = mx,
-                     N.end = N.end,
-                     pop.model = 'exponential')
-
-   tuned.res[[i]] <- tunes
 } # end i in Stocks look
 
 
 
 # Save all these
-# saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
- saveRDS(object = back.res,file = paste0(loc,"/Results/backwards_sim_results.Rds"))
- saveRDS(object = back.ts,file = paste0(loc,"/Results/backwards_sim_ts_summaries.Rds"))
- saveRDS(object = back.ts.quants,file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries.Rds"))
+saveRDS(object = back.res,file = paste0(loc,"/Results/backwards_sim_results_no_error.Rds"))
+saveRDS(object = back.ts,file = paste0(loc,"/Results/backwards_sim_ts_summaries_no_error.Rds"))
+saveRDS(object = back.ts.quants,file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries_no_error.Rds"))
+# Forward simulations, just using the 'realization'
+saveRDS(object = for.res,file = paste0(loc,"/Results/forwards_sim_results_no_error.Rds"))
+saveRDS(object = for.ts,file = paste0(loc,"/Results/forwards_sim_ts_summaries_no_error.Rds"))
+saveRDS(object = for.ts.quants,file = paste0(loc,"/Results/forwards_sim_ts_quantiles_summaries_no_error.Rds"))
+ 
 ```
 
 
-```{r, make-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 
-# Now we can run the figures separately.
-tuned.res <- readRDS(file = "D:/Github/ICM/Results/tuned_fits.Rds")
-back.ts <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
-back.ts.quants <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
-back.res <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
-load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+```{r}
 
+# Upack the back.res object...
+
+tst.for <- NULL
+tst.back <- NULL
+count = 0
 for(i in Stocks)
 {
-  # Unpack the lists
-  tunes <- tuned.res[[i]] 
-  did.it.work <- back.ts[[i]] 
-  quants <- back.ts.quants[[i]] 
-  missing_rem <- mr.tmp[[i]] 
-  tst <- back.res[[i]]
-  
-  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
-
-    # All the results in a plot
-  p2 <- ggplot() +
-          geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
-          xlab("") +
-          ylab("Abundance (1000s)") +
-          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
-          ggtitle(i) +
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
-  # Same thing but functional boxplots
-  p3 <- ggplot() +
-          geom_line(data=quants, aes(x=years,y= med)) +
-          geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
-          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          xlab("") + ylab("Abundance (1000s)") +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + #geom_vline()
-          ggtitle(i)+
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_ribbon_", i, ".png"), base_width = 6,base_height = 4)
-
-  # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
-  p4 <- ggplot(tst$r) +
-          geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
-          xlab("") +
-          ylab("Lotka r") +
-          #scale_y_continuous(breaks = seq(0,1.5,by=0.1)) +
-          #scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          scale_color_viridis_c(end = 0.75) +
-          ggtitle(i)
-  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/lokta_r_", i, ".png"), base_width = 6,base_height = 4)
-
-
-  
-  # Comparing our new time series with the old
-  p2 <- ggplot() +
-          geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res, aes(x=year,y=vpa.n),color='black') +
-          xlab("") +
-          ylab("Abundance (1000s)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/tunded_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
-  
-  # Comparing the absolute miss from the tuned time series
-   p3 <- ggplot() +
-          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.n),color='red') +
-          xlab("") +
-          ylab("Difference in abundance (1000s)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) 
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_N_", i, ".png"), base_width = 6,base_height = 4)
-
-  # What percentage (mean) difference
-   p4 <- ggplot() +
-          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.n),color='red') +
-          xlab("") +
-          ylab("Difference in abundance (%)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_N_", i, ".png"), base_width = 6,base_height = 4)
-
-     # Difference in m's
-   p5 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.m),color='red') +
-          xlab("") +
-          ylab("Difference in natural mortality (Instantaneous)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p5, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_m_", i, ".png"), base_width = 6,base_height = 4)
-     # % Difference in m's
-   p6 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.m),color='red') +
-          xlab("") +
-          ylab("Difference in natural mortality (%)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p6, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_m_", i, ".png"), base_width = 6,base_height = 4)
-
-   p7 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=mn.m),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=vpa.m),color='black') +
-          xlab("") +
-          ylab("Natural mortality (Instantaneous)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p7, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Nat_M_", i, ".png"), base_width = 6,base_height = 4)
- 
-     p8 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=r),color='blue') +
-          xlab("") +
-          ylab("Lotka r") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p8, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Lotka_r_", i, ".png"), base_width = 6,base_height = 4)
-     
+  count=count+1
+  tmp.for <- for.res[[i]]$r %>% dplyr::filter(n.sims==1)
+  tmp.for <- data.frame(tmp.for,stock = i,direction = 'forward simulations',id = count)
+  tmp.pop.for <- for.res[[i]]$Pop %>% dplyr::filter(sim==1)
+  tst.for[[i]] <- left_join(tmp.pop.for,tmp.for,by=c('years'))
+  # backwards
+  tmp.back <- back.res[[i]]$r %>% dplyr::filter(n.sims==1)
+  tmp.back <- data.frame(tmp.back,stock = i,direction = 'backwards simulations',id = count)
+  tmp.pop.back <- back.res[[i]]$Pop %>% dplyr::filter(sim==1)
+  tst.back[[i]] <- left_join(tmp.pop.back,tmp.back,by=c('years'))
 }
 
+fors <- do.call('rbind',tst.for)
+fors <- fors[,-4]
+backs <- do.call('rbind',tst.back)
 
-# summary plots for ALL stocks, this is already run, so lets not keep running it
-# for (i in unique(ASR_long$Stock)) {
-#   ASR_sub <- ASR_long %>%
-#     dplyr::select(Year, Stock, type, age, value) %>%
-#     dplyr::filter(Stock==i)
-#   maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]),na.rm=T)
-#   maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-#   minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)],na.rm=T)
-#   forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
-#   forplot <- forplot[!is.na(forplot$value),] # remove the NAs, hopefully this works for all the stocks...
-#   p1 <- ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
-#         geom_vline(data=forplot[is.na(forplot$value),], aes(xintercept=Year), colour="red") + facet_grid(type~as.numeric(age), scales="free_y") +
-#         theme_bw() + 
-#         ggtitle(i) +
-#     guides(x =  guide_axis(angle = 90)) 
-#   print(p1)
-#   
-#   if(!dir.exists(paste0("D:/Github/ICM/Figures/", i))) dir.create(paste0("D:/Github/ICM/Figures/", i))
-#   
-#   png(filename=paste0("D:/Github/ICM/Figures/", i, "/data_summary_", i, ".png"), height=4, width=12, res=400, units="in")
-#   print(p1)
-#   dev.off()
-# }
+exploring <- rbind(fors,backs)
+mn.r <- exploring %>% dplyr::group_by(stock,direction,id) %>% dplyr::summarise(r = median(r,na.rm=T),
+                                                                  pop.ratio = dplyr::last(abund)/dplyr::first(abund))
+windows(11,11)
+ggplot(mn.r) + geom_text(aes(r,pop.ratio,label=id)) + scale_y_log10() + facet_wrap(~direction) + xlab("mean instrinc rate of growth (r)") + ylab("N (Final) / N (Initial)")
+
+quantile(mn.r$r,probs = seq(0.01,1,by=0.01),na.rm=T)
 
 ```
 
+So now I can try to do some tuning, both forwards and backwards, lets see what we get from that...
+
+```{r tunes}
 
 
-```{r, forward-sims-n-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
-# Now we have to forward project the stocks, I think it makes the most sense to do this using the tuned data at the moment
-# So we assume the fecundity data and the tuned natural mortality data for the stocks is a reasonable representation of the future
-load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+########################## Now run the tuning sims
+#
+
+
+load(file = paste0(loc,"/Results/model_inputs.Rdata"))
 
 back.res <- NULL
 back.ts <- NULL
@@ -595,40 +443,44 @@ for(i in Stocks)
   N.end <- NE.tmp[[i]] 
   vpa.abund <- vpa.tmp[[i]] 
   age.mat <- am.tmp[[i]]
- 
-################# Now run as a forward simulation
-  N.start <- vpa.abund[length(vpa.abund)] 
-  years <- 2025:2075
-  # For the forward simulations I'm setting it up so we feed in the mean vector or a character, we'll then create a vector of mx's with variablitity
-  st.time <- Sys.time()
-  tst <- for.sim(years,
-                 mat.age = age.mat,
-                 nm = -(log(1-prop.nat.mort)),
-                 w.age = weight.age,
-                 ages = ages,
-                 rems = c(0.1,0.2), # This is set up as a fishing mortality that averages 0.1 with an sd of 0.2)
-                 fecund = mx,
-                 N.start = N.start,
-                 pop.model = 'exponential', sim = 'project', proj.sim = 'sample',
-                 n.sims = 30,
-                 sd.mat = 0.1,
-                 sd.nm = 0.1,
-                 sd.wt = 0.1,
-                 sd.fecund = 0.1)
-  Sys.time() - st.time
-  #Combine the data
-  did.it.work <- data.frame(abund = tst$Pop$abund,years = c(tst$Pop$years),sim = tst$Pop$sim)
-  # Here get the Upper and lower 50% quantiles to make a functional boxplot
-  quants <- tst$Pop %>% dplyr::group_by(years) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25)),
-                                                                   med = median(abund),
-                                                                   U.50 = quantile(abund,probs=c(0.75)))
+  N.end <- vpa.abund[length(vpa.abund)]
+   
+   back.tunes <- tune.sim(years,
+                          tuner = 'f',
+                           n.steps = 100, step.size = 0.2,
+                           abund.ts = vpa.abund,
+                           mat.age = age.mat,
+                           nm = -(log(1-prop.nat.mort)),
+                           w.age = weight.age,
+                           ages = ages,
+                           rems = rem$rem,
+                           fecund = mx,
+                           N.init = N.end,
+                           pop.model = 'exponential',
+                           direction='backwards')
 
-  for.res[[i]] <- tst
-  for.ts[[i]] <- tst$Pop
-  for.ts.quants[[i]] <- quants  
-}  
-ggplot(quants) + geom_line(aes(x=years,y=med))  + geom_ribbon(aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue')
+   back.tuned.res[[i]] <- back.tunes
 
+   
+   N.start <- vpa.abund[1]
+   
+   for.tunes   <- tune.sim(years,
+                           tuner='f',
+                           n.steps =100, step.size =0.2,
+                           abund.ts = vpa.abund,
+                           mat.age = age.mat,
+                           nm = -(log(1-prop.nat.mort)),
+                           w.age = weight.age,
+                           ages = ages,
+                           rems = rem$rem,
+                           fecund = mx,
+                           N.init = N.start,
+                           pop.model = 'exponential',
+                           direction= 'forwards')
+
+   for.tuned.res[[i]] <- for.tunes
+   
+}
+   
 ```
-
 

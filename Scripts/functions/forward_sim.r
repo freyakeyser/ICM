@@ -43,14 +43,31 @@
 # proj.sim
 
 for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,fecund = NULL,N.start = NULL,
-                  sel,rems = c(0.1,0.2),N,u,pop.model = "exponential", sim = 'retro', proj.sim='dist',
+                  sel,rems,N,u,pop.model = "exponential", sim = 'retro', proj.sim='dist',
                   dec.rate = NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
 
-  #st.time <- Sys.time()
+  # Download the function to go from inla to sf
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
+  )
+  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+  for(fun in funs) 
+  {
+    download.file(fun,destfile = basename(fun))
+    source(paste0(getwd(),"/",basename(fun)))
+    file.remove(paste0(getwd(),"/",basename(fun)))
+  }
   
+  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
+  source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  
+  #st.time <- Sys.time()
+  # In case I try to be lazy and shorten names...
+  if(pop.model == 'exp') pop.model <- 'exponential'
+  if(pop.model == 'log') pop.model <- 'logistic'
   #Initialize a bunch of objects
   n.years<-length(years)
   Pop<-data.frame(abund = rep(NA,n.years*n.sims),sim = rep(1:n.sims,n.years),years = sort(rep(years,n.sims)))    #matrix(data=NA, nrow=<<see below>>, ncol=<<see below>>,byrow=F, dimnames=NULL) 
@@ -63,19 +80,36 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   #Calculate r for your example
   for(i in 1:n.sims)
   {
+    # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
+    # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
+    if(i == 1)
+    {
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+                    L.inf = L.inf,K = K,t0 = t0,  sim = sim,
+                    a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
+                    a.fec.len = a.fec.len, b.fec.len = b.fec.len,
+                    sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
+      #browser()
+    } # end if(i == 1)
+    #browser()
+    if(i > 1)
+    {
     #browser()
     # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
-      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,sim =sim,proj.sim = proj.sim,
-                    L.inf = L.inf,K = K,t0 = t0, a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, a.fec.len = a.fec.len, b.fec.len = b.fec.len,
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+                    L.inf = L.inf,K = K,t0 = t0, 
+                    a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
+                    a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                     sd.mat = sd.mat,sd.nm = sd.nm,sd.wt = sd.wt,sd.fecund = sd.fecund)   
+    }
+    
     #browser()
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
-    
-    r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i)# How I have it set up the last entry should be an NA  as we don't use that
+    r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i) # How I have it set up the last entry should be an NA  as we don't use that
     #browser()
-  }
+  } # for(i in 1:n.sims)
   #browser() 
   #print(st.time2 <- Sys.time())
   #unwrap your r vector
@@ -89,7 +123,6 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   
   for(i in 1:n.sims)
   {
-    
     # Get the final year estimate of your population
     Pop.vec[1] <- pop.last <- N.start  # Assuming this is our known starting point, could add uncertainty to this as well if we want to.
     removals <- NA
@@ -115,7 +148,8 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       mn.fm <- rems[[2]]*r.insta
       sd.r <- sd(1-exp(-r.tmp$r),na.rm=T) # This is a bit weird because of the negatives, so will need to think on that.
       fm <- c(NA,rlnorm((n.years-1),log(mn.fm),sd.r))
-    }
+    } # end if(rems[[1]] == "R_based")
+    
     for(y in 2:n.years)
     {
       #browser()
@@ -133,10 +167,10 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # The exponential model
       if(pop.model == 'exponential') 
       {
-        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,fishery.timing = 'beginning')
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- exp.res$Pop.current
-      }
+      } # end if(pop.model == 'exponential') 
       # So this one is the exponential, but when above whatever bound you have set the population growth rate averages 0 with a little uncertainty
       if(pop.model == 'bounded_exp') 
       {

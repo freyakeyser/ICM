@@ -76,11 +76,11 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   # If you have given me the maturity ogive than rename it
   if(length(age.mat) > 1) 
   {
-    if(is.vector(age.mat)) mat.ogive <- rlnorm(length(age.mat),age.mat,sd.nm)
+    if(is.vector(age.mat)) mat.ogive <- rlnorm(length(age.mat),age.mat,sd.mat)
     if(!is.vector(age.mat)) 
     {
       mat.ogive <- as.data.frame(age.mat) # Get it set up, then overwrite it with the uncertainty
-      for(i in 1:nrow(age.mat)) mat.ogive[i,] <- rlnorm(length(age.mat[i,]),as.numeric(log(age.mat[i,])),sd.nm)
+      for(i in 1:nrow(age.mat)) mat.ogive[i,] <- rlnorm(length(age.mat[i,]),as.numeric(log(age.mat[i,])),sd.mat)
     }
     
     
@@ -100,7 +100,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   {  
     W.age <- as.data.frame(wt.at.age)
     # Add in uncertainty
-    if(is.vector(wt.at.age)) W.age <- rlnorm(length(wt.at.age),wt.at.age,sd.nm)
+    if(is.vector(wt.at.age)) W.age <- rlnorm(length(wt.at.age),wt.at.age,sd.wt)
     if(!is.vector(wt.at.age)) for(i in 1:nrow(wt.at.age)) W.age[i,] <- rlnorm(length(wt.at.age[i,]),as.numeric(log(wt.at.age[i,])),sd.wt)
   }
   

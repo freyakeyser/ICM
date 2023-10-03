@@ -42,14 +42,14 @@
 
 
 back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,fecund = NULL,N.end = NULL,
-                  sel,rems,N,u,pop.model = "exp", direction = 'back',
+                  sel,rems,N,u,pop.model = "exponential", 
                   dec.rate = NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
   # Download the function to go from inla to sf
-  funs <- c("https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/Lotka_r.r",
-            "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/backwards_project.r"
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r"
   )
   # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
   for(fun in funs) 
@@ -63,6 +63,10 @@ back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL
   
   
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
+  
+  # In case I try to be lazy and shorten names...
+  if(pop.model == 'exp') pop.model <- 'exponential'
+  if(pop.model == 'log') pop.model <- 'logistic'
   
   #Initialize a bunch of objects
   n.years<-length(years)
@@ -123,9 +127,12 @@ back.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL
       #browser()
       # DK Note: So for our removals time series, we put the removals between t+1 and t 
       # down as year t+1.  We can change this, but that's how this is set up at the moment.
-      removals.next <- rems[y-1]
+      # DK changed this to be rems[y] not rems[y-1] in Oct 2023, as I think that makes more sense to me at the moment.
+      removals.next <- rems[y]
       #browser()
-      r.up <- r.tmp$r[y] # 
+      # DK changed this to be y-1 in Oct 2023, because the population got to where it is from the year before r.  This might be why 
+      # we seemed to have a 1 year offset in a bunch of the fits.
+      r.up <- r.tmp$r[y-1] # 
       # The exponential model
       if(pop.model == 'exponential') 
       {
