@@ -447,7 +447,7 @@ for(i in Stocks)
    
    back.tunes <- tune.sim(years,
                           tuner = 'f',
-                           n.steps = 100, step.size = 0.2,
+                           n.steps = 250, step.size = 0.2,
                            abund.ts = vpa.abund,
                            mat.age = age.mat,
                            nm = -(log(1-prop.nat.mort)),
@@ -466,7 +466,7 @@ for(i in Stocks)
    
    for.tunes   <- tune.sim(years,
                            tuner='f',
-                           n.steps =100, step.size =0.2,
+                           n.steps =250, step.size =0.2,
                            abund.ts = vpa.abund,
                            mat.age = age.mat,
                            nm = -(log(1-prop.nat.mort)),

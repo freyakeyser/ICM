@@ -54,8 +54,10 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
                    sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
   # Download the function to go from inla to sf
-  funs <- c("https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/Lotka_r.r",
-            "https://raw.githubusercontent.com/freyakeyser/ICM/main/Scripts/functions/backwards_project.r"
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
+            
   )
   # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
   for(fun in funs) 
@@ -129,6 +131,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
   
   #Calculate r for your examples... going to be a lot of lotka.r's all of a sudden isn't there...
   tmp.y <- NULL
+  lotka.res <- NULL
   for(y in 1:n.years)
   {
     if(tuner == 'm') nm.tmp <- nm.lst[[as.character(years[y])]] 
@@ -138,8 +141,10 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
     waa.tmp <- w.age[y,]
     if(tuner == 'f') fecund.tmp <- fec.lst[[as.character(years[y])]] 
     if(tuner != 'f') fecund.tmp <- fecund[y,]
-    tmp.s <- NULL
     
+    tmp.s <- NULL
+    tmp.l <- NULL
+
     #browser()
     
     for(ss in 1:n.steps)
@@ -152,6 +157,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
                     a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                     sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
         tmp.s[[ss]] <- data.frame(year = years[y],r = junk$res[1,2],mn.m = mean(as.numeric(nm.tmp[ss,]),na.rm=T),mn.fec = mean(fecund.tmp),s=ss)   
+        tmp.l[[ss]] <- junk
       } # end if(tuner == 'm')
       
       if(tuner == 'f')
@@ -161,17 +167,20 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
                       a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
                       a.fec.len = a.fec.len, b.fec.len = b.fec.len,
                       sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
-        tmp.s[[ss]] <- data.frame(year = years[y],r = junk$res[1,2],mn.m = mean(as.numeric(nm.tmp),na.rm=T),mn.fec = mean(unlist(fecund.tmp[ss,]),na.rm=T),s=ss)   
+        tmp.s[[ss]] <- data.frame(year = years[y],r = junk$res[1,2],mn.m = mean(as.numeric(nm.tmp),na.rm=T),mn.fec = mean(unlist(fecund.tmp[ss,]),na.rm=T),s=ss) 
+        tmp.l[[ss]] <- junk
       } # end if(tuner == 'm')  
       
-    print(paste0("Running lotka simulation " ,ss, ' for year ',years[y]))
+    
     } # end for(s in 1:ns.steps)
-
+    lotka.res[[as.character(years[y])]] <- tmp.l
     tmp.y[[as.character(years[y])]] <- do.call('rbind',tmp.s)
+    print(paste0("Running lotka simulation " ,ss, ' for year ',years[y]))
   }
 
   #unwrap your r vector
   r.vec <- do.call('rbind',tmp.y)
+  
   #browser()
    #temp.r.vec<-r.vec[r.vec>0 & r.vec<r.cutoff]
   #r.vec<-temp.r.vec[1:n.sims]
@@ -190,6 +199,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
   if(direction == 'backwards') y.index <- n.years:2
   if(direction == 'forwards')  y.index <- 2:n.years
   res <- NULL
+  lotka.final <- NULL
   # Setting up the output vector, more mind games here with the forwards and backwards methods.
   # want to make sure that the r value lines up with the population estimate that is relevant to it..
   # i.e. when going forwards the 2020 r value is used to get the 2021 population estimate, so we line up the r in 2020 with the 2021 results, so here we give it a +1
@@ -253,7 +263,6 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
             pop.last[ss] <- exp.res$Pop.current
           }
         } # end if(direction == 'forwards')
-        print(paste0("Running population simulation " ,ss, ' for year ',years[y]))
         # So here we need to pick the best of the pop.next's based on the bm.est.
         #browser()
         if(direction == 'backwards')
@@ -295,24 +304,30 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
         r.tmp <- r.out[r.out$year == years[y-1],]
         min.dif <- min(abs(r.tmp$diff.n),na.rm=T)
         keep <- which(abs(r.tmp$diff.n) == min.dif)[1] # Just pick the first one that works, we'll get multiples where populations crash to 0
+        s.index <- r.tmp$s[keep]
         res[[y-1]] <- r.tmp[keep,]
         pop.next <- rep(res[[y-1]]$lotka.n,n.steps)
+        lotka.final[[as.character(years[y-1])]] <- lotka.res[[as.character(years[y-1])]][[s.index]]
       } #end if(direction == 'backwards')
       
 
-      ####THIS IS PROBABLY NOT RIGHT YET ######################################
       if(direction == 'forwards') 
       {
         #browser()
         r.tmp <- r.out[r.out$year == years[y],] # because I've offset the years vector in r.out this works.
         min.dif <- min(abs(r.tmp$diff.n),na.rm=T)
         keep <- which(abs(r.tmp$diff.n) == min.dif)[1] # Just pick the first one that works, we'll get multiples where populations crash to 0
+        s.index <- r.tmp$s[keep]
         res[[y]] <- r.tmp[keep,]
         pop.last <- rep(res[[y]]$lotka.n,n.steps)
-      
+        # Putting the r that generated the result into the following year, i.e. r in 2020 resulted in 2021 biomass, the 2020 r 
+        # in this case gets aligned with 2021 how I've done this (but note the internal lotka.res object will still note it comes from 2020)
+        # Which I guarantee will confused the hell out of us all later....
+        lotka.final[[as.character(years[y])]] <- lotka.res[[as.character(years[y-1])]][[s.index]]
+        
       } # end if(direction == 'forwards') 
-      ####THIS IS PROBABLY NOT RIGHT YET ######################################
-      
+    print(paste0("Running population simulation " ,ss, ' for year ',years[y]))
+    
     } # end Loop through all the years.
   
     res.final <- do.call('rbind',res)
@@ -329,7 +344,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
     } # end if(tuner == 'm')
     
 
-    return(list(res=res.final))
+    return(list(res=res.final,lotka = lotka.final)) 
 }
   
   
