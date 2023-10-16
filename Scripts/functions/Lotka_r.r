@@ -24,6 +24,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
                   #                         4) if using the 'eggs' method to estimate fecundity. (L.inf,K, t0, a.fec.len,b.fec.len)
 ) 
 {
+  
   if(is.character(nat.mort)[1]) nm.c <- nat.mort else nm.c <- "Using data"
   if(is.character(fecund)[1]) fecund.c <- fecund else fecund.c <- "Using data"
   # Some warning messages if you didn't include something you needed...
@@ -52,7 +53,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   res <- data.frame(yrs = NA, r = NA)
   if(length(yrs) > 1) n.yrs <- length(yrs) else n.yrs <- 2 # Needs to be 2 if just doing it for one year to work how I have loop set up
   
-  
+ 
   if(sim == 'retro')
   {
   
@@ -72,7 +73,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     mat.ogive <- 1/(1+exp(-(mat.K)*(age.at.50.mat-ages)))
     
   } # end if(length(age.mat) == 1) 
-  
+ 
   # If you have given me the maturity ogive than rename it
   if(length(age.mat) > 1) 
   {
@@ -174,12 +175,13 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   # Or if we directly had an estimate of fecundity (number of recruits per individual)
   if(!is.character(fecund)) 
   { 
-
+   
     mx.t <- fecund
     spr <- NULL
     if(is.null(nrow(fecund))) mx.t <- rlnorm(length(mx.t),mx.t,sd.fecund)
     if(nrow(mx.t) > 1) for(m in 1:nrow(mx.t)) mx.t[m,] <- rlnorm(length(mx.t[m,]),as.numeric(log(mx.t[m,])),sd.fecund)
   }
+  #browser() 
   # remove columns associated with NAs in mx, and remove NAs from mx
   if(any(is.na(colSums(mx)))) {
     ages <- ages[-which(is.na(colSums(mx)))]
@@ -191,7 +193,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   ################################### END RETRO SECTION ################################### END RETRO SECTION################################### END RETRO SECTION
   
  
-  
+
   
   #################################### PROJECTION SECTION#################################### PROJECTION SECTION#################################### PROJECTION SECTION
   # Now build the projection script for lotka.r
@@ -242,6 +244,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   # Now run this through all the yrs 
   for(j in 1:(n.yrs))
   { 
+    #browser() 
     # Get the r estimate for each year if we are running through a bunch of years
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
@@ -254,8 +257,8 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     
     if(!is.null(nrow(mx.t))) mx <- mx.t[j,] else mx <- mx.t
     # Now we are cooking!
-    junk<-nlminb(start = 0.1, obj = eulerlotka)
-    res[j,] <- c(yrs[j],junk$par)
+    junk<-optimize(lower=-0.99,upper=5,f = eulerlotka)
+    res[j,] <- c(yrs[j],junk$minimum)
     mx.tmp[[j]] <- mx
     lx.tmp[[j]] <- lx
     #browser()

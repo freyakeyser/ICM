@@ -143,9 +143,9 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
     if(tuner != 'f') fecund.tmp <- fecund[y,]
     
     tmp.s <- NULL
-    tmp.l <- NULL
+    tmp.l <- NULL 
 
-    #browser()
+    
     
     for(ss in 1:n.steps)
     { 
@@ -173,6 +173,8 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
       
     
     } # end for(s in 1:ns.steps)
+    #browser() 
+    
     lotka.res[[as.character(years[y])]] <- tmp.l
     tmp.y[[as.character(years[y])]] <- do.call('rbind',tmp.s)
     print(paste0("Running lotka simulation " ,ss, ' for year ',years[y]))
@@ -202,11 +204,11 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
   lotka.final <- NULL
   # Setting up the output vector, more mind games here with the forwards and backwards methods.
   # want to make sure that the r value lines up with the population estimate that is relevant to it..
-  # i.e. when going forwards the 2020 r value is used to get the 2021 population estimate, so we line up the r in 2020 with the 2021 results, so here we give it a +1
+  # i.e. when going forwards the 2021 r value is used to get the 2021 population estimate, so we line up the r in 2021 with the 2021 results, 
   # i.e. when going backwards the 2020 populations r value is used to get us from the 2021 population to the 2020 population, so we line it up with 2020 since 2020 is the result
   # 
   r.out <- r.vec
-  if(direction == 'forwards') r.out$year <- r.out$year+1
+  #if(direction == 'forwards') r.out$year <- r.out$year+1
   
   for(y in y.index)
   {
@@ -221,12 +223,12 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
       
       for(ss in 1:n.steps)
       {
-        
-        # DK changed this to be y-1 in Oct 2023, because the population got to where it is from the year before r.  This might be why 
+        # DK has been waffling on this in Oct 2023, moved back to using y
+        # DK changed this to be y in Oct 2023, because the population got to where it is from the year before r.  This might be why 
         # we seemed to have a 1 year offset in a bunch of the fits.
         # For example, when going backwards from 2021 to 2020, the 2021 population Euler-Lotka is not relevant as it is the 'result' of the biological process
         # thus it is the 2020 population parameters that got us to 2021, so we use those to move from 2021-2020, it is a 100% mind fuck.
-        r.up <- r.vec %>% dplyr::filter(s == ss, year == years[y-1]) %>% dplyr::pull(r) # Grab the correct value of r
+        r.up <- r.vec %>% dplyr::filter(s == ss, year == years[y]) %>% dplyr::pull(r) # Grab the correct value of r
     
         if(direction == 'backwards')
         {
@@ -258,7 +260,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
           # The exponential model
           if(pop.model == 'exponential') 
           {
-            exp.res <- for.proj(option = "exponential",pop.last = pop.last[ss] ,r=r.up,removals = removals.next,fishery.timing = 'beginning')
+            exp.res <- for.proj(option = "exponential",pop.last = pop.last[ss] ,r=r.up,removals = removals.next,fishery.timing = 'end')
             if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
             pop.last[ss] <- exp.res$Pop.current
           }
@@ -269,12 +271,12 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
         {
           #browser()
           # IN PROGRESS, but I think it is ok.
-          r.out$vpa.m[r.vec$s == ss & r.out$year == years[y-1]] <- mean(as.numeric(nm[y-1,]),na.rm=T)
-          r.out$vpa.fec[r.vec$s == ss & r.out$year == years[y-1]] <- mean(as.numeric(fecund[y-1,]),na.rm=T)
-          r.out$vpa.n[r.vec$s == ss & r.out$year == years[y-1]] <- abund.ts[y-1]
-          r.out$lotka.n[r.vec$s == ss & r.out$year == years[y-1]] <- pop.next[ss]
-          r.out$diff.n[r.vec$s == ss & r.out$year == years[y-1]] <- pop.next[ss] - abund.ts[y-1]
-          r.out$per.diff.n[r.vec$s == ss & r.out$year == years[y-1]] <- 100*((pop.next[ss] - abund.ts[y-1])/abund.ts[y-1])
+          r.out$vpa.m[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(nm[y,]),na.rm=T)
+          r.out$vpa.fec[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(fecund[y,]),na.rm=T)
+          r.out$vpa.n[r.vec$s == ss & r.out$year == years[y]] <- abund.ts[y]
+          r.out$lotka.n[r.vec$s == ss & r.out$year == years[y]] <- pop.next[ss]
+          r.out$diff.n[r.vec$s == ss & r.out$year == years[y]] <- pop.next[ss] - abund.ts[y]
+          r.out$per.diff.n[r.vec$s == ss & r.out$year == years[y]] <- 100*((pop.next[ss] - abund.ts[y])/abund.ts[y])
           # Then we find the minimum and that becomes or model of choice and we've retained the summary of the natural mortality from that simulation
         } # end (if(direction == 'backwards'))
         # Now do the same for the forwards selection....
@@ -284,8 +286,8 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
         {
           #browser() 
           # This gets weird since we use the previous year r to get the next year abundance, we can have a mix of y-1 and y's here.
-          r.out$vpa.m[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(nm[y-1,]),na.rm=T)
-          r.out$vpa.fec[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(fecund[y-1,]),na.rm=T)
+          r.out$vpa.m[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(nm[y,]),na.rm=T)
+          r.out$vpa.fec[r.vec$s == ss & r.out$year == years[y]] <- mean(as.numeric(fecund[y,]),na.rm=T)
           r.out$vpa.n[r.vec$s == ss & r.out$year == years[y]] <- abund.ts[y]
           r.out$lotka.n[r.vec$s == ss & r.out$year == years[y]] <- pop.last[ss]
           r.out$diff.n[r.vec$s == ss & r.out$year == years[y]] <- pop.last[ss] - abund.ts[y]
@@ -301,7 +303,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
       if(direction == 'backwards')
       {
         #browser() 
-        r.tmp <- r.out[r.out$year == years[y-1],]
+        r.tmp <- r.out[r.out$year == years[y],]
         min.dif <- min(abs(r.tmp$diff.n),na.rm=T)
         keep <- which(abs(r.tmp$diff.n) == min.dif)[1] # Just pick the first one that works, we'll get multiples where populations crash to 0
         s.index <- r.tmp$s[keep]
@@ -319,6 +321,7 @@ tune.sim<-function(years,step.size=0.05,tuner="m", n.steps = 30, direction = 'ba
         keep <- which(abs(r.tmp$diff.n) == min.dif)[1] # Just pick the first one that works, we'll get multiples where populations crash to 0
         s.index <- r.tmp$s[keep]
         res[[y]] <- r.tmp[keep,]
+        res[[y]]$removals <- removals.next
         pop.last <- rep(res[[y]]$lotka.n,n.steps)
         # Putting the r that generated the result into the following year, i.e. r in 2020 resulted in 2021 biomass, the 2020 r 
         # in this case gets aligned with 2021 how I've done this (but note the internal lotka.res object will still note it comes from 2020)
