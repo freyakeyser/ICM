@@ -32,7 +32,8 @@ simple.lotka.r<-function(nat.mort = NULL,fecund = NULL,ages = NULL)
     for(s in 2:(length(si))) lx[s]<-lx[s-1]*si[s-1]
     mx <- fecund
     # Now we are cooking!
-    junk<-optimize(lower=-0.999999,upper=15,f = eulerlotka)
+    #browser()
+    junk<-optimize(lower=-15,upper=15,f = eulerlotka)
     res <- c(junk$minimum)
 
   return(list(res=res,mx=mx,lx=lx,nat.mort = nat.mort,ages=ages))

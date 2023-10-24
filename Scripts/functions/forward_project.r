@@ -17,10 +17,10 @@ for.proj <- function(option = "exponential",pop.last,r,removals.next,K,fishery.t
   {
     if(fishery.timing == 'end')
     {
-    Pop.current <- (pop.last)*((1+r))
+    Pop.current <- (pop.last)*((exp(r)))
     Pop.current<- Pop.current-removals.next  
     }
-    if(fishery.timing =='beginning') Pop.current <- (pop.last-removals.next)*((1+r))
+    if(fishery.timing =='beginning') Pop.current <- (pop.last-removals.next)*((exp(r)))
   }
   # Logistic growth model, 
   # The maths be.... N(t+1) = N(t) + rN(t)(1-N(t)/K).... now we are solving for N(t) not N(t+1), so we rearrange terms
@@ -35,7 +35,7 @@ for.proj <- function(option = "exponential",pop.last,r,removals.next,K,fishery.t
     if(fishery.timing == 'end') par <- pop.last
     if(fishery.timing == 'beginning') par <- pop.last <- pop.last - removals.next
     # Get the current population size using logistic model
-    Pop.current <-  pop.last + (r* pop.last)*(1-(pop.last/K)) 
+    Pop.current <-  (exp(r)* pop.last)*(1-(pop.last/K)) 
     # If the fishery removes individuals at the start of the time series add them in here.
     if(fishery.timing == 'end') Pop.current <- Pop.current - removals.next
   }

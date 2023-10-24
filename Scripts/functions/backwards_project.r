@@ -23,10 +23,10 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K,fishery.
     {
     # Going to 1+r model since we are discrete time...
     #Pop.current <- (pop.next)/(exp(r))
-    Pop.current <- (pop.next)/(1+r)
+    Pop.current <- (pop.next)/(exp(r))
     Pop.current<- Pop.current+removals.next 
     }
-    if(fishery.timing =='end') Pop.current <- (pop.next+removals.next)/((1+r)) #  (pop.next+removals.next)/(exp(r))
+    if(fishery.timing =='end') Pop.current <- (pop.next+removals.next)/((exp(r))) # (pop.next+removals.next)/(exp(r))
   }
   # Logistic growth model, 
   # The maths be.... N(t+1) = N(t) + rN(t)(1-N(t)/K).... now we are solving for N(t) not N(t+1), so we rearrange terms
@@ -43,8 +43,8 @@ back.proj <- function(option = "exponential",pop.next,r,removals.next,K,fishery.
     # Ha, we can use this to solve for N in the previous year 
     #I'm hung up on which of these to use, they give almost the same answer, but not quite, but going with the 1+r version since
     # we are in discrete time here.
-    #logistic.n.last <- function(N.last) sum((exp(r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K) - pop.next))^2
-    logistic.n.last <- function(N.last) sum(((1+r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*(1+r))/K) - pop.next))^2
+    logistic.n.last <- function(N.last) sum((exp(r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*exp(r))/K) - pop.next))^2
+    #logistic.n.last <- function(N.last) sum(((1+r)* ((N.last)/(1-(N.last/K))) / (1 + ( ((N.last)/(1-(N.last/K)))*(1+r))/K) - pop.next))^2
     
     # Solve the above function
     Pop.current <- optimx(par, logistic.n.last, method = "BFGS")$p1

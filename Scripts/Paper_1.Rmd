@@ -89,7 +89,7 @@ Stocks <- Stocks$Stock
 #Stocks <- Stocks[Stocks != "ICES-AFWG_DEEP1-2_Sebastes_norvegicus"]
 # Esmarki doesn't work great as it is assessed using a quarterly model.
 #Stocks <- Stocks[Stocks != "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii"]
-
+#i = 'ICES-AFWG_NEA1-2_Melanogrammus_aeglefinus'
 years.tmp <- NULL
 pnm.tmp <- NULL
 waa.tmp <- NULL
@@ -119,7 +119,8 @@ for(i in Stocks)
   if(i == "ICES-WGCSE_CS27.6a_Merlangius_merlangus") ASR_sub <- ASR_sub %>% dplyr::filter(Year > 1980)
   if(i == "ICES-WGCSE_NS6a_Gadus_morhua") ASR_sub <- ASR_sub %>% dplyr::filter(Year > 1980)
   if(i == "ICES-AFWG_COASTNOR 1-2_Gadus_morhua") ASR_sub <- ASR_sub %>% dplyr::filter(Year > 2006)
-  if(i == "NEFSC_5Z_Pseudopleuronectes_americanus")ASR_sub <- ASR_sub %>% dplyr::filter(Year > 1982)
+  if(i == "NEFSC_5Z_Pseudopleuronectes_americanus") ASR_sub <- ASR_sub %>% dplyr::filter(Year > 1982)
+  if(i == "ICES-WGNSSK_NS 4-7d_Merlangius_merlangus") ASR_sub <- ASR_sub %>% dplyr::filter(Year > 1989)
   
   # maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
   # maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
@@ -155,6 +156,7 @@ for(i in Stocks)
   
   
   nm.tmp <-  ASR_sub %>% dplyr::filter(type=="NM") %>% dplyr::rename(NM=value) %>% dplyr::select(-type)
+  
   #minage
   minage <- min(as.numeric(nm.tmp$age[!is.na(nm.tmp$NM)]))
   if(minage == 0)  nat.mort <- nm.tmp
@@ -164,8 +166,20 @@ for(i in Stocks)
   if(i == "ICES-WGWIDE_NEA 1,2,5,4a,14a_clupea_ harengus") minage <- 2
   #maxage
   maxage <- max(as.numeric(nm.tmp$age[!is.na(nm.tmp$NM)]))
+  
+  # Now get the number of individuals in the youngest age category
+  num.age.min <- ASR_sub %>% dplyr::filter(age==minage,type=="Num")
+  # So any Recruitment even that is > 3 SE's away from the median I'm calling 
+  # an 'extreme' recruitment event and it is going to get a lower/higher natural mortality term.
+  med.mun.age.min <- mean(num.age.min$value,na.rm=T)
+  sd.mun.age.min <- sd(num.age.min$value,na.rm=T)#/sqrt(length(na.omit(num.age.min$value)))
+  low.rec <- med.mun.age.min - 2*sd.mun.age.min
+  high.rec <- med.mun.age.min + 2*sd.mun.age.min
+  high.rec.years <- as.vector(na.omit(num.age.min$Year[num.age.min$value > high.rec]))
+  low.rec.years <- as.vector(na.omit(num.age.min$Year[num.age.min$value < low.rec]))
   # Set up the full abundance matrix 
   full.abund <- abund
+  print(paste0("Stock ", i , ' high recruit years include ', length(c(low.rec.years,high.rec.years)), ' years'))
   # If we need to imput some data run this loop for natural mortality
   if(minage == 0) full.abund <- abund
   
@@ -174,21 +188,33 @@ for(i in Stocks)
   {
     yrs <- sort(unique((nm.tmp$Year)))
     nm.res <- NULL
+    # These already have NM estimates at 0 so don't need to do them...
     if(!i %in% c("ICES-WGCSE_CS7e-k_Gadus_morhua","ICES-WGCSE_ROCK6b_Melanogrammus_aeglefinus",
                  "ICES-WGHANSA_SP8abd_Sardina _pilchardus","ICES-WGWIDE_NEA 1,2,5,4a,14a_clupea_ harengus",
                  "ICES-WGWIDE_NEA 1-9,12,14_Micromesistius_poutassou"))
     {
-      for(y in 1:(length(yrs)))
-      {
-        tmp <- nm.tmp %>% dplyr::filter(Year == yrs[y])
-        tmp.abund <- abund %>% dplyr::filter(Year == yrs[y])
-        min.nm <- tmp$NM[tmp$age == minage]
-        tmp$NM[as.numeric(tmp$age) < minage] <- min.nm
-        # Now save these mudders...
-        nm.res[[y]] <- tmp
-      } # end years loop
-      nat.mort <- do.call('rbind',nm.res)
-    }
+      # Just use the mean mortality of the youngest age class we have information for
+      nm.use <- mean(nm.tmp$NM[nm.tmp$age==minage],na.rm=T)
+      # Take the average natural mortality of the youngest age class with an m and use that
+      # This avoids really blowing up the abundance in the younger age classes which can get a bit squirrly
+      # nm.high.rec <- 0.5*(min(nm.tmp$NM[nm.tmp$age==minage],na.rm=T))
+      # nm.low.rec <-  1.5*(max(nm.tmp$NM[nm.tmp$age==minage],na.rm=T))
+      # Start by filling in everything...
+      nm.tmp$NM[is.na(nm.tmp$NM)] <- nm.use
+      nm.tmp <- nm.tmp[nm.tmp$age %in% 0:maxage,]
+      # Now we need to fill in the 'special' cohorts that were really big (low m) or really small (high m)
+      # for(y in length(yrs):1)
+      # {
+      #   if(yrs[y] %in% c(high.rec.years,low.rec.years))
+      #   {
+      #     if(yrs[y] %in% high.rec.years) nm.pick <- nm.high.rec
+      #     if(yrs[y] %in% low.rec.years) nm.pick <- nm.low.rec
+      #     for(a in minage:1) nm.tmp$NM[nm.tmp$Year == (yrs[y]-a) & nm.tmp$age == minage-a] <- nm.pick
+      # }} #Close the if and for loops
+      # Pointless rename...
+    } #end the skip the stocks with nm at 0 if
+      nat.mort <- nm.tmp
+      
   # Now do the same loopiness for abundance
     for(y in length(yrs):2)
     {
@@ -196,15 +222,6 @@ for(i in Stocks)
       if(i == "ICES-AFWG_NEA1-2_Gadus_morhua") minage <- 3
       if(i == "ICES-NWWG_ICE-Summer_Clupea_harengus") minage <- 3
 
-      # for(a in (minage-1):0)
-      # {
-      #   start.abund <- full.abund %>% dplyr::filter(Year == yrs[y], age == a+1) %>% dplyr::pull(Num)
-      #   nm.calc <- 1-exp(-nat.mort[nat.mort$Year ==yrs[y]-1,][a+1,]$NM) 
-      #   full.abund[full.abund$Year ==yrs[y]-1,][a+1,]$Num <- start.abund/(1-nm.calc)
-      # }
-        
-        #if(minage >1 & y == 1)
-        #{
            # The lowest minage =4, This goes first since we go backwards, this gets us age 3 in year 3
            if(minage ==4) 
            {
@@ -242,11 +259,7 @@ for(i in Stocks)
       
          } # The annoying if to fill in rest of the first few years.
   } # end if minage > 0
-  
  
-
-
-  
   # We won't have a weight at age for the young ages, which is fine since we only need that for SSB
   weight.age <- ASR_sub %>% dplyr::filter(type=="WA") %>% dplyr::rename(WA=value) %>% dplyr::select(-type)
   removals <- ASR_sub %>% dplyr::filter(type=="Catch") %>% dplyr::rename(Catch=value) %>% dplyr::select(-type)
@@ -287,11 +300,10 @@ for(i in Stocks)
   
   #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
   years <- data %>% dplyr::pull(Year) %>% unique() %>% sort()
-  
-  
+
   N.end <- sum(data[data$Year==max(years),]$Num)
   all.abund <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(vpa=sum(Num,na.rm=T)) %>% pull(vpa)
-  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::filter(age >= minage) %>% dplyr::summarize(vpa=sum(Num,na.rm=T)) %>% pull(vpa)
+  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::filter(age %in% minage:maxage) %>% dplyr::summarize(vpa=sum(Num,na.rm=T)) %>% pull(vpa)
   # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
  
   #recruits
@@ -305,7 +317,7 @@ for(i in Stocks)
   
   #tst <- data %>% group_by(Year) %>% summarize(tot.ssn = sum(ssn)) %>% left_join(annual)
 
-  #r.p.ssb This no longer needs any offset...
+  #r.p.ssb So we are assuming the SSB in year X produces the observed recruits in year X
   annual$r.p.ssb <- annual$recruits/annual$tot.ssb
   # recs.per.age
   data <- left_join(data, annual)
@@ -325,13 +337,22 @@ for(i in Stocks)
   data$recs.per.age <- data$ssb*data$r.p.ssb
   # mx
   # Some of the stocks are just the males and females, so these are already half the population.  Probably can just not include the male stocks in the end.
-  # This works because 'males' is also in 'females'
-  if(grepl("males",i)) data$mx <- data$recs.per.age/data$ssn 
-  if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn/2 # Moms only! 
+  # The demographic models are 'female' only, so we'd want to divide the number of recruits by 2 and the SSN by 2, but that just cancels out
+  # so there is no need to make the mom adjustment.
+  data$mx <- data$recs.per.age/data$ssn # if(grepl("males",i))
+  # if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn/2 # Moms only! 
   data$mx[is.nan(data$mx)] <- 0 # if we don't have any spawners in an age class in a year their fecundity is 0
-  # Easier to remove the years where we don't have recs.per.age...
-  #data <- data %>% dplyr::filter(Year %in% years[(minage+1):length(years)])
-  # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
+  # Now for the very high recruitment years allow for a small amount of recruitment (20% of the lowest age) in the age classes after year 0....
+  
+  # if(length(high.rec.years) > 0)
+  # {
+  #   for(y in high.rec.years)
+  #   {
+  #     tmp <- data$AM[data$Year == y]
+  #     am.fill <- which(tmp ==0) 
+  #     if(length(am.fill) > 1) data$mx[data$Year == y-1][am.fill[-1]] <- 0.2*min(data$mx[data$Year == y & data$mx > 0],na.rm=T)
+  #   }
+  # }
   
   age.mat <- data %>% dplyr::select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% dplyr::select(-Year)
   prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% pivot_wider(names_from=age, values_from = prop.nat.mort) %>% dplyr::select(-Year) %>% as.data.frame
@@ -426,6 +447,12 @@ So now I can try to do some tuning, both forwards and backwards, lets see what w
 load(file = paste0(loc,"/Results/model_inputs_all_ages.Rdata"))
 
 
+#DK PICK IT UP HERE#
+# OK So the problem isn't so much "high" recruitment events, it's years in which the population abundance jumps like crash, Stock 57 (ICES Haddock NS)
+# Is the best example, look at year 2005, it isn't a outlier in terms of numbers of recruits, but the population jump from 2004 to 2005 is huge and
+# thus it's those years that get us the crazy fecundity numbers, which can easily be ameliorated by having a small fecundity in the age classes
+# that aren't supposed to be mature yet.  Of course, is that BS, maybe!!  Ended the night running all the stocks trying to see what the changes so far brought about.
+
 back.tune.all.res <- NULL
 back.tune.summary <- NULL
 for.tune.all.res <- NULL
@@ -481,8 +508,8 @@ for(i in Stocks)
    
 }
 
-tst <- do.call('rbind',for.tune.summary)
-quantile(tst$per.diff,probs=seq(0.001,1,0.001),na.rm=T)
+#tst <- do.call('rbind',for.tune.summary)
+#quantile(tst$per.diff,probs=seq(0.001,1,0.001),na.rm=T)
 # summary(tst$per.diff)
 # summary(tst$r)
 # tst <- tst[abs(tst$per.diff) > 5,]
@@ -494,5 +521,258 @@ saveRDS(for.tune.summary,"D:/Github/ICM/Results/forwards_fully_tuned_summary.Rds
 saveRDS(back.tune.all.res,"D:/Github/ICM/Results/backwards_fully_tuned_all_res.Rds")
 saveRDS(for.tune.all.res,"D:/Github/ICM/Results/forwards_fully_tuned_all_res.Rds")
 
+
+
 ```
 
+```{r paper-other-metrics}
+
+# So we agreed we wanted to look at cod, haddock, herring, and sole using the forward tuning sceanrios...
+
+for.tune.summary <- readRDS("D:/Github/ICM/Results/forwards_fully_tuned_summary.Rds")
+for.tune.all <- readRDS("D:/Github/ICM/Results/forwards_fully_tuned_all_res.Rds")
+
+
+cod <- grep("morhua",names(for.tune.summary))
+haddock <- grep('aeglefinus',names(for.tune.summary))
+herring <- grep("harengus",names(for.tune.summary))
+pollock <- grep("virens",names(for.tune.summary)) 
+sole <- grep("solea",names(for.tune.summary))
+euro.plaice <- grep("platessa",names(for.tune.summary))
+am.plaice <- grep("platessoides",names(for.tune.summary))
+
+p1.stocks <- sort(c(cod,haddock,herring,pollock,sole,euro.plaice,am.plaice))
+
+Stocks <- names(for.tune.summary)
+n.stocks <- length(Stocks)
+
+for.tune.stocks <- NULL
+for(i in p1.stocks) 
+{
+  nam <- Stocks[i]
+  #  A quick way to get the other potentially interesting info for the stock...
+  meta <- ASR_long[ASR_long$Stock == nam,][1,]
+  tmp <- for.tune.summary[[nam]]
+  tmp$Management   <- meta$Management  
+  tmp$Area <- meta$Area
+  tmp$Order <- meta$Order
+  tmp$Family   <- meta$Family  
+  tmp$Genus  <- meta$Genus 
+  tmp$Species <- meta$Species
+  tmp$Model <- meta$Model
+  tmp$Meeting_or_reference <- meta$Meeting_or_reference
+  tmp$Notes <- meta$Notes
+  for.tune.stocks[[nam]] <- tmp
+}
+
+# Now unpack them...
+for.tunes <- do.call("rbind",for.tune.stocks)
+# Typo clean up...
+for.tunes$Species[for.tunes$Species==" harengus"] <- "harengus"
+# Now what does this look like...
+paper.stocks <- unique(for.tunes$Stock)
+
+# Now the doubling time simulations for each stock
+
+
+dt.res <- NULL
+for(i in paper.stocks)
+{
+  try <- for.tunes %>% dplyr::filter(Stock == i)
+  double.time <- NA
+  pop <- 1000
+
+for(s in 1:100)
+{
+for(y in 2:100)
+{
+  r <- sample(na.omit(try$r),size=1)
+  pop[y] <- (1+r)*pop[y-1]
+} # end the years loop
+tmp <- which(pop >= 2*pop[1])[1]
+
+if(is.na(tmp)) double.time[s] <- 0
+if(!is.na(tmp))double.time[s] <- tmp
+} # end sim loop
+
+dt.res[[i]] <- data.frame(dt = double.time,Stock = i,Species = try$Species[1])
+
+} # end Stocks loop
+
+dub.time <- do.call("rbind",dt.res)
+
+# Now to get generation lengths + reproductive rates....
+# First I need to get the fecundity and natural mortalities by cohort instead of year.
+
+res.fin <- NULL
+res.year.fin <- NULL
+for(i in paper.stocks)
+{
+tst <- for.tune.all[[i]]
+f.tmp <- tst$fecund.opt
+m.tmp <- exp(-tst$nm.opt)
+f.org.tmp <- tst$fecund.org
+m.org.tmp <- exp(-tst$nm.org)
+
+ages <- 0:(ncol(f.tmp)-1)
+n.ages <- length(ages)
+years <- tst$res$year
+n.years <- length(years)
+# Now I need to grab the fecundities and nat morts by cohort
+if(n.years > n.ages)
+{
+res.cohort <- NULL
+res.year <- NULL
+for(y in 1:(n.years-n.ages+1))
+{
+  count = 0
+  fs <- NA
+  lx <- 1
+  fs.org <- NA
+  lx.org <- 1
+  lx.year <- 1
+  for(a in 1:n.ages)
+  {
+  fs[a] <- f.tmp[y+count,a]  
+  fs.org[a] <- f.org.tmp[y+count,a]  
+  if(a > 1) 
+  {
+    lx[a] <- lx[a-1] * m.tmp[y+count,a]  
+    lx.org[a] <- lx.org[a-1]* m.org.tmp[y+count,a]  
+    lx.year[a] <- lx.year[a-1] * m.tmp[y,a]
+  }  # end the a > 1 if
+  count <- count + 1
+  }# end the ages loop
+  res.cohort[[y]] <- data.frame(mx.opt = fs,lx.opt = lx,mx.org = fs.org,lx.org = lx.org,age = ages,
+                         mx.lx.opt = fs*lx,mx.lx.org = fs.org*lx.org,
+                         x.mx.lx.opt = fs*lx*ages,x.mx.lx.org = fs.org*lx.org*ages,
+                         cohort=years[y],Stock = i)
+  
+  res.year[[y]] <- data.frame(mx.opt = unlist(f.tmp[y,]),lx.opt = lx.year,age = ages,
+                         mx.lx.opt = unlist(f.tmp[y,])*lx.year,
+                         x.mx.lx.opt = unlist(f.tmp[y,])*lx.year*ages,
+                         year=years[y],Stock = i)
+
+} # end the years loop
+
+# unpack it...
+res.fin[[i]] <- do.call('rbind',res.cohort)
+res.year.fin[[i]] <- do.call('rbind',res.year)
+}  # end if to make sure we have enough data to get the cohort estimates.
+
+}# end the stock loop
+res.cohort.final <- do.call('rbind',res.fin)
+res.year.final <- do.call('rbind',res.year.fin)
+
+pop.dam <- res.cohort.final %>% dplyr::group_by(cohort,Stock) %>% dplyr::summarise(gen.len.opt = sum(x.mx.lx.opt)/sum(mx.lx.opt),
+                                                                gen.len.org = sum(x.mx.lx.org)/sum(mx.lx.org),
+                                                                R0.opt = sum(mx.lx.opt),R0.org = sum(mx.lx.org))
+pop.dam <- data.frame(pop.dam,Management=NA,Area = NA,Order=NA,
+                      Family=NA,Genus=NA,Species=NA,Model=NA,Meeting_or_reference = NA,Notes = NA)
+
+for(i in p1.stocks) 
+{
+  nam <- Stocks[i]
+  #  A quick way to get the other potentially interesting info for the stock...
+  meta <- ASR_long[ASR_long$Stock == nam,][1,]
+  
+  pop.dam$Management[pop.dam$Stock == nam]   <- meta$Management  
+  pop.dam$Area[pop.dam$Stock == nam] <- meta$Area
+  pop.dam$Order[pop.dam$Stock == nam] <- meta$Order
+  pop.dam$Family[pop.dam$Stock == nam]   <- meta$Family  
+  pop.dam$Genus[pop.dam$Stock == nam]  <- meta$Genus 
+  pop.dam$Species[pop.dam$Stock == nam] <- meta$Species
+  pop.dam$Model[pop.dam$Stock == nam] <- meta$Model
+  pop.dam$Meeting_or_reference[pop.dam$Stock == nam] <- meta$Meeting_or_reference
+  pop.dam$Notes[pop.dam$Stock == nam] <- meta$Notes
+
+}
+
+pop.dam$Species[pop.dam$Species==" harengus"] <- "harengus"
+
+hmm <- pop.dam %>% dplyr::filter(R0.opt > 500)
+
+hmm
+
+hmm[hmm$Stock == "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus",]
+for.tune.all$`ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus`$res
+
+unique(hmm$Stock)
+# There are 7 stocks with some bat shit happening...
+# Fixed... "ICES-WGNSSK_NS4 _Solea_solea"  
+
+# These are all problems because the abundance increases like nuts in a few years....
+"ICES-AFWG_NEA1-2_Melanogrammus_aeglefinus"
+"ICES-WGCSE_CS7e-k_Gadus_morhua"                  
+"ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus" # Something special weird going on with this stock
+"ICES-WGBFAS_WBS-25-32_Gadus_morhua"              
+
+
+# Figure out how to get an r of 10 and what the mx vector needs to look like for
+#"ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus"
+
+ages <- 0:12 # ages
+mx <- c(0.9,500,500,rep(5000,10)) # fecundity
+nat.mort <- rep(0.2,13) # natural mortality
+si <- 1- nat.mort # survivial
+
+lx <- 1
+for(s in 2:(length(si))) lx[s]<-lx[s-1]*si[s-1]
+
+eulerlotka <- function(r) (sum(lx * mx * exp(-r * ages)) - 1)^2
+
+junk<-optimize(lower=-0.999999,upper=55,f = eulerlotka)
+res <- c(junk$minimum)
+res
+
+p.start <- 10
+
+p.end <- (1+res)*p.start
+p.end
+
+R0 <- sum(lx*mx)
+R0
+
+
+tmp <- for.tune.all[["ICES-AFWG_NEA1-2_Melanogrammus_aeglefinus"]]
+tmp$nm.org
+tmp$fecund.opt
+t1 <- vpa.tmp$`ICES-AFWG_NEA1-2_Melanogrammus_aeglefinus`
+range(t1[2:length(t1)]/t1[1:(length(t1)-1)])
+# So using all the age classes actually reduces the ratios from year to year requiring less insanity...
+t2 <- all.abund.tmp$`ICES-AFWG_NEA1-2_Melanogrammus_aeglefinus`
+range(t2[2:length(t2)]/t2[1:(length(t2)-1)])
+
+data.frame(tmp$res$year,tmp$res$vpa.abund,t1,t2)
+
+mx <- c(0,0,0,rep(30,11))
+nm <- rep(0.2,14)
+
+
+```
+
+
+```{r simp-figs}
+
+
+
+ggplot(for.tunes) + geom_jitter(aes(y=r,x=Species)) + scale_y_continuous(name = 'rate of growth (r)',breaks = c(-1,-0.5,0,0.5,1:10),limits = c(-1,3))
+
+ggplot(for.tunes) + geom_jitter(aes(y=r.vpa.init,x=Species)) + scale_y_continuous(name = 'rate of growth (r)',breaks = c(-1,-0.5,0,0.5,1:10),limits = c(-1,3))
+
+unique(for.tunes$Species)
+windows(11,11)
+ggplot(dub.time) + geom_jitter(aes(y=dt,x=Species),alpha=0.05,fill="black",color="black",shape=22) + 
+                   scale_y_continuous(name = 'Doubling time (years)',breaks = seq(0,100,by=5))
+
+ggplot(for.tunes) + geom_density(aes(r,group=Species,color=Species,fill=Species),alpha = 0.2)
+
+windows(11,11)
+ggplot(pop.dam) + geom_boxplot(aes(y=gen.len.opt,x=Species)) + ylab("Generation Length (years)")
+
+options(scipen=999)
+ggplot(pop.dam) + geom_boxplot(aes(y=R0.opt,x=Species))  + scale_y_log10(name = "Lifetime Reproductive Output",
+                                                                         breaks = c(0.001,0.01,0.1,1,5,10,50,100,500,1000,5000,1e4,1e5,1e6),
+                                                                         minor_breaks = NULL)
+
+```

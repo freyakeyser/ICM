@@ -18,10 +18,11 @@ library(tidyverse)
 library(rio)
 library(ggthemes)
 library(cowplot)
-loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
+loc <- 'D:/GitHub/ICM'
 
 
 source(paste0(loc,"/Scripts/functions/backwards_sim.R"))
+source(paste0(loc,"/Scripts/functions/forward_sim.R"))
 source(paste0(loc,"/Scripts/functions/tuning_sim.R"))
 
 # Choose 5 ICES stocks that we have the necessary data for
@@ -204,9 +205,9 @@ for(i in Stocks)
   data$recs.per.age <- data$ssb.offset*data$r.p.ssb
   # mx
   # Some of the stocks are just the males and females, so these are already half the population.  Probably can just not include the male stocks in the end.
-  # This works because 'males' is also in 'females'
-  if(grepl("males",i)) data$mx <- data$recs.per.age/data$ssn.offset 
-  if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn.offset/2 # Moms only! 
+  # No longer dividing by 2 because we should really divide recruits and ssn by 2 to be female only, but that's pointless so we roll along with this.
+  data$mx <- data$recs.per.age/data$ssn.offset # if(grepl("males",i)) 
+  #if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn.offset/2 # Moms only! 
   data$mx[is.nan(data$mx)] <- 0 # if we don't have any spawners in an age class in a year their fecundity is 0
   # Easier to remove the years where we don't have recs.per.age...
   #data <- data %>% dplyr::filter(Year %in% years[(minage+1):length(years)])
@@ -317,7 +318,7 @@ for(i in Stocks)
                  fecund = mx,
                  N.end = N.end,
                  pop.model = 'exponential',
-                 n.sims = 1,
+                 n.sims = 100,
                  sd.mat = 0.5,
                  sd.nm = 0.5,
                  sd.wt = 0.5,
@@ -349,7 +350,7 @@ tst <- for.sim(years,
                fecund = mx,
                N.start = N.start,
                pop.model = 'exponential',
-               n.sims = 2,
+               n.sims = 100,
                sd.mat = 0.5,
                sd.nm = 0.5,
                sd.wt = 0.5,
@@ -366,43 +367,25 @@ tst <- for.sim(years,
   for.ts[[i]] <- did.it.work
   for.ts.quants[[i]] <- quants
   
-  
-
-  
-  
-  
-########################## Now run the tuning sims
-#
-   N.end <- vpa.abund[length(vpa.abund)]
-   tunes <- tune.sim(years,
-                     n.steps = 100,
-                     abund.ts = vpa.abund,
-                     mat.age = age.mat,
-                     nm = -(log(1-prop.nat.mort)),
-                     w.age = weight.age,
-                     ages = ages,
-                     rems = rem$rem,
-                     fecund = mx,
-                     N.end = N.end,
-                     pop.model = 'exponential')
-
-   tuned.res[[i]] <- tunes
-} # end i in Stocks look
-
-
+}
 
 # Save all these
 # saveRDS(object = tuned.res,file = "D:/Github/ICM/Results/tuned_fits.Rds")
- saveRDS(object = back.res,file = paste0(loc,"/Results/backwards_sim_results.Rds"))
- saveRDS(object = back.ts,file = paste0(loc,"/Results/backwards_sim_ts_summaries.Rds"))
- saveRDS(object = back.ts.quants,file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries.Rds"))
+saveRDS(object = back.res,file = paste0(loc,"/Results/backwards_sim_results.Rds"))
+saveRDS(object = back.ts,file = paste0(loc,"/Results/backwards_sim_ts_summaries.Rds"))
+saveRDS(object = back.ts.quants,file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries.Rds"))
+saveRDS(object = for.res,file = paste0(loc,"/Results/forwards_sim_results.Rds"))
+saveRDS(object = for.ts,file = paste0(loc,"/Results/forwards_sim_ts_summaries.Rds"))
+saveRDS(object = for.ts.quants,file = paste0(loc,"/Results/forwards_sim_ts_quantiles_summaries.Rds"))
+ 
+ 
 ```
 
 
 ```{r, make-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 
 # Now we can run the figures separately.
-tuned.res <- readRDS(file = "D:/Github/ICM/Results/tuned_fits.Rds")
+# tuned.res <- readRDS(file = "D:/Github/ICM/Results/tuned_fits.Rds")
 back.ts <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
 back.ts.quants <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
 back.res <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_results.Rds")

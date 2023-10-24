@@ -40,14 +40,15 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
   }
   
   source("D:/Github/ICM/Scripts/functions/simple_Lotka_r.r")
-  
+  source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  source("D:/Github/ICM/Scripts/functions/backwards_project.r")
   
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
   
  
   #Initialize a bunch of objects
   n.years<-length(years)
-  res <- data.frame(year = years,vpa.abund = N.init, est.abund = NA, diff= NA,per.diff = NA,r=NA,r.vpa.init = NA,
+  res <- data.frame(year = years,vpa.abund = N.init, est.abund = NA, diff= NA,per.diff = NA,lambda=NA,lambda.vpa.init = NA,
                     removals = NA,mean.fec=NA,mean.vpa.fec = NA,mean.nm = NA,mean.vpa.nm = NA)
   fecund.ts <- data.frame(fecund)
   nm.ts <- data.frame(nm)
@@ -85,11 +86,11 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     r.est = lotka.est$res
     
     # For extremes, get away from that bad estimate area fast as it is numerical instability territory!
-    if(r.est < -0.995) 
-    {
-      fecund.tmp <- 1.5*fecund.tmp
-      nm.tmp <- nm.tmp/1.5
-    }
+    # if(r.est < -0.995) 
+    # {
+    #   fecund.tmp <- 1.5*fecund.tmp
+    #   nm.tmp <- nm.tmp/1.5
+    # }
     # Then we run the model 1 year (either backwards or forwards) and see how well it fits.
     
     if(direction == 'backwards')
@@ -165,7 +166,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
         } # end if(direction == 'forwards')
         
        
-        
+        #browser()
         if(abs(per.diff.inc) < abs(per.diff.dec))
         {
           going <- 'up'
@@ -215,7 +216,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             }
           }
           
-          
+          #browser()
           lotka.tunes <- simple.lotka.r(nat.mort = nm.tmp,fecund=fecund.tmp,ages=ages)
           r.tunes <- lotka.tunes$res
         
@@ -267,9 +268,9 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     {
       index <- which(years == years[y+1])
       #browser() 
-      res$r[index] <- r.tunes
+      res$lambda[index] <- exp(r.tunes)
       #browser()
-      res$r.vpa.init[index] <- r.est
+      res$lambda.vpa.init[index] <- exp(r.est)
       res$removals[index] <- removals.next
       res$mean.fec[index] <- mean(as.numeric(fecund.tmp))
       res$mean.vpa.fec[index-1] <- mean(as.numeric(fecund.init))
@@ -281,8 +282,8 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     if(direction == 'backwards')
     {
       index <- which(years == years[y])
-      res$r[index+1] <- r.tunes
-      res$r.vpa.init[index+1] <- r.est
+      res$lambda[index+1] <- exp(r.tunes)
+      res$lambda.vpa.init[index+1] <- exp(r.est)
       res$removals[index+1] <- removals.next
       res$mean.fec[index+1] <- mean(as.numeric(fecund.tmp))
       res$mean.vpa.fec[index] <- mean(as.numeric(fecund.init))
