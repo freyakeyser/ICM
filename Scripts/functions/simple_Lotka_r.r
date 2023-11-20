@@ -1,12 +1,12 @@
 # Function to calculate Lotka R, DK revised this with several options of how we want to calculate
 
 # Function Arguments
-# nat.mort:    Natural mortality, 
+# Z:    Total mortality, 
 # fecund:      Fecundity
 # ages:
 
-simple.lotka.r<-function(nat.mort = NULL,fecund = NULL,ages = NULL) 
-{
+simple.lotka.r<-function(Z = NULL,fecund = NULL,ages = NULL) 
+{  
   
   # The Euler-Lotka Function to optimize on to find the intrinsic rate of growth for your population
   eulerlotka <- function(r) (sum(lx * mx * exp(-r * ages)) - 1)^2
@@ -16,14 +16,11 @@ simple.lotka.r<-function(nat.mort = NULL,fecund = NULL,ages = NULL)
   
   
   #################################### Calculate Lotka SECTION #################################### Calculate Lotka SECTION #################################### Calculate Lotka SECTION
-  mx.tmp <- NULL
-  lx.tmp <- NULL
-  
   # Now run this through all the yrs 
 
     # Get the r estimate for each year if we are running through a bunch of years
-    # Just use the first year if we don't have same length nat.mort as years
-    if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort) else lx <- 1-exp(-nat.mort)
+    # Just use the first year if we don't have same length Z as years
+    if(!is.null(nrow(Z))) lx <- 1-exp(-Z) else lx <- 1-exp(-Z)
     # Convert to survivorship vector
     si <- 1-lx 
     # Set the first age class to be 1
@@ -33,8 +30,8 @@ simple.lotka.r<-function(nat.mort = NULL,fecund = NULL,ages = NULL)
     mx <- fecund
     # Now we are cooking!
     #browser()
-    junk<-optimize(lower=-15,upper=15,f = eulerlotka)
+    junk<-optimize(lower=-5,upper=5,f = eulerlotka)
     res <- c(junk$minimum)
 
-  return(list(res=res,mx=mx,lx=lx,nat.mort = nat.mort,ages=ages))
+  return(list(res=res,mx=mx,lx=lx,Z = Z,ages=ages))
 }
