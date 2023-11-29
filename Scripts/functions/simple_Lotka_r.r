@@ -4,7 +4,7 @@
 # Z:    Total mortality, 
 # fecund:      Fecundity
 # ages:
-
+ 
 simple.lotka.r<-function(Z = NULL,fecund = NULL,ages = NULL) 
 {  
   
