@@ -18,6 +18,8 @@ library(tidyverse)
 library(rio)
 library(ggthemes)
 library(cowplot)
+library(gtable)
+library(viridis)
 loc <- 'D:/GitHub/ICM'
 
 source(paste0(loc,"/Scripts/functions/tuning_sim_fast.R"))
@@ -787,7 +789,7 @@ n.stocks <- length(Stocks)
 
 # Doubling time, no fishing
 dt.res <- NULL
-n.dt.sims <- 20 # Number of simultions...
+n.dt.sims <- 2000 # Number of simulations...
 n.years <- 100
 for(i in Stocks)
 {
@@ -855,31 +857,42 @@ for(i in Stocks)
   {
     count = 0
     fs <- NA
-    lx <- 1
+    # The lx is no fishing survivorship, zx I'm calling the survivorship including fishing
+    lx <- lx.org <- lx.year <- zx <- zx.org <- zx.year <- 1
     fs.org <- NA
-    lx.org <- 1
-    lx.year <- 1
+    
     for(a in 1:n.ages)
     {
     fs[a] <- fec.tmp[y+count,a]  
     fs.org[a] <- fec.org.tmp[y+count,a]  
     if(a > 1) 
     {
+      # No fishing
       lx[a] <- lx[a-1] * m.tmp[y+count,a]  
       lx.org[a] <- lx.org[a-1]* m.org.tmp[y+count,a]  
       lx.year[a] <- lx.year[a-1] * m.tmp[y,a]
+      # Including fishing
+      zx[a] <- zx[a-1] * z.tmp[y+count,a]  
+      zx.org[a] <- zx.org[a-1]* z.org.tmp[y+count,a]  
+      zx.year[a] <- zx.year[a-1] * z.tmp[y,a]
     }  # end the a > 1 if
         count <- count + 1
     }# end the ages loop
-        res.cohort[[y]] <- data.frame(mx.opt = fs,lx.opt = lx,mx.org = fs.org,lx.org = lx.org,age = ages,
+        res.cohort[[y]] <- data.frame(mx.opt = fs,lx.opt = lx,mx.org = fs.org,lx.opt = lx,
                                mx.lx.opt = fs*lx,mx.lx.org = fs.org*lx.org,
                                x.mx.lx.opt = fs*lx*ages,x.mx.lx.org = fs.org*lx.org*ages,
-                               cohort=years[y],meta.tmp)
+                               zx.opt = zx,zx.opt = zx,
+                               mx.zx.opt = fs*zx,mx.zx.org = fs.org*zx.org,
+                               x.mx.zx.opt = fs*zx*ages,x.mx.zx.org = fs.org*zx.org*ages,
+                               cohort=years[y],age = ages,meta.tmp)
         
-        res.year[[y]] <- data.frame(mx.opt = unlist(fec.tmp[y,]),lx.opt = lx.year,age = ages,
+        res.year[[y]] <- data.frame(mx.opt = unlist(fec.tmp[y,]),lx.opt = lx.year,
                                mx.lx.opt = unlist(fec.tmp[y,])*lx.year,
                                x.mx.lx.opt = unlist(fec.tmp[y,])*lx.year*ages,
-                               year=years[y],meta.tmp)
+                               zx.opt = zx.year,
+                               mx.zx.opt = unlist(fec.tmp[y,])*lx.year,
+                               x.mx.zx.opt = unlist(fec.tmp[y,])*lx.year*ages,
+                               age = ages,year=years[y],meta.tmp)
 
   } # end the years loop
 
@@ -937,29 +950,56 @@ write.csv(meta.sub, "D:/Github/ICM/Data/metadata.csv")
 theme_set(theme_few(base_size = 14))
 model <- 'fec_nm'
 load(file=paste0("D:/Github/ICM/Results/all_cleaned_forward_tune_summaries_",model,".Rdata"))
-
-pop.dam.6 <- pop.dam %>% dplyr::filter(Species %in% c('morhua','harengus','aeglefinus','virens','solea','platessa'))
-for.tunes.6 <- for.tunes %>% dplyr::filter(Species %in% c('morhua','harengus','aeglefinus','virens','solea','platessa'))
-res.lambda.final.6 <- res.lambda.final %>% dplyr::filter(Species %in% c('morhua','harengus','aeglefinus','virens','solea','platessa'))
-dub.time.6 <- dub.time.summary %>% dplyr::filter(Species %in% c('morhua','harengus','aeglefinus','virens','solea','platessa'))
-# Lambda plot
-              
-
-res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(LME,Area.broad) %>%
-                                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-              
-res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(Species,Area.broad) %>%
-                                             dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
-
-res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::group_by(Stock) %>% 
+pop.dam <- data.frame(pop.dam)
+six.species <- c('morhua','harengus','aeglefinus','virens','solea','platessa')
+pop.dam.6 <- pop.dam %>% dplyr::filter(Species %in% six.species)
+for.tunes.6 <- for.tunes %>% dplyr::filter(Species %in% six.species)
+dub.time.6 <- dub.time.summary %>% dplyr::filter(Species %in% six.species)
+res.lambda.final$decade <- floor(res.lambda.final$year/10)*10
+res.lambda.final <- res.lambda.final %>% dplyr::group_by(Stock,decade) %>% dplyr::mutate(mn.lam = mean(lam.fish,na.rm=T),
+                                                                                 med.lam = median(lam.fish,na.rm=T),
+                                                                                 sd.lam = sd(lam.fish,na.rm=T))
+res.lambda.final <- res.lambda.final %>% dplyr::group_by(Species,decade) %>% dplyr::mutate(lm.spec.mn = mean(mn.lam,na.rm=T))              
+res.lambda.final <- res.lambda.final %>% dplyr::group_by(Stock) %>% 
                                             dplyr::mutate(lam.no.fish.mn = mean(lam.no.fish,na.rm=T),
                                                           lam.fish.mn = mean(lam.fish,na.rm=T),
                                                           lam.org.no.fish.mn = mean(lam.org.no.fish,na.rm=T),
-                                                          lam.org.fish.mn = mean(lam.org.fish,na.rm=T))
+                                                          lam.org.fish.mn = mean(lam.org.fish,na.rm=T),
+                                                          lam.no.fish.med = median(lam.no.fish,na.rm=T),
+                                                          lam.fish.med = median(lam.fish,na.rm=T),
+                                                          lam.org.no.fish.med = median(lam.org.no.fish,na.rm=T),
+                                                          lam.org.fish.med = median(lam.org.fish,na.rm=T),) %>% data.frame()
 
+res.lambda.final.6 <- res.lambda.final %>% dplyr::filter(Species %in% six.species)
+# Sort the data into a nice order...
+res.lambda.final <- res.lambda.final %>% dplyr::arrange(Species,Area.broad) %>%
+                                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(Species,Area.broad) %>%
+                                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+dub.time <- dub.time %>% dplyr::arrange(LME) %>%
+                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+
+dub.time.summary <- dub.time.summary %>% dplyr::arrange(LME,Order,Species,Area.broad) %>%
+                                         dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
+
+dub.time.6 <- dub.time.6 %>% dplyr::arrange(LME) %>%
+                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+pop.dam <- pop.dam %>% dplyr::arrange(Species,LME) %>%
+                       dplyr::mutate(Stock = forcats::fct_inorder(factor(Stock, ordered=TRUE)))
+pop.dam.6 <- pop.dam.6 %>% dplyr::arrange(LME,Area.broad) %>%
+                       dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+                            
+# Lambda plots
+              
+
+# res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(LME,Area.broad) %>%
+#                                              dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+            
+
+################### Figures in main text################### Figures in main text################### Figures in main text################### 
 
 #hmm <- merge(tst,res.lambda.final.6,by="Stock")
-
+plot(res.lambda.final$lam.fish.med ~ res.lambda.final$lam.fish.mn)
 # So this is lambda with fishing included
 lambda.plt <- ggplot(res.lambda.final.6) + geom_boxplot(aes(y=lam.no.fish,x=Stock.no.species))  + 
                                            geom_point(aes(y=lam.no.fish.mn,x=Stock.no.species),color='blue',shape=8,fill='blue') +
@@ -980,96 +1020,16 @@ lambda.plt.fish <- ggplot(res.lambda.final.6) + geom_boxplot(aes(y=lam.fish,x=St
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
+
 save_plot("D:/Github/ICM/Figures/tuned/lambda_with_fishing_6.png",lambda.plt.fish,base_width = 12,base_height = 10)
-
-# Time series of lambdas....
-col.try <- rep(rep(c("black","blue","orange",'firebrick2','lightgreen'),3),20)
-#col.try <- rep(c(rep("black",3),rep("blue",3),rep('orange',3),rep('firebrick2',3),rep('lightgreen',3)),20)
-pty <- rep(c(rep(21,5),rep(22,5),rep(23,5)),20)
-#pty <- rep(rep(c(21:23),5),20)
-
-lambda.ts.plt <- ggplot(res.lambda.final.6,aes(y=lam.fish,x=year,group=Stock.short,color=Stock.short,shape = Stock.short,fill = Stock.short)) +
-                            geom_point(size=4) +
-                            geom_smooth(method='gam',formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),se=F) + 
-                            #scale_y_log10(name = "lambda") +
-                            facet_wrap(~G.Species,scales='free_y') +
-                            scale_color_manual(name = "Stock",values = col.try) + scale_shape_manual(name = "Stock",values = pty) +
-                            scale_fill_manual(name = "Stock",values = col.try)+
-                            guides(colour = guide_legend(ncol = 1))+
-                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm'))
-#lambda.ts.plt
-save_plot("D:/Github/ICM/Figures/tuned/lambda_timeseries_6.png",lambda.ts.plt,base_width = 12,base_height = 10)
-
-res.lambda.final.6$decade <- floor(res.lambda.final.6$year/10)*10
-
-tst <- res.lambda.final.6 %>% dplyr::group_by(Stock,decade) %>% dplyr::summarise(mn.lam = mean(lam.fish,na.rm=T),
-                                                                                 med.lam = median(lam.fish,na.rm=T),
-                                                                                 sd.lam = sd(lam.fish,na.rm=T))
-tst <- merge(tst,meta.sub,by="Stock")
-
-tst <- tst %>% dplyr::arrange(Species,Area.broad) %>%
-                                             dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
-              
-
-lambda.dec.mn.plt <- ggplot(tst,aes(y=mn.lam,x=decade,group=Stock.short,color=Stock.short,shape = Stock.short,fill = Stock.short)) +
-                            geom_jitter(size=4,width = 1) +
-                            scale_x_continuous(breaks=seq(1940,2020,by=10))+
-                            geom_hline(yintercept = 1,linetype='dashed') +
-                            facet_wrap(~G.Species,scales='free_y') +
-                            scale_color_manual(name = "Stock",values = col.try) + scale_shape_manual(name = "Stock",values = pty) +
-                            scale_fill_manual(name = "Stock",values = col.try)+
-                            guides(colour = guide_legend(ncol = 1))+
-                            theme(legend.key.width = unit(5,'cm'))
-save_plot("D:/Github/ICM/Figures/tuned/lambda_decades_mean.png",lambda.dec.mn.plt,base_width = 30,base_height = 12)
-
-
-lambda.dec.med.plt <- ggplot(tst,aes(y=med.lam,x=decade,group=Stock.short,color=Stock.short,shape = Stock.short,fill = Stock.short)) +
-                            geom_jitter(size=4,width = 1) +
-                            scale_x_continuous(breaks=seq(1940,2020,by=10))+
-                            geom_hline(yintercept = 1,linetype='dashed') +
-                            facet_wrap(~G.Species,scales='free_y') +
-                            scale_color_manual(name = "Stock",values = col.try) + scale_shape_manual(name = "Stock",values = pty) +
-                            scale_fill_manual(name = "Stock",values = col.try)+
-                            guides(colour = guide_legend(ncol = 1))+
-                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm'))
-save_plot("D:/Github/ICM/Figures/tuned/lambda_decades_median.png",lambda.dec.med.plt,base_width = 30,base_height = 12)
 
 
 # Doubling Times
-# Reorder the doubling time, either by Species and LME, or the other way around
-dub.time.summary <- dub.time.summary %>%
-                            dplyr::arrange(Species,LME) %>%
-                            dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
-              
-dub.heatmap.ne <- ggplot(dub.time.summary %>% dplyr::filter(LME == "NE Atlantic"), aes(x=year, y=Stock.short, fill= prop)) + xlab("") + ylab("")+                                    facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + 
-                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
-                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.9, "cm"))
 
-dub.heatmap.nw <- ggplot(dub.time.summary %>% dplyr::filter(LME == "NW Atlantic"), aes(x=year, y=Stock.short, fill= prop)) + xlab("") + ylab("")+                                    facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
-                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
-                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.22, "cm"))
-
-dub.heatmap.pac <- ggplot(dub.time.summary %>% dplyr::filter(LME == "Pacific (Alaska)"), aes(x=year, y=Stock.short, fill= prop)) + xlab("") + ylab("")+
-                            facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
-                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
-                            theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"),
-                                  legend.key.width = unit(3,'cm'))
-
-dub.heatmap <- cowplot::plot_grid(dub.heatmap.pac,dub.heatmap.nw,dub.heatmap.ne,nrow = 3,rel_heights = c(3,4,10))
-dub.heatmap
-
-
-save_plot("D:/Github/ICM/Figures/tuned/Doubling_time_heatmap.png",dub.heatmap,base_width = 20,base_height = 17)
-
-dub.time.6 <- dub.time.6 %>%
-                            dplyr::arrange(LME) %>%
-                            dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-              
-                            
-              
 dub.heatmap.cod <- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "G. morhua"), aes(x=year, y=Stock.no.species, fill= prop)) + xlab("") + ylab("")+                                     facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + 
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + scale_x_continuous(labels=NULL) +
-                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"))
+                            theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"),
+                                  legend.key.width = unit(3,'cm'))
 
 dub.heatmap.herring<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "C. harengus"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
@@ -1107,19 +1067,12 @@ dub.heatmap.sp6 <- cowplot::plot_grid(dub.heatmap.cod,dub.heatmap.herring,dub.he
                                  dub.heatmap.virens, dub.heatmap.solea,dub.heatmap.platessa,nrow = 6,rel_heights = c(14,9,8,5,5,4))
 dub.heatmap.sp6
 
-
 save_plot("D:/Github/ICM/Figures/tuned/Doubling_time_heatmap_by_sp6.png",dub.heatmap.sp6,base_width = 20,base_height = 17)
 
 
 
-
 # Generation length
-pop.dam <- pop.dam %>% dplyr::arrange(Species,LME) %>%
-                       dplyr::mutate(Stock = forcats::fct_inorder(factor(Stock, ordered=TRUE)))
-              
-pop.dam.6 <- pop.dam.6 %>% dplyr::arrange(LME,Area.broad) %>%
-                       dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-              
+
 gen.boxplt <- ggplot(pop.dam.6) +
                             geom_boxplot(aes(y=gen.len.opt,x=Stock.no.species))  + 
                             xlab("") + scale_y_continuous("Generation Length (years)",limits=c(0,13),breaks= seq(0,20,by=2)) +
@@ -1129,8 +1082,118 @@ gen.boxplt <- ggplot(pop.dam.6) +
 
 save_plot("D:/Github/ICM/Figures/tuned/GL_boxplot_no_fish_6_species.png",gen.boxplt,base_width = 12,base_height = 10)
 
+# Lifetime reproductive success (no fishing)
 
+
+r0.boxplt <- ggplot(pop.dam.6) +
+                            geom_boxplot(aes(y=R0.opt,x=Stock.no.species))  + 
+                            xlab("") + scale_y_log10(name = "Lifetime Reproductive Output")+
+                            geom_hline(yintercept = 1,linetype='dashed',color='blue')+
+                            facet_wrap(~G.Species,scales = 'free')+
+                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',plot.margin = margin(0,0.5,0,0.5, "cm"),
+                                  axis.title.y = element_text(margin = margin(r = 30)))
+
+save_plot("D:/Github/ICM/Figures/tuned/R0_boxplot_no_fish_6_species.png",r0.boxplt,base_width = 12,base_height = 10)
+
+
+
+
+################### Supplemental Figures################### Supplemental Figures################### Supplemental Figures################### Supplemental 
+
+# Reorder the doubling time, either by Species and LME, or the other way around
+
+dub.time.summary$Order.short <- "Gadi"
+dub.time.summary$Order.short[dub.time.summary$Order == "Pleuronectiformes"] <- "Plero"
+dub.time.summary$Order.short[dub.time.summary$Order == "Clupeiformes"] <- "Clupei"
+dub.time.summary$Order.short[dub.time.summary$Order == "Scorpaeniformes "] <- "Scor"
+dub.time.summary$Order.short[dub.time.summary$Order == "Scombriformes"] <- "Scomb"
+dub.time.summary$Order.short[dub.time.summary$Order == "Perciformes"] <- "Perci"
+
+dub.time.summary <- dub.time.summary %>%
+                            dplyr::arrange(G.Species,LME,Area.broad) %>%
+                            dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
               
+dub.heatmap.gad <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Gadiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+                                    
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.45, "cm"),
+                                  legend.key.width = unit(3,'cm'))
+
+dub.heatmap.pl <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Pleuronectiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+                                    
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"))
+
+dub.heatmap.cl <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Clupeiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.35, "cm"),
+                                  legend.key.width = unit(3,'cm'))
+
+dub.heatmap.per <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Perciformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,2, "cm"),
+                                  legend.key.width = unit(3,'cm'))
+
+dub.heatmap.scom <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Scombriformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,2.1, "cm"),
+                                  legend.key.width = unit(3,'cm'))
+
+dub.heatmap.scorp <- ggplot(dub.time.summary %>% dplyr::filter(Order %in% "Scorpaeniformes "), aes(x=year, y=Stock.short, fill= prop)) + 
+                            xlab("") + ylab("")+
+                            facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + 
+                            geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+                            theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.5, "cm"),
+                                  legend.key.width = unit(3,'cm'))
+
+
+
+dub.heatmap <- cowplot::plot_grid(dub.heatmap.gad,dub.heatmap.pl,dub.heatmap.cl,dub.heatmap.per,dub.heatmap.scom,dub.heatmap.scorp,
+                                  nrow = 6,rel_heights = c(39,20,11,4,3,3))
+dub.heatmap
+
+save_plot("D:/Github/ICM/Figures/tuned/Doubling_time_heatmap_by_order.png",dub.heatmap,base_width = 20,base_height = 20)
+
+# Time series of lambdas....
+col.try <- rep(rep(c("black","blue","orange",'firebrick2','lightgreen'),3),20)
+#col.try <- rep(c(rep("black",3),rep("blue",3),rep('orange',3),rep('firebrick2',3),rep('lightgreen',3)),20)
+pty <- rep(c(rep(21,5),rep(22,5),rep(23,5)),20)
+#pty <- rep(rep(c(21:23),5),20)
+
+lambda.ts.plt <- ggplot(res.lambda.final.6,aes(y=lam.fish,x=year,group=Stock.short,color=Stock.short,shape = Stock.short,fill = Stock.short)) +
+                            geom_point(size=4) +
+                            geom_smooth(method='gam',formula = y ~ s(x, bs = "cs", fx = TRUE, k = 5),se=F) + 
+                            #scale_y_log10(name = "lambda") +
+                            facet_wrap(~G.Species,scales='free_y') +
+                            scale_color_manual(name = "Stock",values = col.try) + scale_shape_manual(name = "Stock",values = pty) +
+                            scale_fill_manual(name = "Stock",values = col.try)+
+                            guides(colour = guide_legend(ncol = 1))+
+                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm'))
+#lambda.ts.plt
+save_plot("D:/Github/ICM/Figures/tuned/lambda_timeseries_6.png",lambda.ts.plt,base_width = 12,base_height = 10)
+
+
+lambda.dec.plt <- ggplot(res.lambda.final.6,aes(y=med.lam,x=as.factor(decade))) +
+                            geom_boxplot() + scale_y_log10()+
+                            xlab("Decade") + ylab("Lambda") + 
+                            geom_point(aes(x=as.factor(decade),y=lm.spec.mn),color='blue',shape=8,fill='blue')+
+                            #scale_x_continuous(breaks=seq(1940,2020,by=10))+
+                            geom_hline(yintercept = 1,linetype='dashed') +
+                            facet_wrap(~G.Species,scales='free_y') 
+save_plot("D:/Github/ICM/Figures/tuned/lambda_by_decade_6.png",lambda.dec.plt,base_width = 12,base_height = 12)
+
+
+
+
+
 gen.heatmap.ne <- ggplot(pop.dam %>% dplyr::filter(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + 
                                               xlab("") + ylab("")+  
                                               facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + 
@@ -1152,8 +1215,6 @@ gen.heatmap
 
 save_plot("D:/Github/ICM/Figures/tuned/gen_heatmap.png",gen.heatmap,base_width = 20,base_height = 17)
 
-
-# Lifetime reproductive success (no fishing)
 r0.heatmap.ne <- ggplot(pop.dam %>% dplyr::filter(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
                                     xlab("") + ylab("")+
                                     facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + 
@@ -1183,15 +1244,6 @@ r0.heatmap <- cowplot::plot_grid(r0.heatmap.pac,r0.heatmap.nw,r0.heatmap.ne,nrow
 r0.heatmap
 
 save_plot("D:/Github/ICM/Figures/tuned/r0_heatmap.png",r0.heatmap,base_width = 20,base_height = 17)
-
-r0.boxplt <- ggplot(pop.dam.6) +
-                            geom_boxplot(aes(y=R0.opt,x=Stock.no.species))  + 
-                            xlab("") + scale_y_log10(name = "Lifetime Reproductive Output")+
-                            facet_wrap(~G.Species,scales = 'free')+
-                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',plot.margin = margin(0,0.5,0,0.5, "cm"),
-                                  axis.title.y = element_text(margin = margin(r = 30)))
-
-save_plot("D:/Github/ICM/Figures/tuned/R0_boxplot_no_fish_6_species.png",r0.boxplt,base_width = 12,base_height = 10)
 
 # Other figures....
 
@@ -1307,3 +1359,12 @@ save_plot("D:/Github/ICM/Figures/tuned/R0_boxplot_no_fish_6_species.png",r0.boxp
 # #                                    theme(axis.text.x = element_text(angle=45,hjust = 1))
 # # bycatch.plt                                   
 #                        
+
+# Doubling time for the rest of the stocks...
+
+# dub.heatmap.no.6 <- ggplot(dub.time.summary %>% dplyr::filter(!Species %in% six.species), aes(x=year, y=Stock.short, fill= prop)) + 
+#                               xlab("") + ylab("")+                                    
+#                               #facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + 
+#                               scale_x_continuous() +
+#                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
+#                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.68, "cm"))
