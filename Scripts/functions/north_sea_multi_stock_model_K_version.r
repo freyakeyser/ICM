@@ -23,11 +23,11 @@ for(fun in funs)
 }
 
 #source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
-load(file = "C:/Users/Owner/Documents/Github/ICM/Results/model_inputs.Rdata")
+load(file = "d:/Github/ICM/Results/model_inputs.Rdata")
 #load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
-loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
+loc <- 'D:/GitHub/ICM'
 
-load(file = paste0(loc,"/Results/NS_tuned_sim_results.RData"))
+load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata"))
 
 ########################### End Section 1 Loading  ###################################### End Section 1 Loading ###############################################
 
@@ -73,16 +73,16 @@ for(i in  Stocks)
   years.ns[[i]] <- years.tmp[[i]]
   vpa.ns[[i]] <- vpa.tmp[[i]]
   ages.ns[[i]] <- ages.tmp[[i]]
-  num.ns[[i]] <- ASR_long %>% dplyr::filter(Stock == i,type == "Num")
-  num.ns[[i]] <- num.ns[[i]] %>% dplyr::filter(age != "tot")
-  waa.ns[[i]] <- ASR_long %>% dplyr::filter(Stock == i,type == "WA")
+  num.ns[[i]] <- ASR_long |> collapse::fsubset(Stock == i & type == "Num")
+  num.ns[[i]] <- num.ns[[i]] |> collapse::fsubset(age != "tot")
+  waa.ns[[i]] <- ASR_long|> collapse::fsubset(Stock == i & type == "WA")
   bm.ns[[i]] <- data.frame(Year = num.ns[[i]]$Year,Stock = num.ns[[i]]$Stock,age = num.ns[[i]]$age,
                            bm = num.ns[[i]]$value*waa.ns[[i]]$value,
                            num = num.ns[[i]]$value)
   pnm.ns[[i]] <- pnm.tmp[[i]]
   rem.ns[[i]] <- rem.tmp[[i]]
   rem.ns[[i]]$Stock <- i
-  mx.ns[[i]]  <- tuned.res[[i]]$fec
+  mx.ns[[i]]  <- for.tune.all[[i]]$fecund.opt
   am.ns[[i]] <- am.tmp[[i]]
 }
 
@@ -211,15 +211,10 @@ Ks <- NULL
 for(j in 1:n.sims)
 {
   st.time <- Sys.time()
-  # This picks the years of the mx and nm samples, note all stocks sample from the same year, tho it is separate for mx and nm
-  # They are all the same length so it doesn't matter what I pick for the nrow() bit.
-
+  # This is getting the K for the stock for a particular simulation
   Kss <- K.stock[[j]]
   # Now get the fecundity and natural mortality matricies for the simulations
 
-
-  # OK, so I have everything I need now to run the simulations forward.
-  
   res.ts <- NULL
   res.r <- NULL
   for(s in Stocks)
@@ -230,7 +225,7 @@ for(j in 1:n.sims)
     age.mat <- am.ns[[s]]
     mx <- mx.ns[[s]] 
     #vpa.abund <- vpa.ns[[s]]
-    weight.age <- waa.ns[[s]]
+    #weight.age <- waa.ns[[s]]
     ages <- ages.ns[[s]]
     Ks <- Kss[[s]]
     vpa.ns  <- bm.best$num.stock[bm.best$Stock == s]
@@ -239,9 +234,9 @@ for(j in 1:n.sims)
     tst <- for.sim(years,
                    mat.age = age.mat,
                    nm = -(log(1-prop.nat.mort)),
-                   w.age = weight.age,
+                   w.age = NULL,
                    ages = ages,
-                   rems =  list(fm.stock[[s]]$mn,0), #fm,
+                   rems =  list(fm.stock[[s]]$mn,fm.stock[[s]]$sd), #fm,
                    fecund = mx,
                    N.start = N.start,
                    pop.model = 'bounded_exp', 
@@ -251,15 +246,15 @@ for(j in 1:n.sims)
                    sd.nm = 0,
                    sd.wt = 0,
                    sd.fecund = 0,
-                   CC = 5*Ks,
-                   B0 = max(vpa.ns,na.rm=T))
-ggplot(tst$Pop) + geom_line(aes(x=years,y=abund,color=sim,group=sim)) + #geom_hline(yintercept = K)
+                   K = 5*Ks)
+    
+#ggplot(tst$Pop) + geom_line(aes(x=years,y=abund,color=sim,group=sim)) 
 
 
 res.ts[[s]] <- data.frame(tst$Pop[,-2],stock = s,sim= j)
 res.r[[s]] <- data.frame(tst$r[,-3],stock=s,sim=j)
 
-  } # end 
+  } # end stock look 
   
   ts.unpack[[j]] <- do.call('rbind',res.ts)
   r.unpack[[j]] <- do.call('rbind',res.r)

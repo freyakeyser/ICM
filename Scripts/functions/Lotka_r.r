@@ -36,10 +36,10 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(is.null(L.inf) | is.null(K)) stop("You need to specify K and L infinity from von B to use the Then-Pauly method")
   }
   
-  if(is.null(wt.at.age))
-  {
-    if(is.null(L.inf) | is.null(K) | is.null(t0)) stop("You need to specify K, L infinity, and t0 if weight at age vector isn't specified")
-  }
+  # if(is.null(wt.at.age))
+  # {
+  #   if(is.null(L.inf) | is.null(K) | is.null(t0)) stop("You need to specify K, L infinity, and t0 if weight at age vector isn't specified")
+  # }
   
   if(fecund.c == 'eggs')
   {
@@ -249,12 +249,12 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
     # Convert to survivorship vector
-    si <- 1-lx 
+    si <- 1-unlist(lx)
     # Set the first age class to be 1
     lx<-1
     # And get cumulative survivorship for the stock
     for(s in 2:(length(si))) lx[s]<-lx[s-1]*si[s-1]
-    
+    #browser()
     if(!is.null(nrow(mx.t))) mx <- mx.t[j,] else mx <- mx.t
     # Now we are cooking!
     junk<-optimize(lower=-0.99,upper=5,f = eulerlotka)
@@ -268,5 +268,5 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   lx.mat <- do.call('rbind',lx.tmp)
   
   
-  return(list(res=res,mx=mx.mat,lx=lx.mat,spr = spr,mat.ogive = mat.ogive,wt.at.age = W.age,nat.mort = nat.mort))
+  return(list(res=res,mx=mx.mat,lx=lx.mat,spr = spr,mat.ogive = mat.ogive,nat.mort = nat.mort))
 }

@@ -49,6 +49,9 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
 
+  # If the functions haven't been loaded into the environment yet load them here....
+  if(!any(grepl("for.sim",objects())==T))
+  {
   # Download the function to go from inla to sf
   funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
@@ -61,8 +64,9 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
   
-  source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
-  source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  #source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
+  #source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  }
   
   #st.time <- Sys.time()
   # In case I try to be lazy and shorten names...
@@ -84,7 +88,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
     if(i == 1)
     {
-      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=NULL,fecund=fecund,
                     L.inf = L.inf,K = K,t0 = t0,  sim = sim,
                     a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
                     a.fec.len = a.fec.len, b.fec.len = b.fec.len,
@@ -97,7 +101,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     #browser()
     # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
-      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=w.age,fecund=fecund,
+      junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=NULL,fecund=fecund,
                     L.inf = L.inf,K = K,t0 = t0, 
                     a.len.wgt = a.len.wgt, b.len.wgt = b.len.wgt, 
                     a.fec.len = a.fec.len, b.fec.len = b.fec.len,
@@ -150,6 +154,9 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       fm <- c(NA,rlnorm((n.years-1),log(mn.fm),sd.r))
     } # end if(rems[[1]] == "R_based")
     
+    # Get your fishing mortality...
+    if(as.numeric(rems[[1]])) fm <- log(rlnorm(n.years,rems[[1]],rems[[2]]))
+    
     for(y in 2:n.years)
     {
       #browser()
@@ -157,17 +164,18 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(sim == 'retro') removals.next <- rems[y]
       if(sim == 'project') 
       {
+        
         # Adding in harvest controls, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is all stuff we can tweak.
-        if(pop.last < 0.2*K) removals.next <- 0.1*fm[y]*pop.last
-        if(pop.last >= 0.2*K) removals.next <- fm[y]*pop.last
+        if(pop.last < 0.2*K[y-1]) removals.next <- 0.1*fm[y]*pop.last
+        if(pop.last >= 0.2*K[y-1]) removals.next <- fm[y]*pop.last
       } 
      
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
       # The exponential model
       if(pop.model == 'exponential') 
       {
-        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,fishery.timing = 'beginning')
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- exp.res$Pop.current
       } # end if(pop.model == 'exponential') 
@@ -175,11 +183,11 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       if(pop.model == 'bounded_exp') 
       {
         #browser()
-        if(pop.last > K & r.up > 0) 
+        if(pop.last > K[y-1] & r.up > 0) 
         {
           r.up <- rlnorm(1,0,0.02)-1
         }
-        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up,removals = removals.next,direction,fishery.timing = 'beginning')
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up)
         #browser()
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- exp.res$Pop.current
@@ -188,7 +196,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # If you are running the logistic model
       if(pop.model == 'logistic')
       {
-        log.res <- for.proj(option = "logistic",pop.last = pop.last,K=K,r=r.up,removals = removals.next)
+        log.res <- for.proj(option = "logistic",pop.last = pop.last,K=K,r=r.up)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- min(log.res$Pop.current)
       }
