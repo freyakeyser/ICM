@@ -25,13 +25,12 @@ for(fun in funs)
 #source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
 #load(file = "C:/Users/Owner/Documents/Github/ICM/Results/model_inputs.Rdata")
 #load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
-loc <- 'C:/Users/Owner/Documents/GitHub/ICM'
+loc <- 'D:/GitHub/ICM'
+load(file = paste0(loc,"/Results/model_inputs.Rdata"))
 
-load(file = paste0(loc,"/Results/NS_tuned_sim_results.RData"))
-
+load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata"))
+Stocks <- Stocks[grep("WGNSSK",Stocks)] # The stocks we want
 ########################### End Section 1 Loading  ###################################### End Section 1 Loading ###############################################
-
-
 
 
 
@@ -40,7 +39,7 @@ load(file = paste0(loc,"/Results/NS_tuned_sim_results.RData"))
 
 yrs.all <- 1990:2016 # These are the years we have data for all 10 stocks
 n.yrs.proj <- 25
-n.sims <- 100
+n.sims <- 5
 sd.nm <- 0.1
 sd.mx <- 0.1
 # Now we can make a super simple or complex climate effect.  As proof of concept this will change either the fecundity
@@ -68,10 +67,10 @@ fm.sub <- NULL
 for(i in Stocks)
 {
   # Subset data
-  yrs.t <- years.tmp[[i]]
-  nm.t <- pnm.tmp[[i]]
-  mx.t <- mx.tmp[[i]]
-  vpa.t <- vpa.tmp[[i]]
+  yrs.t <- for.tune.all[[i]]$res$year
+  nm.t <- 1-exp(-for.tune.all[[i]]$nm.opt)
+  mx.t <- for.tune.all[[i]]$fecund.opt
+  vpa.t <- for.tune.all[[i]]$res$est.abund
   ages.t <- ages.tmp[[i]]
   waa.t <- waa.tmp[[i]]
   mat.t <- am.tmp[[i]]
@@ -132,11 +131,11 @@ colnames(fm.cor.ts) <- c('years',"Melanogrammus aeglefinus","Trisopterus esmarki
                           "Pollachius virens", "Gadus morhua", "Scopthalmus maximus",
                           "Pleuronectes platessa 7d", "Pleuronectes platessa 4,20", "Solea solea 7d", "Solea solea 4",
                           "Merlangius merlangus")
-fm.cor.mat <- cor(fm.cor.ts[,-1])
+fm.cor.mat <- cor(fm.cor.ts[,-1],use="complete.obs")
 
 p.fm.cor <- ggpairs(data = fm.cor.ts[,-1])
 
-save_plot("C:/Users/Owner/Documents/Github/ICM/Figures/NS_sims/NS_fm_correlation_plot.png",p.fm.cor,base_width = 22,base_height = 22)
+save_plot(paste0(loc,"/ICM/Figures/NS_sims/NS_fm_correlation_plot.png"),p.fm.cor,base_width = 22,base_height = 22)
 
 
 
@@ -180,14 +179,14 @@ r.unpack <- NULL
 for(j in 1:n.sims)
 {
 st.time <- Sys.time()
-# This picks the years of the mx and nm samples, note all stocks sample from the same year, tho it is separate for mx and nm
-# They are all the same length so it doesn't matter what I pick for the nrow() bit.
-samp.mx <- round(runif(n.yrs.proj,1,nrow(mx.sub[[1]])))
-samp.nm <- round(runif(n.yrs.proj,1,nrow(mx.sub[[1]])))
 
 # Now get the fecundity and natural mortality matricies for the simulations
 for(i in Stocks)
 {
+  # This picks the years of the mx and nm samples, note all stocks sample from the same year, tho it is separate for mx and nm
+  samp.mx <- round(runif(n.yrs.proj,1,nrow(mx.sub[[i]])))
+  samp.nm <- round(runif(n.yrs.proj,1,nrow(mx.sub[[i]])))
+  
   mx.tp <- NULL
   nm.tp <- NULL
   age.tp <- NULL
@@ -211,7 +210,7 @@ for(i in Stocks)
     corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
-    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
+    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,abs(corr))+1
   }# end Functional Group 1 if statement
   
   # More hacky
@@ -223,7 +222,7 @@ for(i in Stocks)
     corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS 4-6- 3a_Pollachius_virens"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
-    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
+    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,abs(corr))+1
   } # end Functional Group 2 if statement
   
   # Final hacky section of this hacky section
@@ -236,7 +235,7 @@ for(i in Stocks)
     corr <- mx.cor.mat[row.sel,col.sel]
     mx.d.tmp <- mx.dev[["ICES-WGNSSK_NS 7d_Pleuronectes_platessa"]]-1
     # Toss in a little variability in the correlation, this weakens the correlation a little bit (approx 10%), but does a pretty solid job.
-    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,corr)+1
+    mx.dev[[i]] <- rnorm(n.yrs.proj,mx.d.tmp,abs(corr))+1
   } # end Functional Group 3 if statement
 
   # Easy enough now to incorporate the above uncertainty to our data...
@@ -251,15 +250,15 @@ for(i in Stocks)
 
   # Now I can add a climate effect here to change mx and nm.  Ideally it would be driven by stock or functional group, but for first pass
   # We'll just play about with this for everyone...
-  if(c.effect < n.yrs.proj)
-  {
-    ce.mx <-  (climate.mx.effect/10)*(1:(n.yrs.proj-c.effect))
-    tmp.mx[[i]][c.effect:n.yrs.proj,] <- tmp.mx[[i]][c.effect:n.yrs.proj,] - ce.mx*tmp.mx[[i]][c.effect:n.yrs.proj,]
-    # Need to be careful here since we are on a proportional scale, lets go to instantaneous and convert back
-    ce.nm <-  (climate.nm.effect/10)*(1:(n.yrs.proj-c.effect)) # So we'll say this is instantaneous rate.
-    tmp.insta.nm <- -log(1-tmp.nm[[i]])
-    tmp.nm[[i]][c.effect:n.yrs.proj,] <- 1-exp(-(tmp.insta.nm[c.effect:n.yrs.proj,] + ce.nm*tmp.nm[[i]][c.effect:n.yrs.proj,]))
-  } # end if(c.effect < n.yrs.proj)
+  # if(c.effect < n.yrs.proj)
+  # {
+  #   ce.mx <-  (climate.mx.effect/10)*(1:(n.yrs.proj-c.effect))
+  #   tmp.mx[[i]][c.effect:n.yrs.proj,] <- tmp.mx[[i]][c.effect:n.yrs.proj,] - ce.mx*tmp.mx[[i]][c.effect:n.yrs.proj,]
+  #   # Need to be careful here since we are on a proportional scale, lets go to instantaneous and convert back
+  #   ce.nm <-  (climate.nm.effect/10)*(1:(n.yrs.proj-c.effect)) # So we'll say this is instantaneous rate.
+  #   tmp.insta.nm <- -log(1-tmp.nm[[i]])
+  #   tmp.nm[[i]][c.effect:n.yrs.proj,] <- 1-exp(-(tmp.insta.nm[c.effect:n.yrs.proj,] + ce.nm*tmp.nm[[i]][c.effect:n.yrs.proj,]))
+  # } # end if(c.effect < n.yrs.proj)
 }  # end for(i in Stocks)
 
 # OK, so I have everything I need now to run the simulations forward.
@@ -270,33 +269,34 @@ for(s in Stocks)
 {
   # The last year of data for all the stocks is 2016
   years <- 2016:(2017+n.yrs.proj-2)
-  prop.nat.mort <- tmp.nm[[s]] 
+  inst.nat.mort <- tmp.nm[[s]] # 
   age.mat <- tmp.mat[[s]]
   mx <- tmp.mx[[s]] 
   vpa.abund <- vpa.sub[[s]]
   weight.age <- tmp.waa[[s]]
   ages <- tmp.age[[s]]
   N.start <- vpa.abund[length(vpa.abund)]
-  K <- max(vpa.abund)
+  K <- max(vpa.abund,na.rm=T)
   fm <- unlist(fish.mort[fish.mort$stock == s,1:2]) # Mean and variance, is log-normally distributed.
   
   tst <- for.sim(years,
                  mat.age = age.mat,
-                 nm = -(log(1-prop.nat.mort)),
+                 nm = inst.nat.mort,
                  w.age = weight.age,
                  ages = ages,
-                 rems =  list("R_based",0.5), #fm,
+                 rems =  list("R_based",0), #fm,
                  fecund = mx,
                  N.start = N.start,
-                 pop.model = 'bounded_exp', K = K,
+                 pop.model = 'bounded_exp', K = rep(K,length(years)),
                  sim= "project",
                  n.sims = 1,
                  sd.mat = 0,
                  sd.nm = 0,
                  sd.wt = 0,
-                 sd.fecund = 0)
+                 sd.fecund = 0
+                 )
   #ggplot(tst$Pop) + geom_line(aes(x=years,y=abund)) + geom_hline(yintercept = K)
-  
+  for.proj(option = "logistic",pop.last = 10,K=20,r=0.6)
 
 res.ts[[s]] <- data.frame(tst$Pop[,-2],stock = s,sim= j)
 res.r[[s]] <- data.frame(tst$r[,-3],stock=s,sim=j)
@@ -338,7 +338,7 @@ quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 =
 
 
 # Two simple plots.
-p.sims <- ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim),alpha=0.02) +
+p.sims <- ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim),alpha=1) +
                              facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) + scale_x_continuous(breaks = seq(2010,2200,by=10)) 
 #save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_all_realizations_climate_starts_at_year_",c.effect,
 #                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims,base_height = 12,base_width = 20)
@@ -347,6 +347,15 @@ p.sims.quants <- ggplot(quants) + geom_line(aes(x=years,y=med)) + facet_wrap(~st
                                   geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') 
 #save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_quantiles_climate_starts_at_year_",c.effect,
 #                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims.quants,base_height = 12,base_width = 20)
+
+
+
+
+
+
+
+
+
 
 
 

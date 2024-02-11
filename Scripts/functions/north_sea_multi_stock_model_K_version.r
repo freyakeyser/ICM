@@ -40,7 +40,7 @@ load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata
 
 yrs.all <- 1990:2016 # These are the years we have data for all 10 stocks
 n.yrs.proj <- 25
-n.sims <- 5
+n.sims <- 100
 
 
 # OK, so I'm going to base past fishing mortality on what was observed in the past
@@ -71,7 +71,7 @@ ages.ns <- NULL
 for(i in  Stocks)
 {
   years.ns[[i]] <- years.tmp[[i]]
-  vpa.ns[[i]] <- vpa.tmp[[i]]
+  #vpa.ns[[i]] <- vpa.tmp[[i]]
   ages.ns[[i]] <- ages.tmp[[i]]
   num.ns[[i]] <- ASR_long |> collapse::fsubset(Stock == i & type == "Num")
   num.ns[[i]] <- num.ns[[i]] |> collapse::fsubset(age != "tot")
@@ -79,34 +79,15 @@ for(i in  Stocks)
   bm.ns[[i]] <- data.frame(Year = num.ns[[i]]$Year,Stock = num.ns[[i]]$Stock,age = num.ns[[i]]$age,
                            bm = num.ns[[i]]$value*waa.ns[[i]]$value,
                            num = num.ns[[i]]$value)
-  pnm.ns[[i]] <- pnm.tmp[[i]]
+  pnm.ns[[i]] <- 1-exp(-for.tune.all[[i]]$nm.opt)
+  mx.ns[[i]] <- for.tune.all[[i]]$fecund.opt
+  vpa.ns[[i]] <- for.tune.all[[i]]$res$est.abund
   rem.ns[[i]] <- rem.tmp[[i]]
   rem.ns[[i]]$Stock <- i
-  mx.ns[[i]]  <- for.tune.all[[i]]$fecund.opt
   am.ns[[i]] <- am.tmp[[i]]
 }
 
-ns.had <- "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus"
-years.ns[[ns.had]] <- years.ns[[ns.had]][-1:-7]
-pnm.ns[[ns.had]] <- pnm.ns[[ns.had]][-1:-7,]
-waa.ns[[ns.had]] <- waa.ns[[ns.had]][-1:-7,]
-#ages.ns[[ns.had]] <- ages.ns[[ns.had]][-1:-7]
-rem.ns[[ns.had]] <- rem.ns[[ns.had]][-1:-7,]
-mx.ns[[ns.had]] <- mx.ns[[ns.had]][-1:-7,]
-bm.ns[[ns.had]] <- bm.ns[[ns.had]] %>% filter(Year >= 1972)
-vpa.ns[[ns.had]] <- vpa.ns[[ns.had]][-1:-7]
-am.ns[[ns.had]] <- am.ns[[ns.had]][-1:-7,]
 
-ns.sole <- "ICES-WGNSSK_NS4 _Solea_solea"
-years.ns[[ns.sole]] <- years.ns[[ns.sole]][-1:-7]
-pnm.ns[[ns.sole]] <- pnm.ns[[ns.sole]][-1:-7,]
-waa.ns[[ns.sole]] <- waa.ns[[ns.sole]][-1:-7,]
-#ages.ns[[ns.sole]] <- ages.ns[[ns.sole]][-1:-7]
-rem.ns[[ns.sole]] <- rem.ns[[ns.sole]][-1:-7,]
-mx.ns[[ns.sole]] <- mx.ns[[ns.sole]][-1:-7,]
-bm.ns[[ns.sole]] <- bm.ns[[ns.sole]] %>% filter(Year >= 1971)
-vpa.ns[[ns.sole]] <- vpa.ns[[ns.sole]][-1:-7]
-am.ns[[ns.sole]] <- am.ns[[ns.sole]][-1:-7,]
 
 bm.tst <- do.call("rbind",bm.ns)
 
@@ -241,7 +222,7 @@ for(j in 1:n.sims)
                    N.start = N.start,
                    pop.model = 'bounded_exp', 
                    sim= "project",
-                   n.sims = 10,
+                   n.sims = 1,
                    sd.mat = 0,
                    sd.nm = 0,
                    sd.wt = 0,
@@ -250,7 +231,8 @@ for(j in 1:n.sims)
     
 #ggplot(tst$Pop) + geom_line(aes(x=years,y=abund,color=sim,group=sim)) 
 
-
+    
+    
 res.ts[[s]] <- data.frame(tst$Pop[,-2],stock = s,sim= j)
 res.r[[s]] <- data.frame(tst$r[,-3],stock=s,sim=j)
 
@@ -291,7 +273,7 @@ quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 =
 
 
 # Two simple plots.
-p.sims <- ggplot(ts.final) + geom_line(aes(x=years,y=abund,group = sim),alpha=0.8) +
+p.sims <- ggplot(ts.final ) + geom_line(aes(x=years,y=abund,group = sim,color=sim),alpha=0.8) +
   facet_wrap(~stock,scales = 'free_y') + ylim(c(0,NA)) + scale_x_continuous(breaks = seq(2010,2200,by=10)) 
 #save_plot(paste0("D:/Github/ICM/Figures/NS_sims/NS_all_realizations_climate_starts_at_year_",c.effect,
 #                 "_mx_decade_effect_",climate.mx.effect, "_nm_decade_effect_",climate.nm.effect,".png"),p.sims,base_height = 12,base_width = 20)

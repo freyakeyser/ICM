@@ -49,9 +49,6 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
 {
 
-  # If the functions haven't been loaded into the environment yet load them here....
-  if(!any(grepl("for.sim",objects())==T))
-  {
   # Download the function to go from inla to sf
   funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
@@ -66,7 +63,6 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   
   #source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
   #source("D:/Github/ICM/Scripts/functions/forward_project.r")
-  }
   
   #st.time <- Sys.time()
   # In case I try to be lazy and shorten names...
@@ -86,6 +82,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
   {
     # For the first run we use the mean estimate, for runs after that we add in all the uncertainty specified
     # For now I've only tested this using the stock assessment data, needs cleaned up for other options.
+    #browser()
     if(i == 1)
     {
       junk<-lotka.r(yrs = years,age.mat = mat.age,nat.mort = nm,ages=ages,wt.at.age=NULL,fecund=fecund,
@@ -155,7 +152,7 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
     } # end if(rems[[1]] == "R_based")
     
     # Get your fishing mortality...
-    if(as.numeric(rems[[1]])) fm <- log(rlnorm(n.years,rems[[1]],rems[[2]]))
+    if(is.numeric(rems[[1]])) fm <- rlnorm(n.years,log(rems[[1]]),rems[[2]])
     
     for(y in 2:n.years)
     {
@@ -196,9 +193,10 @@ for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,
       # If you are running the logistic model
       if(pop.model == 'logistic')
       {
-        log.res <- for.proj(option = "logistic",pop.last = pop.last,K=K,r=r.up)
+        #browser()
+        exp.res <- for.proj(option = "logistic",pop.last = pop.last,K=K[y-1],r=r.up)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
-        pop.last <- min(log.res$Pop.current)
+        pop.last <- min(exp.res$Pop.current)
       }
       if(pop.model == 'dec.rate')
       {
