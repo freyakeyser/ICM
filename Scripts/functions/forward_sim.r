@@ -41,28 +41,35 @@
 # dec.rate
 # sim
 # proj.sim
+# repo.loc    Where is your repo.  Deaults to pulling from online Github Repo using 'repo'.  If you put in the directory to point at
+#             like D:/Github/ICM that'll work, or you can go with 'preload', which means you have the necessary functions already loaded
 
 for.sim<-function(years,n.sims=1,mat.age = NULL,nm=NULL,w.age = NULL,ages =NULL,fecund = NULL,N.start = NULL,
                   sel,rems,N,u,pop.model = "exponential", sim = 'retro', proj.sim='dist',
                   dec.rate = NULL,
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
-                  sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0)
+                  sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0,repo.loc = 'repo')
 {
 
+  if(repo.loc == 'repo')
+  {
   # Download the function to go from inla to sf
   funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
-            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
-  )
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r")
+  
   # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
   for(fun in funs) 
   {
     download.file(fun,destfile = basename(fun))
     source(paste0(getwd(),"/",basename(fun)))
     file.remove(paste0(getwd(),"/",basename(fun)))
-  }
+  }} # close the load from repo....
   
-  #source("D:/Github/ICM/Scripts/functions/Lotka_r.r")
-  #source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  if(repo.loc != 'repo' & repo.loc != 'preload')
+  {
+  source(paste0(repo.loc,"/Scripts/functions/Lotka_r.r"))
+  source(paste0(repo.loc,"/Scripts/functions/forward_project.r"))
+  } # close the load from a location
   
   #st.time <- Sys.time()
   # In case I try to be lazy and shorten names...

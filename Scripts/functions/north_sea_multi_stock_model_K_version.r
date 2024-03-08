@@ -8,11 +8,12 @@ library(cowplot)
 library(ggthemes)
 # Set the base plot theme
 theme_set(theme_few(base_size = 14))
-
+options(scipen = 999)
 # Download the function to go from inla to sf
 funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/Lotka_r.r",
           "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_sim.r",
           "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
+          
 )
 # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
 for(fun in funs) 
@@ -24,9 +25,11 @@ for(fun in funs)
 
 #source("D:/Github/ICM/Scripts/functions/Lotka_r.r") # For testing purposes, delete when done
 load(file = "d:/Github/ICM/Results/model_inputs.Rdata")
+load(file = "C:/Users/Owner/Documents/Github/ICM/Results/model_inputs.Rdata")
+
 #load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
 loc <- 'D:/GitHub/ICM'
-
+loc <- "C:/Users/Owner/Documents/Github/ICM"
 load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata"))
 
 ########################### End Section 1 Loading  ###################################### End Section 1 Loading ###############################################
@@ -40,7 +43,7 @@ load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata
 
 yrs.all <- 1990:2016 # These are the years we have data for all 10 stocks
 n.yrs.proj <- 25
-n.sims <- 100
+n.sims <- 10
 
 
 # OK, so I'm going to base past fishing mortality on what was observed in the past
@@ -52,8 +55,9 @@ n.sims <- 100
 # fish.mort <- fish.mort[,c(2,3,1)] # reorder for below
 
 # SO now I want to get the carrying capacity and slice it up by stock
-
-Stocks <- Stocks[grep("WGNSSK",Stocks)]
+Stocks <- names(for.tune.all)
+Stocks <- Stocks[grep("NS",Stocks)]
+Stocks <- Stocks[Stocks != "ICES-WGHANSA_SP8abd_Sardina _pilchardus"]
 # Haddock in NS is busted before 1972, not sure why, but I'm chucking all that data here in a very sloppy way
 
 # So lets look at total abundance and total biomass in the system by year...
@@ -76,6 +80,7 @@ for(i in  Stocks)
   num.ns[[i]] <- ASR_long |> collapse::fsubset(Stock == i & type == "Num")
   num.ns[[i]] <- num.ns[[i]] |> collapse::fsubset(age != "tot")
   waa.ns[[i]] <- ASR_long|> collapse::fsubset(Stock == i & type == "WA")
+  if(i == "ICES-HAWG_NS_Ammodytes_dubius") waa.ns[[i]]$value <- waa.ns[[i]]$value/1000
   bm.ns[[i]] <- data.frame(Year = num.ns[[i]]$Year,Stock = num.ns[[i]]$Stock,age = num.ns[[i]]$age,
                            bm = num.ns[[i]]$value*waa.ns[[i]]$value,
                            num = num.ns[[i]]$value)
@@ -87,52 +92,63 @@ for(i in  Stocks)
   am.ns[[i]] <- am.tmp[[i]]
 }
 
-
+#checkers....
+#waa.tst <- do.call("rbind",waa.ns)
+#ggplot(waa.tst) + geom_histogram(aes(x=value)) + facet_wrap(~Stock, scales='free_x')
 
 bm.tst <- do.call("rbind",bm.ns)
 
-bm.tot <- bm.tst %>% dplyr::group_by(Stock,Year) %>% dplyr::summarise(bm = sum(bm,na.rm=T),
-                                                                      num = sum(num,na.rm=T))
+bm.tot <- bm.tst |> collapse::fgroup_by(Stock,Year) |> collapse::fsummarize(bm = sum(bm,na.rm=T),
+                                                                            num = sum(num,na.rm=T))
 
-eco.bm <- bm.tot %>% dplyr::group_by(Year) %>% dplyr::summarise(num = sum(num),bm = sum(bm))
+eco.bm <- bm.tot |> collapse::fgroup_by(Year) |> collapse::fsummarize(num = sum(num),bm = sum(bm))
 
-rem.tst <- do.call("rbind",rem.ns)
-# This isn't perfect, it's the fishing removals in numbers not biomass, but that is 
-# what we are modelling... should make biomass...
-fm.dat <- left_join(bm.tot,rem.tst,by=c("Stock",'Year'))
-# This seems ok, we want this as an exploitation rate
-fm.dat$exploit <- fm.dat$rem/fm.dat$num
+
 # Now all stocks start in 1990 so need to consider that...
 bm.final <- left_join(bm.tot,eco.bm,by=c("Year"))
 names(bm.final) <- c("Stock","Year","bm.stock","num.stock","num.total","bm.total")
 # Get proportions...
-bm.final <- bm.final %>% dplyr::mutate(bm.prop = bm.stock/bm.total,
+bm.final <- bm.final |> collapse::fmutate(bm.prop = bm.stock/bm.total,
                                        num.prop = num.stock/num.total)
 bm.final <- bm.final[bm.final$bm.stock > 0,]
-
-what.year <- bm.final %>% dplyr::group_by(Stock) %>% dplyr::summarize(min = min(Year),
+bm.final <- as.data.frame(bm.final)
+bm.final$avg.weight <- bm.final$bm.stock/bm.final$num.stock
+what.year <- bm.final |> collapse::fgroup_by(Stock) |> collapse::fsummarize(min = min(Year),
                                                                       max = max(Year))
 first.year <- max(what.year$min)
 last.year <- min(what.year$max)
 
-bm.best <- bm.final %>% dplyr::filter(Year %in% first.year:last.year)
+bm.best <- bm.final |> collapse::fsubset(Year %in% first.year:last.year & Stock == Stocks[1], bm.total, num.total,Year) 
+
+# Now I need to get fishign mortality right
+rem.tst <- do.call("rbind",rem.ns)
+# This isn't perfect, it's the fishing removals in numbers not biomass, but that is 
+# what we are modelling... should make biomass...
+fm.dat <- left_join(bm.final,rem.tst,by=c("Stock",'Year'))
+# This seems ok, we want this as an exploitation rate, getting closers, but will have to think about 
+# how this gets back to nubmers too...
+fm.dat$exploit <- (fm.dat$rem*fm.dat$avg.weight)/fm.dat$bm.stock
 
 # # Autocorrelation in K.
 K.cor <- pacf(log(bm.best$num.total))
+K.cor.bm <- pacf(log(bm.best$bm.total))
 # 
 
-# OK so now make a fake K time series, note the stock is irrlevant here as we're looking at total bm...
-N.target.sum <- bm.best %>% dplyr::filter(Stock == "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus") %>% 
-                           dplyr::summarise(sd = sd(log(num.total)),
+# OK so now make a fake K time series, note the stock is irrlevant here as we're looking at total numbers...
+N.target.sum <- bm.best |> collapse::fsummarise(sd = sd(log(num.total)),
                                             mn = mean(log(num.total)),
                                             med = median(log(num.total)))
+# Working on implementing using the biomass as K rather than nubmers...
+bm.target.sum <- bm.best |>   collapse::fsummarise(sd = sd(log(bm.total)),
+                                               mn = mean(log(bm.total)),
+                                               med = median(log(bm.total)))
 
 K.devs <- NULL
 cors <- NULL
 K.sims <- NULL
 for(i in 1:n.sims) 
 {
-   K.devs[[i]] <- as.data.frame(arima.sim(list(order = c(1,0,0), ar = K.cor$acf[1]), 
+   K.devs[[i]] <- as.data.frame(arima.sim(list(order = c(1,0,0), ar = K.cor.bm$acf[1]), 
                                                                  n = n.yrs.proj,
                                                                  sd = N.target.sum$sd))
   #K.devs[[i]] <- data.frame(x = rep(0,n.yrs.proj)) # Lets see what happens when it's fixed at a mean level.
@@ -140,7 +156,9 @@ for(i in 1:n.sims)
 }
 
 # For the moment, lets just cut the world up so each stock gets a fixed % of K bassed on their biomass
-prop.stock <- bm.best %>% dplyr::group_by(Stock) %>% dplyr::summarise(prop = mean(num.prop))
+prop.stock <- bm.final |> collapse::fgroup_by(Stock) |> collapse::fsummarize(prop = median(num.prop))
+prop.stock.bm <- bm.final |> collapse::fgroup_by(Stock) |> collapse::fsummarize(prop = median(bm.prop))
+
 # Now get this for each stock...
 K.stock <- NULL
 fm.stock <- NULL
@@ -150,9 +168,9 @@ tmp <- NULL
     tmp <- NULL
     for(s in Stocks)
     {
-      prop <- prop.stock %>% dplyr::filter(Stock == s)
+      prop <- prop.stock |> collapse::fsubset(Stock == s)
       tmp[[s]] <- prop$prop *as.numeric(K.sims[[i]])
-      if(i == 1) fm.stock[[s]] <- fm.dat %>% dplyr::filter(Stock ==s) %>% dplyr::summarise(mn = median(exploit,na.rm=T),
+      if(i == 1) fm.stock[[s]] <- fm.dat |> collapse::fsubset(Stock ==s) |> collapse::fsummarize(mn = median(exploit,na.rm=T),
                                                                                            sd = sd(log(exploit[exploit > 0]),na.rm=T))
     }
     K.stock[[i]] <- tmp
@@ -209,7 +227,7 @@ for(j in 1:n.sims)
     #weight.age <- waa.ns[[s]]
     ages <- ages.ns[[s]]
     Ks <- Kss[[s]]
-    vpa.ns  <- bm.best$num.stock[bm.best$Stock == s]
+    vpa.ns  <- bm.final$num.stock[bm.final$Stock == s]
     N.start <- vpa.ns[length(vpa.ns)]
     
     tst <- for.sim(years,
@@ -227,7 +245,8 @@ for(j in 1:n.sims)
                    sd.nm = 0,
                    sd.wt = 0,
                    sd.fecund = 0,
-                   K = 5*Ks)
+                   K = Ks,
+                   repo='preload')
     
 #ggplot(tst$Pop) + geom_line(aes(x=years,y=abund,color=sim,group=sim)) 
 
@@ -252,7 +271,7 @@ ts.final <- do.call("rbind",ts.unpack)
 ts.final$fm <- ts.final$removals/ts.final$abund
 r.final <- do.call("rbind",r.unpack)
 
-quants <- ts.final %>%  dplyr::group_by(years,stock) %>% dplyr::summarise(L.50 = quantile(abund,probs=c(0.25),na.rm=T),
+quants <- ts.final |>  collapse::fgroup_by(years,stock) |> collapse::fsummarize(L.50 = quantile(abund,probs=c(0.25),na.rm=T),
                                                                           med = median(abund,na.rm=T),
                                                                           U.50 = quantile(abund,probs=c(0.75),na.rm=T),
                                                                           fml.50 = quantile(fm,probs=c(0.25),na.rm=T),
@@ -287,6 +306,6 @@ p.sims.quants <- ggplot(quants) + geom_line(aes(x=years,y=med)) + facet_wrap(~st
 
 ### Section in progress, getting the K's and the bimoasses ##
 
-catch <- ASR_long %>% dplyr::filter(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Catch")             
-an.num <- num %>% dplyr::filter(age != 'tot') %>% dplyr::group_by(Year) %>% dplyr::summarise(nums = sum(value,na.rm=T))
-num <- ASR_long %>% dplyr::filter(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Num")
+catch <- ASR_long |> collapse::fsubset(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Catch")             
+an.num <- num |> collapse::fsubset(age != 'tot') |> collapse::fgroup_by(Year) |> collapse::fsummarize(nums = sum(value,na.rm=T))
+num <- ASR_long |> collapse::fsubset(Stock == "ICES-AFWG_NEA1-2_Gadus_morhua", type == "Num")

@@ -19,6 +19,7 @@ library(rio)
 library(ggthemes)
 library(cowplot)
 loc <- 'D:/GitHub/ICM'
+loc <- "C:/Users/Owner/Documents/GitHub/ICM/"
 
 
 source(paste0(loc,"/Scripts/functions/backwards_sim.R"))
@@ -57,6 +58,8 @@ ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$
 ASR_long <- ASR_trim %>%
   pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
   separate(col=name, into=c("type", "age"), sep = "\\.")
+
+
 
 ```
 
@@ -136,6 +139,7 @@ for(i in Stocks)
   nat.mort <-  ASR_sub %>% dplyr::filter(type=="NM") %>% dplyr::rename(NM=value) %>% dplyr::select(-type)
   abund <- ASR_sub %>% dplyr::filter(type=="Num") %>% dplyr::rename(Num=value) %>% dplyr::select(-type)
   weight.age <- ASR_sub %>% dplyr::filter(type=="WA") %>% dplyr::rename(WA=value) %>% dplyr::select(-type)
+  if(i == Stocks[30]) weight.age$WA <- weight.age$WA/1000
   removals <- ASR_sub %>% dplyr::filter(type=="Catch") %>% dplyr::rename(Catch=value) %>% dplyr::select(-type)
 
  # if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
@@ -385,145 +389,145 @@ saveRDS(object = for.ts.quants,file = paste0(loc,"/Results/forwards_sim_ts_quant
 ```{r, make-figs,echo=F, message=F, warning=F, fig.width=6, fig.height=4}
 
 # Now we can run the figures separately.
-# tuned.res <- readRDS(file = "D:/Github/ICM/Results/tuned_fits.Rds")
-back.ts <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_summaries.Rds")
-back.ts.quants <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_ts_quantiles_summaries.Rds")
-back.res <- readRDS(file = "D:/Github/ICM/Results/backwards_sim_results.Rds")
-load(file = "D:/Github/ICM/Results/model_inputs.Rdata")
+#tuned.res <- readRDS(file = paste0(loc,"/Results/tuned_fits.Rds"))
+back.ts <- readRDS(file = paste0(loc,"/Results/backwards_sim_ts_summaries.Rds"))
+back.ts.quants <- readRDS(file = paste0(loc,"/Results/backwards_sim_ts_quantiles_summaries.Rds"))
+back.res <- readRDS(file = paste0(loc,"/Results/backwards_sim_results.Rds"))
+for.res <- readRDS(file = paste0(loc,"/Results/forwards_sim_results.Rds"))
+for.ts <- readRDS(file = paste0(loc,"/Results/forwards_sim_ts_summaries.Rds"))
+for.ts.quants <- readRDS(file = paste0(loc,"/Results/forwards_sim_ts_quantiles_summaries.Rds"))
+ 
+loc <- "C:/Users/Owner/Documents/Github/ICM"
+load(file =  paste0(loc,"/Results/model_inputs.Rdata"))
+load(file = paste0(loc,"/Results/all_cleaned_forward_tune_summaries_fec_nm.Rdata"))
+
+Stocks <- unique(for.tunes$Stock)
 
 for(i in Stocks)
 {
   # Unpack the lists
-  tunes <- tuned.res[[i]] 
-  did.it.work <- back.ts[[i]] 
-  quants <- back.ts.quants[[i]] 
-  missing_rem <- mr.tmp[[i]] 
-  tst <- back.res[[i]]
+ #tunes <- tuned.res[[i]] 
+  did.it.work <- for.tunes |> collapse::fsubset(Stock == i) 
+  #quants <- back.ts.quants[[i]] 
+  #missing_rem <- mr.tmp[[i]] 
+ # tst <- back.res[[i]]
   
-  did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
+  #did.it.work$missing[did.it.work$years %in% missing_rem] <- "missing"
 
     # All the results in a plot
   p2 <- ggplot() +
-          geom_line(data=did.it.work, aes(x=years,y=abund,color=sim)) +
+          geom_line(data=did.it.work, aes(x=year,y=est.abund),color='blue') +
+          geom_line(data=did.it.work, aes(x=year,y=vpa.abund), color='black') +
           xlab("") +
           ylab("Abundance (1000s)") +
-          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') + scale_color_viridis_d(end = 0.75) +
-          ggtitle(i) +
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
+          ggtitle(i) #+
+          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  save_plot(plot = p2, filename = paste0(loc,"/Figures/tuned/", i, "/tuned_vs_vpa_", i, ".png"), base_width = 10,base_height = 8)
   # Same thing but functional boxplots
-  p3 <- ggplot() +
-          geom_line(data=quants, aes(x=years,y= med)) +
-          geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
-          geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          xlab("") + ylab("Abundance (1000s)") +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + #geom_vline()
-          ggtitle(i)+
-          geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_ribbon_", i, ".png"), base_width = 6,base_height = 4)
+  # p3 <- ggplot() +
+  #         geom_line(data=quants, aes(x=years,y= med)) +
+  #         geom_ribbon(data=quants, aes(x=years,ymax=U.50,ymin = L.50),alpha=0.5,fill='blue',color='blue') +
+  #         geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+  #         xlab("") + ylab("Abundance (1000s)") +
+  #         #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+  #         theme_few() + theme(legend.position = 'none') + #geom_vline()
+  #         ggtitle(i)+
+  #         geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/runs_vs_vpa_ribbon_", i, ".png"), base_width = 6,base_height = 4)
 
   # Plotting how the estimate of r changes over time (which you can do when we have time varying inputs (e.g. Wgt, M, or maturity at age)
-  p4 <- ggplot(tst$r) +
-          geom_line(aes(x=years,y=r,group=n.sims,color=n.sims)) +
+  p4 <- ggplot(did.it.work) +
+          geom_line(aes(x=year,y=lambda)) +
           xlab("") +
-          ylab("Lotka r") +
+          ylab("Lambda") +
           #scale_y_continuous(breaks = seq(0,1.5,by=0.1)) +
           #scale_x_continuous(breaks = seq(1960,2025,by=5)) +
           theme_few() + theme(legend.position = 'none') +
           scale_color_viridis_c(end = 0.75) +
           ggtitle(i)
-  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/raw/", i, "/lokta_r_", i, ".png"), base_width = 6,base_height = 4)
+  save_plot(plot = p4, filename = paste0(loc,"/Figures/tuned/", i, "/lambda_", i, ".png"), base_width = 10,base_height = 8)
 
 
   
   # Comparing our new time series with the old
-  p2 <- ggplot() +
-          geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res, aes(x=year,y=vpa.n),color='black') +
-          xlab("") +
-          ylab("Abundance (1000s)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/tunded_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
+  # p2 <- ggplot() +
+  #         geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+  #         geom_line(data=tunes$res, aes(x=year,y=vpa.n),color='black') +
+  #         xlab("") +
+  #         ylab("Abundance (1000s)") +
+  #         #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+  #         #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+  #         theme_few() + theme(legend.position = 'none') +
+  #         ggtitle(i) #+
+  #         #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # save_plot(plot = p2, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/tunded_vs_vpa_", i, ".png"), base_width = 6,base_height = 4)
   
   # Comparing the absolute miss from the tuned time series
-   p3 <- ggplot() +
-          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.n),color='red') +
-          xlab("") +
-          ylab("Difference in abundance (1000s)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) 
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_N_", i, ".png"), base_width = 6,base_height = 4)
+  #  p3 <- ggplot(did.it.work) +
+  #         #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+  #         geom_line( aes(x=year,y=diff.n),color='red') +
+  #         xlab("") +
+  #         ylab("Difference in abundance (1000s)") +
+  #         #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+  #         #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+  #         theme_few() + theme(legend.position = 'none') + 
+  #         ggtitle(i) 
+  #         #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # save_plot(plot = p3, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_N_", i, ".png"), base_width = 6,base_height = 4)
 
   # What percentage (mean) difference
-   p4 <- ggplot() +
-          #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.n),color='red') +
-          xlab("") +
-          ylab("Difference in abundance (%)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_N_", i, ".png"), base_width = 6,base_height = 4)
+  #  p4 <- ggplot() +
+  #         #geom_line(data=tunes$res, aes(x=year,y=lotka.n),color='blue') +
+  #         geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.n),color='red') +
+  #         xlab("") +
+  #         ylab("Difference in abundance (%)") +
+  #         #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+  #         #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+  #         theme_few() + theme(legend.position = 'none') + 
+  #         ggtitle(i) #+ ylim(c(-100,100))
+  #         #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # save_plot(plot = p4, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_N_", i, ".png"), base_width = 6,base_height = 4)
 
      # Difference in m's
-   p5 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=diff.m),color='red') +
-          xlab("") +
-          ylab("Difference in natural mortality (Instantaneous)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p5, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/diff_m_", i, ".png"), base_width = 6,base_height = 4)
-     # % Difference in m's
-   p6 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.m),color='red') +
-          xlab("") +
-          ylab("Difference in natural mortality (%)") +
-          #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
-          #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') + 
-          ggtitle(i) #+ ylim(c(-100,100))
-          #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p6, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_m_", i, ".png"), base_width = 6,base_height = 4)
-
-   p7 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=mn.m),color='blue') +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=vpa.m),color='black') +
+   p5 <- ggplot(did.it.work) +
+          geom_line( aes(x=year,y=mean.nm),color='blue') +
+          geom_line( aes(x=year,y=mean.vpa.nm),color='black') +
           xlab("") +
           ylab("Natural mortality (Instantaneous)") +
           #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) #+ ylim(c(-100,100))
           #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p7, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Nat_M_", i, ".png"), base_width = 6,base_height = 4)
- 
-     p8 <- ggplot() +
-          geom_line(data=tunes$res[-1,], aes(x=year,y=r),color='blue') +
+  save_plot(plot = p5, filename = paste0(loc,"/Figures/tuned/", i, "/Nat_mort_", i, ".png"), base_width = 10,base_height = 8)
+     # % Difference in m's
+  #  p6 <- ggplot() +
+  #         geom_line(data=tunes$res[-1,], aes(x=year,y=per.diff.m),color='red') +
+  #         xlab("") +
+  #         ylab("Difference in natural mortality (%)") +
+  #         #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
+  #         #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
+  #         theme_few() + theme(legend.position = 'none') + 
+  #         ggtitle(i) #+ ylim(c(-100,100))
+  #         #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
+  # save_plot(plot = p6, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/per_diff_m_", i, ".png"), base_width = 6,base_height = 4)
+
+    p6 <- ggplot(did.it.work) +
+          geom_line( aes(x=year,y=mean.fec),color='blue') +
+          geom_line( aes(x=year-1,y= mean.vpa.fec),color='black') +
           xlab("") +
-          ylab("Lotka r") +
+          ylab("Recruits (Number) per spawner (kg female)") +
           #geom_line(data=did.it.work %>% dplyr::filter(sim == "VPA"),aes(x=years,y=abund),color='black',size=2) +
           #scale_y_continuous(breaks = seq(0,3e6,by=5e5)) + scale_x_continuous(breaks = seq(1960,2025,by=5)) +
-          theme_few() + theme(legend.position = 'none') +
-          ggtitle(i) #+
+          theme_few() + theme(legend.position = 'none') + 
+          ggtitle(i) #+ ylim(c(-100,100))
           #geom_text(data=did.it.work[did.it.work$missing=="missing",], aes(x=years, y=abund, label="?"))
-  save_plot(plot = p8, filename = paste0("D:/Github/ICM/Figures/tuned/", i, "/Lotka_r_", i, ".png"), base_width = 6,base_height = 4)
-     
+  save_plot(plot = p6, filename = paste0(loc,"/Figures/tuned/", i, "/Fecundity_", i, ".png"), base_width = 10,base_height = 8)
+  
+  
 }
 
 
