@@ -26,7 +26,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
                    nm=NULL,fecund = NULL,fm = NULL,N.init = NULL,abund.ts = NULL,abund.age = NULL,catch.age = NULL)
 {
   # Download the function to go from inla to sf
-  funs <- c(#"https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple.lotka.r",
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple.lotka.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
             
@@ -39,9 +39,9 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
   
-  source("D:/Github/ICM/Scripts/functions/simple_Lotka_r.r")
-  source("D:/Github/ICM/Scripts/functions/forward_project.r")
-  source("D:/Github/ICM/Scripts/functions/backwards_project.r")
+  #source("D:/Github/ICM/Scripts/functions/simple_Lotka_r.r")
+  #source("D:/Github/ICM/Scripts/functions/forward_project.r")
+  #source("D:/Github/ICM/Scripts/functions/backwards_project.r")
   
   require(optimx)  || stop("Please load the 'optimx' package which you'll need for the optimations to run")
   
@@ -104,7 +104,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     # we want to use the previous years. This is all handled by the y.index happily.
     #removals.next <- rems[y]
     # Going to line up the r with the 'previous' year, so the r in column 2020 is the r used to move between 2020 and 2021 (in either direction)
-    lotka.est <- simple.lotka.r(Z = z.tmp,fecund=fecund.tmp,ages=ages)
+    lotka.est <- simple.lotka.r(mort = z.tmp,fecund=fecund.tmp,ages=ages)
     
     r.est = lotka.est$res
     
@@ -201,20 +201,20 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
         # Calculate the lotka both direction and figure out which way is making the fit better...
         if(tuner %in% c('fm','nm','z'))
         {
-          lotka.inc <- simple.lotka.r(Z = z.dec,fecund=fecund.tmp,ages=ages)
-          lotka.dec <- simple.lotka.r(Z = z.inc,fecund=fecund.tmp,ages=ages)
+          lotka.inc <- simple.lotka.r(mort = z.dec,fecund=fecund.tmp,ages=ages)
+          lotka.dec <- simple.lotka.r(mort = z.inc,fecund=fecund.tmp,ages=ages)
         } # end fm/nm tuner
           
         if(tuner == 'fecund') 
         {
-          lotka.inc <- simple.lotka.r(Z = z.tmp,fecund=fecund.inc,ages=ages)
-          lotka.dec <- simple.lotka.r(Z = z.tmp,fecund=fecund.dec,ages=ages)
+          lotka.inc <- simple.lotka.r(mort = z.tmp,fecund=fecund.inc,ages=ages)
+          lotka.dec <- simple.lotka.r(mort = z.tmp,fecund=fecund.dec,ages=ages)
         } # end fecund tuner
           
           if(tuner == 'fec_nm') 
           {
-            lotka.inc <- simple.lotka.r(Z = z.dec,fecund=fecund.inc,ages=ages)
-            lotka.dec <- simple.lotka.r(Z = z.inc,fecund=fecund.dec,ages=ages)
+            lotka.inc <- simple.lotka.r(mort = z.dec,fecund=fecund.inc,ages=ages)
+            lotka.dec <- simple.lotka.r(mort = z.inc,fecund=fecund.dec,ages=ages)
           } # end fecund tuner  
           
         r.inc <- lotka.inc$res
@@ -389,7 +389,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
           
           #browser()  
           z.tmp <- nm.tmp + fm.tmp
-          lotka.tunes <- simple.lotka.r(Z = z.tmp,fecund=fecund.tmp,ages=ages)
+          lotka.tunes <- simple.lotka.r(mort = z.tmp,fecund=fecund.tmp,ages=ages)
           r.tunes <- lotka.tunes$res
         
           

@@ -486,15 +486,6 @@ So now I can try to do some tuning, both forwards and backwards, lets see what w
 
 load(file = paste0(loc,"/Results/model_inputs_all_ages.Rdata"))
 
-
-#DK PICK IT UP HERE#
-# OK So the problem isn't so much "high" recruitment events, it's years in which the population abundance jumps like crash, Stock 57 (ICES Haddock NS)
-# Is the best example, look at year 2005, it isn't a outlier in terms of numbers of recruits, but the population jump from 2004 to 2005 is huge and
-# thus it's those years that get us the crazy fecundity numbers, which can easily be ameliorated by having a small fecundity in the age classes
-# that aren't supposed to be mature yet.  Of course, is that BS, maybe!!  Ended the night running all the stocks trying to see what the changes so far brought about.
-
-back.tune.all.res <- NULL
-back.tune.summary <- NULL
 for.tune.all.res <- NULL
 for.tune.summary <- NULL
 for(i in Stocks)
@@ -558,23 +549,7 @@ for(i in Stocks)
    
    N.end <- all.abund[length(all.abund)]
    
-   # fast.back.tune <- fast.tunes(years,
-   #                         tuner='fm',
-   #                         step.size = 0.01, # Make sure n.steps is even please!!
-   #                         abund.ts = all.abund,
-   #                         ages=ages,
-   #                         nm = -(log(1-prop.nat.mort)),
-   #                         fecund = mx,
-   #                         fm = fs,
-   #                         abund.age = full.abund, 
-   #                         catch.age = full.rem, 
-   #                         N.init = N.end,
-   #                         direction= 'backwards'
-   #                         )
-   # 
-   # back.tune.all.res[[i]] <- fast.back.tune
-   # back.tune.tmp <- data.frame(fast.back.tune$res,Stock = i)
-   # back.tune.summary[[i]] <- back.tune.tmp
+ 
    
 }
 
@@ -587,12 +562,6 @@ for(i in Stocks)
 # ICES-WGCSE_IS6a-7b-7j_Dicentrarchus _labrax Lotka error
 # ICES-HAWG_CS 6a- 7b-7c_Clupea_harengus # lotka error
 
-# Fixed...
-#ICES-HAWG_NS_Ammodytes_dubius Overshoot
-# ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii  Overshoot
-#ICES-WGNSSK_NS 4-7d,20_Gadus_morhua Overshoot
-# ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus Overshoot
-# ICES-WGCSE_ISbc-ek_Melanogrammus_aeglefinus  Overshoot
 
 #saveRDS(for.tune.summary,"D:/Github/ICM/Results/forwards_fully_tuned_summary_z.Rds")
 #saveRDS(for.tune.all.res,"D:/Github/ICM/Results/forwards_fully_tuned_all_res_z.Rds")

@@ -1,4 +1,4 @@
-# here we project forward, should be fairly straightforward tweak of the backward simulation function
+# Here we project forward, should be fairly straightforward tweak of the backward simulation function
 
 # All the data you need to make it dance...
 # years:          The years you are running the backwards calculation for
