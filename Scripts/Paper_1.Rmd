@@ -24,6 +24,21 @@ loc <- 'D:/GitHub/ICM'
 
 source(paste0(loc,"/Scripts/functions/tuning_sim_fast.R"))
 
+# Download the functions we'll need from github
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple_Lotka_r.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r",
+            "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/tuning_sim_fast.R",
+            
+  )
+  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+  for(fun in funs) 
+  {
+    download.file(fun,destfile = basename(fun))
+    source(paste0(getwd(),"/",basename(fun)))
+    file.remove(paste0(getwd(),"/",basename(fun)))
+  }
+
 # Choose 5 ICES stocks that we have the necessary data for
 #ASR <- read_xlsx("../Data/ASR_2018.xlsx" sheet = "ICES")
 ASR1 <- read.csv(paste0(loc,"/Data/ICM_data_NE_atlantic_stocks.csv"))

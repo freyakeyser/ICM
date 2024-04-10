@@ -1,32 +1,31 @@
-# Here we take the ideas from the backwards projections but 'tune' them to the 'known' biomass by adjusting either the fecundity or survivorship variables iteratively until
-# the biomass in the current year is withing X% of the actual biomass.
+# This function is the workhorse to make the model 'fit' to the observed time series, to do so we adjust the fecundity or survivorship variables iteratively until
+# the observed population abundance is within X% of the VPA model.
 
 # All the data you need to make it dance...
 # years:          The years you are running the backwards calculation for
-# abund.ts:        The abundance time series from the assessment
-
-# tuner:          What are we tuning, the fecundity "f", or natural mortality 'm', or both 'b'
-# rems            Removals from the fishery in a given year.
 # step.size:      How big is the difference (proportional) in the simulation step.  Default = 0.05 which is about a 5% change for each step
-
+# tuner:          What are we tuning, the fecundity "f", or natural mortality 'm', or both 'b'
 # direction       Allow for forwards and backwards simulations
-# What we need for the Lotka.r function...
-# fecund:      How are you estimating fecundity. If a vector it is the number of recruits produced by the average individual in the age classes. 
-#              If a matrix the rows are different simulations. Also have options to set fecund = 'eggs' which we can use if we can get an estimate of egg mortality
-#              fecund = 'SPR' uses the spawner per recruit metric, to get this to work we need to know how many recruits there are in a given year
-#              We could also let this vary by year, but we'll need to go 3-D array or something for that
-# nm:             Natural mortality, this wants the instantaneous natural mortality, not the proportional. There are several options here....
-#                 You can enter a vector of instantaneous natural moralities, just put a single number of all ages, or put in a character
-#                 string that will tell the function to calculate the natural mortality based on life history data. If a matrix the rows are different simulations
-#                 we could also let this vary by year, but we'll need to go 3-D array or something for that
-# ages:       Ages...
-
+# ages:           The age classes of your population
+# nm:             Natural mortality, this wants the instantaneous natural mortality, not the proportional. Should be a matrix the rows are different years
+#                 and the columns are the different ages.
+# fecund:         Fecundity is the number of recruits produced by the average individual in the age classes.  Should be a matrix the rows are different years
+#                 and the columns are the different ages.
+# fm:             Fishing mortality, should be a matrix with the columns being the age classes and rows being years. Should be instantaneous fishing mortality
+# N.init          The abundance in year 1
+# abund.ts:       The abundance time series from the assessment
+# abund.age       The abundance by age, should be a matrix with rows being years and columns being age classes
+# catch.age       The catch by age, should be a matrix with rows being years and columns being age classes. This is in numbers not biomass
+# preload:        if you have already loaded the functions you need...
 
 fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ages = NULL,
-                   nm=NULL,fecund = NULL,fm = NULL,N.init = NULL,abund.ts = NULL,abund.age = NULL,catch.age = NULL)
+                   nm=NULL,fecund = NULL,fm = NULL,N.init = NULL,abund.ts = NULL,abund.age = NULL,catch.age = NULL,preload=T)
 {
-  # Download the function to go from inla to sf
-  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple.lotka.r",
+  
+  if(preload==F)
+  {
+  # Download the functions we'll need from github
+  funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple_Lotka_r.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
             "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r"
             
@@ -38,7 +37,9 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     source(paste0(getwd(),"/",basename(fun)))
     file.remove(paste0(getwd(),"/",basename(fun)))
   }
+  } # end if(preload==F)
   
+  # Uncomment these lines if troubleshooting, you'll need to change the directories.
   #source("D:/Github/ICM/Scripts/functions/simple_Lotka_r.r")
   #source("D:/Github/ICM/Scripts/functions/forward_project.r")
   #source("D:/Github/ICM/Scripts/functions/backwards_project.r")
@@ -52,8 +53,10 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
   min.age <- min(ages)
   # Now these all run from age 0 not
   ages <- 0:max(ages)
+  # Making a dataframe for later.
   res <- data.frame(year = years,vpa.abund = N.init, est.abund = NA, diff= NA,per.diff = NA,lambda=NA,lambda.vpa.init = NA,
                     removals = NA,removals.init = NA,mean.fec=NA,mean.vpa.fec = NA,mean.nm = NA,mean.vpa.nm = NA)
+  # making sure objects are nicely formated
   fecund.ts <- data.frame(fecund)
   nm.ts <- data.frame(nm)
   fm.ts <- data.frame(fm)
@@ -65,23 +68,21 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
   tot.catch <- rowSums(catch.age.ts,na.rm=T)
   mn.fm.age <- colMeans(fm.ts,na.rm=T)
   mn.catch <- mean(tot.catch,na.rm=T)
-  # Here I try to make a fast fitting version of the previous model...
   
+  # an index to move through the years
   if(direction == 'backwards') y.index <- (n.years-1):1 # Starting at the second last year of data makes the indexing below way more consistent between directions
   if(direction == 'forwards')  y.index <- 1:(n.years-1) # Stop at the second last year of data
-  
+  # Get the initial abundance
   N.up <- N.init
-
+  # Now move through the years making the model fit the VPA results.
   for(y in y.index)
   {
-   #if(y %in% c(27)) browser()
     print(paste0("Year = ",years[y]))
-    #if(y %in% c(43,39,38)) browser()
     pop.est <- N.up
     # The first step is to fit the default lotka.r values
     # When going forwards we use everything in the 'current' year to project to next year
     # When going backwards we use everything in the 'previous' year to project from the next year
-    
+    # Getting the data we need to start the year
     nm.tmp <- nm.init <- nm[y,]
     fecund.tmp <- fecund.init <-  fecund[y,]
     fm.tmp <- fm.init <- fm[y,]
@@ -90,139 +91,148 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     tot.catch.tmp <- tot.catch.init <- sum(catch.age.tmp)
     abund.age.tmp <- abund.age.ts[y,]
     
-    # If claiming no fishing, make there be a little bit of fishing so we have something to tweak.
+    # If claiming no fishing, make there be a little bit of fishing so we have something to tweak if we want to.
+    # I've set it to be 1% of the mean fishing mortality, so this will be tiny (F of 0.4 would be 0.004)
+    # FIX: Do we need to do this?
     if(max(fm.tmp,na.rm=T) == 0)
     {
       fm.tmp <- 0.01*mn.fm.age 
       catch.age.tmp <- (1-exp(-fm.tmp)) * abund.age.tmp
       tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
     }
-    #browser() 
-    # DK Note: So for our removals time series, we put the removals between y+1 and y 
+    
+    # FIX: So for our removals time series, we put the removals between y+1 and y 
     # down as year y+1.  We can change this, but that's how this is set up at the moment.
     # So when going forwards we want to use the current year index, but when going backwards
     # we want to use the previous years. This is all handled by the y.index happily.
-    #removals.next <- rems[y]
     # Going to line up the r with the 'previous' year, so the r in column 2020 is the r used to move between 2020 and 2021 (in either direction)
+    
+    # Here's is where the magic happens and we get our estiamte of population growth for the year based on the mortality and fecundity info
     lotka.est <- simple.lotka.r(mort = z.tmp,fecund=fecund.tmp,ages=ages)
-    
-    r.est = lotka.est$res
-    
-    # For extremes, get away from that bad estimate area fast as it is numerical instability territory!
-    # if(r.est < -0.995) 
-    # {
-    #   fecund.tmp <- 1.5*fecund.tmp
-    #   nm.tmp <- nm.tmp/1.5
-    # }
-    # Then we run the model 1 year (either backwards or forwards) and see how well it fits.
-    
+    # Pull out the estimate from this
+    #browser()
+    r.est = lotka.est$res$r
+ 
+    # If going backwards we do the back.projection
     if(direction == 'backwards')
     {
+        # Do the projection, using the exponential model (because we have the 'real' estimate of r)
         exp.res <- back.proj(option = "exponential",pop.next = pop.est,r=r.est)
+        # get the abundance
         pop.step <- exp.res$Pop.current
+        # calculate the difference and % difference
         diff.org <- abund.ts[y] - pop.step
         per.diff.org <- 100*((pop.step - abund.ts[y])/abund.ts[y])
     } # end if(direction == 'backwards')
     
-    # And forwards 
+    # If going forwards we do the forward projection
     if(direction == 'forwards')
     {
       #browser()
+        # Do the projection, using the exponential model (because we have the 'real' estimate of r)
         exp.res <- for.proj(option = "exponential",pop.last = pop.est ,r=r.est)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
+        # Update the abundance
         pop.step <- exp.res$Pop.current
+        # calculate the difference and % difference
         diff.org <- abund.ts[y+1] - pop.step
         per.diff.org <- 100*((pop.step - abund.ts[y+1])/abund.ts[y+1])
     } # end if(direction == 'forwards')
+    # rename the diff and % difference objects
     diff <- diff.org
     per.diff <- per.diff.org
-    # So now we compare that value to the 'real' value from the vpa
-    #if(y %in% 3:7) browser()
     
+    
+    # So now we compare that value to the 'real' value from the vpa
     #Initial conditions
-      count =0
-      last.per.diff <- 1e6 # Make it ridiculous high to make sure we get started...
-      # Run this until one of these becomes false.
-      get.better <- T
-      big.diff <- T
-      close.enough <- T
-      while(get.better && big.diff &&  close.enough) # && ()
+    count =0
+    last.per.diff <- 1e6 # Make it ridiculous high to make sure we get started...
+    # Run this until one of these becomes false.
+    get.better <- T    # get.better is making sure we are going the right way
+    big.diff <- T      # big.diff means we are far away so we can make a big change
+    not.close.enough <- T  # Not close enough means we are too far away from correct so we keep going.
+    # So as long as these three things are TRUE we are in this while. This while is the 'it's a big difference' while
+    while(get.better && big.diff &&  not.close.enough) 
+    {
+      if(last.per.diff == per.diff) stop("You broke something the percent differences aren't changing.")
+      # Update
+      last.per.diff <- per.diff
+      # indexing...
+      count = count + 1
+      # Depending on how you decided to 'tune' depends which if we pop into
+      # For the first step we need to figure out what direction to go, thus for count = 1 we check decline and increase and have a decently big step size.
+      if(count == 1)
       {
-        #browser()
-        if(last.per.diff == per.diff) stop("You broke something the percent differences aren't changing.")
-        
-        last.per.diff <- per.diff
-        # indexing...
-        count = count + 1
-        if(count == 1)
+        # if varying fecundity do this...
+        if(tuner %in% c('fecund',"fec_nm"))
         {
-          
-          if(tuner %in% c('fecund',"fec_nm"))
-          {
           fecund.inc <- fecund.tmp * (1+5*step.size)
           fecund.dec <- fecund.tmp / (1+5*step.size)
-          } # end fecund tuner
+        } # end if tuner is fecund or both
         
-          if(tuner %in% c('nm','z',"fec_nm"))
+        # If varying natural mortality go in here, note that 
+        if(tuner %in% c('nm','z',"fec_nm"))
+        {
+          nm.inc <- nm.tmp * (1+5*step.size)
+          nm.dec <- nm.tmp / (1+5*step.size)
+          if(tuner %in% c('nm',"fec_nm"))
           {
-            nm.inc <- nm.tmp * (1+5*step.size)
-            nm.dec <- nm.tmp / (1+5*step.size)
-            if(tuner %in% c('nm',"fec_nm"))
-            {
-              z.inc <- nm.inc + fm.tmp
-              z.dec <- nm.dec + fm.tmp
-            }
-          } # end nm tuner
+            z.inc <- nm.inc + fm.tmp
+            z.dec <- nm.dec + fm.tmp
+          } # end if tuner is nm or both
+          } # end if tuner is nm, z, or both
           
+          # If varying f go in here
           if(tuner %in% c('fm','z'))
           {
-            #browser() 
             fm.dec <- fm.tmp / (1+5*step.size)
             catch.age.dec <- (1-exp(-fm.dec)) * abund.age.tmp
             catch.dec <- sum(catch.age.tmp,na.rm=T)
             fm.inc <- fm.tmp * (1+5*step.size)
             catch.age.inc <- (1-exp(-fm.inc)) * abund.age.tmp
             catch.inc <- sum(catch.age.tmp,na.rm=T)
-
+            # if only tweaking fishing mortality
             if(tuner == 'fm')
             {
             z.inc <- nm.tmp + fm.inc
             z.dec <- nm.tmp + fm.dec 
-            }
-          } #end fm tuner
+            } # end the fishing mortality tuner 
+          } #end tuner if varying fishing mortality
           
+          # If tweaking both f and natural mortality (note this grabs the natural mortality and fishing mortalities from the above if loops)
           if(tuner == 'z')
           {
             z.inc <- nm.inc + fm.inc
             z.dec <- nm.dec + fm.dec 
-          }
-          #browser()
-        
-        # Calculate the lotka both direction and figure out which way is making the fit better...
-        if(tuner %in% c('fm','nm','z'))
-        {
-          lotka.inc <- simple.lotka.r(mort = z.dec,fecund=fecund.tmp,ages=ages)
-          lotka.dec <- simple.lotka.r(mort = z.inc,fecund=fecund.tmp,ages=ages)
-        } # end fm/nm tuner
-          
-        if(tuner == 'fecund') 
-        {
-          lotka.inc <- simple.lotka.r(mort = z.tmp,fecund=fecund.inc,ages=ages)
-          lotka.dec <- simple.lotka.r(mort = z.tmp,fecund=fecund.dec,ages=ages)
-        } # end fecund tuner
-          
+          } # end tuner is total mortality
+
+          # Because we are in count 1, we calculate the lotka both directions and figure out which way is making the fit better...
+          # what we run depends on our tuner...
+          if(tuner %in% c('fm','nm','z'))
+          {
+            lotka.inc <- simple.lotka.r(mort = z.dec,fecund=fecund.tmp,ages=ages)
+            lotka.dec <- simple.lotka.r(mort = z.inc,fecund=fecund.tmp,ages=ages)
+          } # end fm/nm tuner
+            
+          if(tuner == 'fecund') 
+          {
+            lotka.inc <- simple.lotka.r(mort = z.tmp,fecund=fecund.inc,ages=ages)
+            lotka.dec <- simple.lotka.r(mort = z.tmp,fecund=fecund.dec,ages=ages)
+          } # end fecund tuner
+            
           if(tuner == 'fec_nm') 
           {
             lotka.inc <- simple.lotka.r(mort = z.dec,fecund=fecund.inc,ages=ages)
             lotka.dec <- simple.lotka.r(mort = z.inc,fecund=fecund.dec,ages=ages)
-          } # end fecund tuner  
+          } # end fecund & nm tuner  
+            
+          r.inc <- lotka.inc$res$r
+          r.dec <- lotka.dec$res$r
           
-        r.inc <- lotka.inc$res
-        r.dec <- lotka.dec$res
-        #browser()
-        # Backwards
-        if(direction == 'backwards')
-        {
+          # If doing a backwards simulation we see how close we got to the 'vpa' abundance using the back project function
+          if(direction == 'backwards')
+          {
+            # Get your population estimates by increasing r and decreasing r
             exp.inc <- back.proj(option = "exponential",pop.next = pop.est,r=r.inc)
             pop.est.inc <- exp.inc$Pop.current
             exp.dec <- back.proj(option = "exponential",pop.next = pop.est,r=r.dec)
@@ -232,11 +242,12 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             per.diff.inc <- 100*((pop.est.inc - abund.ts[y])/abund.ts[y])
             diff.dec <- abund.ts[y] - pop.est.dec
             per.diff.dec <- 100*((pop.est.dec - abund.ts[y])/abund.ts[y])
-        } # end if(direction == 'backwards')
-        
-        # And forwards
-        if(direction == 'forwards')
-        {
+          } # end if(direction == 'backwards')
+          
+          # If doing a forwards simulation we see how close we got to the 'vpa' abundance using the forwards project function
+          if(direction == 'forwards')
+          {
+            # Get your population estimates by increasing r and decreasing r
             exp.inc <- for.proj(option = "exponential",pop.last = pop.est ,r=r.inc)
             if(exp.inc$Pop.current < 0) exp.inc$Pop.current =0 # don't let it drop below 0
             pop.est.inc <- exp.inc$Pop.current
@@ -249,13 +260,14 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             per.diff.inc <- 100*((pop.est.inc - abund.ts[y+1])/abund.ts[y+1])
             diff.dec <- abund.ts[y+1] - pop.est.dec
             per.diff.dec <- 100*((pop.est.dec - abund.ts[y+1])/abund.ts[y+1])
-        } # end if(direction == 'forwards')
+          } # end if(direction == 'forwards')
         
        
-        # we are getting better by increasing r, i.e. either incresing fecundity or decreasing F or M
+        # we are getting better by increasing r, i.e. either increasing fecundity or decreasing F or M
         if(abs(per.diff.inc) < abs(per.diff.dec))
         {
           going <- 'up' # up means increasing r
+          # now pick the 'correct' new values of the tuned parameters as appropriate
           if(tuner %in% c('fecund',"fec_nm")) fecund.tmp <- fecund.inc
           if(tuner %in% c('nm','z',"fec_nm"))     nm.tmp <- nm.dec
           if(tuner %in% c('fm','z'))    
@@ -264,11 +276,11 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             catch.age.tmp <- catch.age.dec
           }  
           per.diff <- per.diff.inc
-          #pop.tunes <- pop.est.inc
-          
+
         } else 
           {
             going <- 'down' # down means decreasing r
+            # now pick the 'correct' new values of the tuned parameters as appropriate
             if(tuner %in% c('fecund',"fec_nm")) fecund.tmp <- fecund.dec
             if(tuner %in% c('nm','z',"fec_nm"))    nm.tmp <- nm.inc
             if(tuner %in% c('fm','z'))    
@@ -279,12 +291,11 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             per.diff <- per.diff.dec
             #pop.tunes <- pop.est.dec
           } # end if else
-      
         } # end count ==1
-
+        
+        # OK, so we have our direction figured out, now we go off in that direction and optimize
         if(count > 1)
         {
-          #browser()
           # Increasing the population growth rate
           if(going == 'up')  
           {
@@ -292,24 +303,19 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
             if(tuner %in% c('nm','z',"fec_nm")) nm.tmp <- nm.tmp / (1+step.size)
             if(tuner %in% c('fm','z')) 
             {
-              #browser()
               fm.tmp <- fm.tmp / (1+step.size)
               catch.age.tmp <- (1-exp(-fm.tmp)) * abund.age.tmp
               tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
-              #fm.tmp <- -log(1-catch.age.tmp/abund.age.tmp)
-              #fixers <- which(is.na(fm.tmp))
-              #zeros <- which(fm.tmp == 0)
-              #fm.tmp[fixers] <- mean(as.numeric(fm.tmp[1,c(-zeros,-fixers)]),na.rm=T)
-              
             } # end if(tuner == 'fm') 
 
-            # Once r is big, we also turn down nm!!
+            # So once we have the ball rolling, let's see how close to correct we are
             if(count > 2)
             {
-              # So if we need to drop r (i.e. z is too high) I'm setting it up so that it changes fecundity if the biomass is off by more than 5%
+              # When the percent difference is > 5% we can take some relatively big steps to get closer
               if(abs(per.diff) > 5) 
               {
-                # Big steps and for everybody
+                # Go for big steps and for everybody, the numbers here seem arbitrary, but I set them to values that 
+                # quickly resulted in convergence without overshooting the optimum.
                 fec.ss <- nm.ss <- fm.ss <- 5*step.size
                 if(abs(per.diff)>15) fec.ss <- nm.ss <- fm.ss <- 3*fec.ss
                 if(tuner %in% c('fecund',"fec_nm")) fec.ss <- 10*step.size
@@ -324,8 +330,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
                   catch.age.tmp <- (1-exp(-fm.tmp)) * abund.age.tmp
                   tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
                 } # End don't do this if we just want to tune on fecundity and natural mortality
-                
-              }# end abs(per.diff > 30)
+              }# end abs(per.diff > 5)
             } # end if count > 2
           } # end if going is up.
           
@@ -340,18 +345,12 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
               fm.tmp <- fm.tmp * (1+step.size)
               catch.age.tmp <- (1-exp(-fm.tmp)) * abund.age.tmp
               tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
-              # catch.age.tmp <- catch.age.tmp * (1+(5*step.size))
-              # tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
-              # fm.tmp <- -log(1-catch.age.tmp/abund.age.tmp)
-              # fixers <- which(is.na(fm.tmp))
-              # zeros <- which(fm.tmp == 0)
-              # fm.tmp[fixers] <- mean(as.numeric(fm.tmp[1,c(-zeros,-fixers)]),na.rm=T)
-             
             } # end if(tuner == 'fm')
             # Once r is big, we also turn down nm!!
             if(count > 2)
             {
-              #Speed up convergence when we are far away
+              # Go for big steps and for everybody, the numbers here seem arbitrary, but I set them to values that 
+              # quickly resulted in convergence without overshooting the optimum.
               if(abs(per.diff) > 10) 
               {
                 fec.ss <- nm.ss <- fm.ss <- 2*step.size
@@ -360,12 +359,13 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
                 if(tuner %in% c('fm','z')) 
                 {
                   fm.ss <- 10*step.size
-                
+                  # Really far away means really big jump, if fishing mortality is super low we bump it up a bunch
+                  # only if we are tuning on z and fishing mortality
                   if(abs(per.diff) > 15)
                   {
                     fm.big.jump <- tot.catch.tmp < 0.1*mn.catch
                     if(fm.big.jump) fm.tmp <- 0.5*mn.fm.age else fm.ss <- 20*step.size
-                  } # end the bigger than 30 jump...
+                  } # end the bigger than 15% jump...
                 } # end the fm and z 
                 # Decrease fecundity when we need a big decrease in R 
                 fecund.tmp <- fecund.tmp/(1+fec.ss)  # if(tuner =='fecund')
@@ -376,23 +376,16 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
                   catch.age.tmp <- (1-exp(-fm.tmp)) * abund.age.tmp
                   tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
                 } # end the don't do it if only tuning on fec and nm.
-                  # catch.age.tmp <- catch.age.tmp * (1+(5*step.size))
-                  # tot.catch.tmp <- sum(catch.age.tmp,na.rm=T)
-                  # fm.tmp <- -log(1-catch.age.tmp/abund.age.tmp)
-                  # fixers <- which(is.na(fm.tmp))
-                  # zeros <- which(fm.tmp == 0)
-                  # fm.tmp[fixers] <- mean(as.numeric(fm.tmp[1,c(-zeros,-fixers)]),na.rm=T)
               }# end abs(per.diff > 30)
             } # end if count > 2
-
           } # end going down 
           
-          #browser()  
+          # the the total Z from the above, use that and fecundity and get the new lotka r estimate.
           z.tmp <- nm.tmp + fm.tmp
           lotka.tunes <- simple.lotka.r(mort = z.tmp,fecund=fecund.tmp,ages=ages)
-          r.tunes <- lotka.tunes$res
+          r.tunes <- lotka.tunes$res$r
         
-          
+        # Run this throught the backwards or forwards simulations as appropriate
         if(direction == 'backwards')
         {
           exp.tunes <- back.proj(option = "exponential",pop.next = pop.est,r=r.tunes)
@@ -402,7 +395,6 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
           per.diff <- per.diff.tunes
         } # end if(direction == 'backwards')
         
-          #browser()
         # And forwards
         if(direction == 'forwards')
         {
@@ -413,20 +405,26 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
           per.diff.tunes <- 100*((pop.tunes - abund.ts[y+1])/abund.ts[y+1])
           per.diff <- per.diff.tunes
         } # end if(direction == 'forwards')
-        
      
-        } # end if count >1
+      } # end if count >1
         print(paste0("Percent difference = ",round(per.diff))) 
         
-        #browser()
-      # some decision rules for the while....
+       
+        # Now we look at the results of the above to see if we can exist the while 'loop'.
+        # Basically we are looking to see if the simulations are improving, 
+        # if we are 'stuck' and if we are close enough to right to bail out of the while
+        # Get out of the while if the results are getting worse (we've gone past the optimum result)
         if(abs(per.diff) > abs(last.per.diff) ) get.better <- F
+        # Get out if the difference is less than 1% of the step size and we have run 3 steps, basically
+        # avoids infinite loops (stop if it doesn't do anything anymore)
         if((abs(abs(per.diff) - abs(last.per.diff))) < step.size/100 & count > 2) big.diff <- F
-        if(abs(per.diff)  < 5 & abs(per.diff - last.per.diff) < step.size*20 & count > 2) close.enough <- F
-      } # end while(abs(per.diff) > 1)
+        # If the % difference is < 5%, the absolute percent difference is less than 20 times our step size, and we have run through 3 steps
+        # Basically we are 'close enough
+        # FIX: 5% is arbitrary, we can change this, probably makes sense to be a function option.
+        if(abs(per.diff)  < 5 & abs(per.diff - last.per.diff) < step.size*20 & count > 2) not.close.enough <- F
+      } # end while(get.better && big.diff &&  not.close.enough)
       
-    #browser()
-      # If count = 1 then the original is the best fit!
+      # If the maximum count = 1 then the original is the best fit!
       if(max(count) == 1) 
       {
           r.tunes <- r.est
@@ -435,8 +433,9 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
           per.diff <- per.diff.org
           fecund.tmp <- fecund.init
           nm.tmp <- nm.init
-      }
+      } # end if(max(count) == 1) 
       
+    # Get the results tidied up when going forward, this is all about indices.
     if(direction == 'forwards')  
     {
       index <- which(years == years[y+1])
@@ -455,6 +454,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
       fm.ts[index,] <- fm.tmp
       z.ts[index,] <- z.tmp
     } # end forwards
+    # Get teh results tidied up properly when going backwards, this is all about indices.
     if(direction == 'backwards')
     {
       index <- which(years == years[y])
@@ -475,10 +475,7 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     res$est.abund[index] <- pop.tunes
     res$diff[index] <- diff.tunes
     res$per.diff[index] <- per.diff
-    #browser()
-    
-    
-    # 
+ 
     # Get the next N ready...
     N.up <- pop.tunes
     
