@@ -52,6 +52,8 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
   # In case I try to be lazy and shorten names...
   if(pop.model == 'exp') pop.model <- 'exponential'
   if(pop.model == 'log') pop.model <- 'logistic'
+  # If doing the projections we start from the year before the simulations period, so we add in the N.start year.
+  years <- c(min(years)-1,years)
   #Initialize a bunch of objects
   n.years<-length(years)
   Pop<-data.frame(abund = rep(NA,n.years*n.sims),sim = rep(1:n.sims,n.years),years = sort(rep(years,n.sims)))   
@@ -124,8 +126,8 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
       {
         # FIX: I've added in harvest controls for the projections, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is something to discuss and make customizable.
-        if(pop.last < 0.2*K[y-1]) removals.next <- 0.1*fm[y]*pop.last
-        if(pop.last >= 0.2*K[y-1]) removals.next <- fm[y]*pop.last
+        if(pop.last < 0.2*K[y-1]) removals.next <- 0.1*fm[y-1]*pop.last
+        if(pop.last >= 0.2*K[y-1]) removals.next <- fm[y-1]*pop.last
       } 
      
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
@@ -172,6 +174,7 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
       removals[y-1] <- removals.next 
 
     } #Loop through all the years.
+    #browser()
     # Extract the data
     Pop$abund[Pop$sim == i]<-Pop.vec
     Pop$removals[Pop$sim == i]<- c(removals,NA)
