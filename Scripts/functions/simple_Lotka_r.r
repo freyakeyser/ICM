@@ -37,7 +37,7 @@ simple.lotka.r<-function(yrs = 1,mort = NULL,fecund = NULL,ages = NULL)
     #browser()
     if(!is.null(nrow(fecund))) mx <- fecund[j,] else mx <- fecund
     # Now we are cooking!
-    junk<-optimize(lower=-0.99,upper=5,f = eulerlotka)
+    junk<-optimize(lower=-15,upper=15,f = eulerlotka)
     #browser()
     res[j,] <- c(yrs[j],junk$minimum)
     mx.tmp[[j]] <- mx

@@ -1,0 +1,22 @@
+---
+output:
+  pdf_document:
+    fig_caption: yes
+    extra_dependencies: float
+linkcolor: blue
+header-includes: \usepackage{float}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include=F, echo=F}
+knitr::opts_knit$set(eval.after = "fig.cap")
+knitr::opts_chunk$set(fig.pos = 'H')
+options(knitr.kable.NA = '')
+require(tidyverse)
+options(tinytex.verbose = TRUE)
+
+```
+
+
+

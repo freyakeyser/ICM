@@ -1,0 +1,91 @@
+---
+title: "ICM testing"
+output:
+  #pdf_document: default
+  #html_document: default
+  word_document: 
+    #reference_docx: template.docx
+editor_options:
+  chunk_output_type: console
+---
+
+The data is now available to test this on at least 81 stocks.  All of the NE Atlantic stocks (ICES) have been through the QA/QC process and we are happy with those data (Sept 1, 2022).  Let's see if we can get this to work on all the stocks with sufficient data... 
+
+
+
+```{r, load-stuff,echo=F, message=F, warning=F, fig.width=6, fig.height=4,include=F}
+# OK, so using the ICES assessments here's what we get for North Sea cod.
+library(readxl)
+library(tidyverse)
+library(rio)
+library(ggthemes)
+library(cowplot)
+library(gtable)
+library(viridis)
+theme_set(theme_few(base_size = 14))
+
+
+# The location of your data
+loc <- 'D:/GitHub/ICM'
+
+# If we already have the results don't re-run the models or load data we don't need.
+load.results <- T
+# What tunning model are you running or did you run!
+what.2.tune <- 'fec_nm'
+
+#source(paste0(loc,"/Scripts/functions/tuning_sim_fast.R"))
+
+# Download the functions we'll need from github
+funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple_Lotka_r.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/tuning_sim_fast.r"
+)
+  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+for(fun in funs) 
+{
+  download.file(fun,destfile = basename(fun))
+  source(paste0(getwd(),"/",basename(fun)))
+  file.remove(paste0(getwd(),"/",basename(fun)))
+}
+
+if(load.results==F)
+{
+  # Choose 5 ICES stocks that we have the necessary data for
+  #ASR <- read_xlsx("../Data/ASR_2018.xlsx" sheet = "ICES")
+  ASR1 <- read.csv(paste0(loc,"/Data/ICM_data_NE_atlantic_stocks.csv"))
+  ASR <- read.csv(paste0(loc,"/Data/ICM_data_NW_atlantic_stocks.csv"))
+  
+  
+  
+  ASR <- rbind(ASR1,ASR)
+  datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
+  
+  # Replace 0's in Num.tot with NA so the rest of this works as Freya designed it to...
+  ASR$Num.tot[ASR$Num.tot == 0] <- NA
+  # we want:
+  # Year, Num, WA, Catch, AM, NM, StockID, Management, Area, Order, Family, Genus, Species
+  ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
+                   grep(x=names(ASR), "WA"),
+                   grep(x=names(ASR), "Catch"),
+                   grep(x=names(ASR), "AM"),
+                   grep(x=names(ASR), "NM"))]
+  # Making all the data numeric that should be numeric
+  ASRdat <- apply(X = ASRdat, 2, as.numeric)
+  # Getting the species info back
+  ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
+  # And binding it all back together
+  ASR_trim <- cbind(ASRsp, ASRdat)
+  # need a unique ID for stock
+  #table(ASR_trim$Management, ASR_trim$Species)
+  ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
+  
+  ASR_long <- ASR_trim %>%
+    pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
+    separate(col=name, into=c("type", "age"), sep = "\\.")
+  
+  # Something is weird with the mentella stock, I'm going to drop it...
+  ASR_long <- ASR_long %>% dplyr::filter(Stock != "ICES-AFWG_DEEP1-2_Sebastes_mentella")
+}# end if load results
+```
+

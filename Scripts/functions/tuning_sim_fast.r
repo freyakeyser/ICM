@@ -4,7 +4,8 @@
 # All the data you need to make it dance...
 # years:          The years you are running the backwards calculation for
 # step.size:      How big is the difference (proportional) in the simulation step.  Default = 0.05 which is about a 5% change for each step
-# tuner:          What are we tuning, the fecundity "f", or natural mortality 'm', or both 'b'
+# tuner:          What are we tuning, options are 'fecund' for fecundity, 'fec_nm' for fecundity and natural mortality, 'z' for natural mortality and 
+#                 fishing mortality, 'nm' for natural mortality, 
 # direction       Allow for forwards and backwards simulations
 # ages:           The age classes of your population
 # nm:             Natural mortality, this wants the instantaneous natural mortality, not the proportional. Should be a matrix the rows are different years
@@ -112,6 +113,24 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     # Pull out the estimate from this
     #browser()
     r.est = lotka.est$res$r
+    # If the r.est is bonkers, we reduce fecundity until it isn't
+    while(r.est > 10) 
+    {
+      # if the lotka isn't converging set the age class fecundity to be 90% of what we had if tuning on fecundity
+      if(tuner %in% c("fecund","fec_nm")) fecund.tmp <- 0.9*fecund.tmp 
+      # if tuning on natural mortality increase that by 10%
+      if(tuner %in% c("nm","fec_nm",'z')) nm.tmp <- nm.tmp*1.1
+      # if tuning on z, increase fishing mortality by 10% too.
+      if(tuner == "z") fm.tmp <- fm.tmp*1.1
+      # If chaning nm or fm then we need a new z.tmp object that accounts for that
+      if(tuner != 'fecund') z.tmp <- nm.tmp + fm.tmp
+      
+      lotka.est <- simple.lotka.r(mort = z.tmp,fecund=fecund.tmp,ages=ages)
+      # Pull out the estimate from this
+      #browser()
+      r.est = lotka.est$res$r
+      print("lotka wasn't converging, we pre-tuned the tuner variables in steps of 10% until lotka converged")
+    }
  
     # If going backwards we do the back.projection
     if(direction == 'backwards')
@@ -154,7 +173,8 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     # So as long as these three things are TRUE we are in this while. This while is the 'it's a big difference' while
     while(get.better && big.diff &&  not.close.enough) 
     {
-      if(last.per.diff == per.diff) stop("You broke something the percent differences aren't changing.")
+      #if(y %in% 35:37) browser()
+      if(last.per.diff == per.diff & count > 2) stop("You broke something the percent differences aren't changing.")
       # Update
       last.per.diff <- per.diff
       # indexing...
