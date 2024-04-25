@@ -1,2 +1,19 @@
 # INTRODUCTION  {#intro}
 
+Intro – life history paragraph, environmental variation paragraph, management ties paragraph, goals. 
+
+theoretical expectations related to productivity and life history for various species (e.g. herring vs. Cod) (ties to regional variation in lifetime reproductive rates and doubling time).  
+
+Evidence for specific species to make use of environmental conditions – boom in recruitment.  
+
+How our understanding of productivity is used in a management context – projections, reference points, risk, (ties directly to density dependence figure).  
+Species-environment relationship – is it different from what we expect and how does that influence our capacity for management of exploited fishes.  
+
+The underappreciated influence of regional variation in determining recovery potential of exploited teleosts.  - can’t look at a single species and expect it will behave the same way.  
+
+
+Objectives
+  - Quantify the life history variability of exploited marine teleosts
+  - Explore regional and taxonomic correlates of life history variability
+  - Based on the observed life history, quantify the recovery potential of marine teleosts in the absence of fishing
+  

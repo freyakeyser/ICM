@@ -16,7 +16,9 @@ The discrete time Euler-Lotka was first proposed by Euler in 1760 (subsequently 
 $$
 1 = \sum_{x=\alpha}^{\omega} \lambda^{-x} s_x f_x dx
 $$
-Where $x$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_x$ is the survivorship to age $x$, and $f_x$ is the fecundity of individuals of age $x$. The discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945,@caswellMatrixPopulationModels2001]:
+Where $x$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_x$ is the survivorship to age $x$, and $f_x$ is the fecundity of individuals of age $x$. For stocks in which the minimum age is > 0, this may lead to a slight positive bias in the lambda estimate [@pardoMaximumIntrinsicRate2016].
+
+The discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945,@caswellMatrixPopulationModels2001]:
 
 $$
 
@@ -32,59 +34,74 @@ $$
 
 ## Life-Table Reconstruction (LITAR)
  
-The data necessary to obtain age specific estimates of fecundity and mortality are publicly available from the database  @charbonneauAgestructuredmarinefishdatabase2022.
-
+The data necessary to obtain initial age specific estimates of fecundity and mortality are publicly available from the database  @charbonneauAgestructuredmarinefishdatabase2022.
 
 The Euler-lotka equation requires the fecundity given as the number of offspring produced by each female in each age class. This can be estimated from the available recruitment, age at maturity, and biomass information. **Note there is no need to divide by 2 for females because we'd divide the recruits by 2 to get the number of females, and the spawning numbers by 2, which would just cancel out**.
 
-The number of spawners in year $t$ and age class $a$ ($SSN_{t,a}$) is the proportion of mature individuals ($Mat_{t,a}$) multiplied by the Number of individuals 
+The number of spawners in year $y$ and age class $a$ ($SSN_{y,a}$) is the proportion of mature individuals ($Mat_{y,a}$) multiplied by the Number of individuals 
 
 $$
-SSN_{t,a} = Mat_{t,a} N_{t,a}
+SSN_{y,a} = Mat_{y,a} N_{y,a}
 $$
-
-# NEED TO SORT OUT THE "NOMENCLATURE" AROUND LINING THESE UP RIGHT!
-
-The number of recruits produced per spawner $RPS_{t}$ is calculated as
+The number of recruits produced per kilogram of spawning biomass $RPS_{y}$ is calculated as
 
 $$
-RPS_{t+ra} = R_{t+ra} SSB_{t} 
+RPS_{y} = R_{y} SSB_{tot,(y-ra)} 
 $$
 
-Where $SSB_{t}$ is the total spawning stock biomass in year $t$ and $R_t$ is the number individuals in the youngest age class (hereafter referred to as recruits).  The spawner abundance ($SSB$) is offset by the age of the recruits ($ra$), for example, if the recruits are two-year olds, we assume that the recruits in 2010 were produced by the spawners in 2008. The number of recruits produced by each age class can then be calculated by multiplying the spawner biomass in each age class $S_{t,a}$ by the number of number of recruits produced per kilogram of SSB
+Where $SSB_{yot,y-ra}$ is the total spawning stock biomass in year $y$. $R_{y}$ is the number individuals in the youngest age class (hereafter referred to as recruits) offset temporally by the age of the recruits, for example, if the age of the recruits ($ra$) is 2 years , we assume that the recruits in 2010 were produced by the spawning stock biomass in 2008 ($SSB_{tot,y-ra}$).  The number of recruits produced by each age class ($RPA_{y,a}$) can then be calculated by multiplying the spawner biomass in each age class $SSB_{y-ra,a}$ by the number of number of recruits produced per kilogram of SSB
 
 $$
-RPA_{(t+ra),a} =  SSB_{t,a} RPS_{(t+ra),a}
+RPA_{y,a} =  SSB_{(y-ra),a} RPS_{y,a}
 $$
-This method assumes that there is no effect of age on reproductive success (i.e., each kilogram of spawning biomass contributes the same to the total total reproductive output, irrespective of their age). Finally, the fecundity is calculated as number of offspring produced by each individual in the population
+This method assumes that there is no effect of age on reproductive success (i.e., each kilogram of spawning biomass contributes the same to the total total reproductive output, irrespective of their age). Finally, the fecundity ($Fec_{y-1,a}$) is calculated as number of offspring produced by each individual in the population, this is offset by one year, as the recruits observed in year $y+1$ are produced in the Euler-Lotka formulation in year $y$.
 
 $$
-Fec_{t,a} =  RPA_{t,a} / SSN_{t,a}
+Fec_{y,a} =  RPA_{y+1,a} / SSN_{(y-ra+1),a}
 $$
-
 Due to challenges with separability in typical stock assessment models, natural mortality is often assumed for each age class, in some assessments it varies by age and over time, in other assessments it does not.  Irrespective of this, the stock assessment used in this analysis all provide an estimate of natural mortality by age and year, this value is typically an instantaneous rate and is convert to a proportional natural mortality for the Euler-Lotka model.  
 
 The data also contains the number of fish harvested by the fishery each year and for each age. This can be combined with the assessed numbers at age to get an estimate of fishing mortality in each year for each age.
 
 $$
-FM_{t,a} =  Catch_{t,a} / N_{t,a}
+FM_{y,a} =  Catch_{y,a} / N_{y,a}
 $$
-This is combined with the natural mortality to get a total mortality estimate ($Z_{t,a}$) for each age in each year 
+This is combined with the natural mortality to get a total mortality estimate ($Z_{y,a}$) for each age in each year 
 
 $$
-Z_{t,a} =  FM_{t,a} + NM_{t,a}
+Z_{y,a} =  FM_{y,a} + NM_{y,a}
 $$
 
 The fecundity, natural mortality, and fishing mortality estimates were then used to obtain an estimate of $\lambda$ for a given year from the Euler-Lotka equation and used to predict the abundance in the following year.
 
 $$
-N_{t+1} = \lambda N_{t}
+N_{y+1} = \lambda{y} N_{y}
 $$
-The result of this was compared to the abundance estimate from the stock assessment for the upcoming year ($N_{t+1}$). Where necessary, the fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{t+1}$) that was less than 5% different from the abundance estimates from the stock assessment (AVERAGE DIFFERNCE WAS 0.XX%). In this way the $\lambda$, fecundity, and natural mortality estimates are obtained for each year in which data are available.
+The result of this was compared to the abundance estimate from the stock assessment for the upcoming year ($N_{y+1}$). Where necessary, the fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was less than 5% different from the abundance estimates from the stock assessment (AVERAGE DIFFERNCE WAS 0.XX%). In this way the $\lambda$, fecundity, and natural mortality estimates are obtained for each year in which data are available.
 
 WONDER IF I HAVE THE "AVERAGE" DIFFERENCE of NM and FECUNDITY FROM THE ORIGINAL VALUES FROM THE ABOVE or is that opening up pandora's box.
 
 <!-- For consistency in the Euler-lotka estimates across all the stocks, the first age used in the analysis was 'age 0' (which is simply an estimate of abundance of fish in the year they were born). For some stocks this information is not available (see Table X, **possibly in an Appendix where we have meta-data**). For the stocks in which age 0 information is unavailable, an estimate of the abundance of the younger age classes were back calculated using average natural mortality provided for the youngest age class available. -->
 
+## Doubling Time
+
+Doubling time was calculated using a simulation approach in which the estimated fecundity and natural mortality for a year were sampled from the historically observed fecundity and natural natural mortality. The Euler-Lotka equation was used to estimate the population growth rate and this rate was used to adjust the population biomass accordingly.  The simulation was run for XX years with YY simulations, the percentage of the simulations in which the population size had doubled was recorded each year. If a population had doubled in size, it was removed from the simulation and recorded as having doubled for all subsequent years.
+
+## Lifetime Reproductive Success 
+
+The lifetime reproductive success ($R_0$) in the absence of fishing was calculated for each cohort in which fecundity and natural mortality were available for all age classes. This was calculated for each cohort as
+
+$$
+R_0 = \sum_{x=\alpha}^{\omega} s_x f_x
+$$
+
+*Here we are treating the plus group as effectively 'terminal', i.e., it assumes that after the last age class the individuals make no contribution, which means these values are probably a bit low, but at this age they really aren't making much of a contribution on average*. 
+
+## Generaion Time
+
+The generation time here is defined as the mean age of the spawners of the observed recruits in a cohort over its lifetime ($T_G$) in the absence of fishing was calculated for each cohort in which fecundity and natural mortality were available for all age classes. This was calculated for each cohort as.
 
 
+$$
+T_G = \frac{\sum_{x=\alpha}^{\omega} x s_x f_x}{\sum_{x=\alpha}^{\omega}  s_x f_x}
+$$

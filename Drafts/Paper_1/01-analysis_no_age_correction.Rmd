@@ -8,20 +8,22 @@ editor_options:
 
 if(load.results==F)
 {
-  Stocks <- ASR_long %>%
-                      dplyr::filter(!is.na(value)) %>%
-                      dplyr::group_by(Stock, type) %>%
-                      dplyr::summarize(count=length(unique(value))) %>%
-                      dplyr::group_by(Stock) %>%
-                      dplyr::summarize(types=length(unique(type))) %>%
-                      dplyr::filter(types==5) %>%
-                      dplyr::select(Stock)
-  
-  ASR_stocks <- ASR_long %>%
-                          dplyr::filter(Stock %in% Stocks$Stock) %>%
-                          dplyr::filter(!is.na(value)) %>%
-                          dplyr::arrange(Stock, Year, type, as.numeric(age))
-  
+  Stocks <- ASR.long |> 
+                      collapse::fsubset(!is.na(value)) |>
+                      collapse::fgroup_by(Stock, type) |>
+                      collapse::fsummarize(count=length(unique(value))) |>
+                      collapse::fgroup_by(Stock) |>
+                      collapse::fsummarize(types=length(unique(type))) |>
+                      collapse::fsubset(types==5) |>
+                      collapse::fselect(Stock)
+
+  ASR.tmp <- ASR.long 
+  ASR.tmp$age <- as.numeric(ASR.tmp$age)
+  ASR.stocks <- ASR.tmp |> 
+                          collapse::fsubset(Stock %in% Stocks$Stock) |>
+                          collapse::fsubset(!is.na(value)) |>
+                          collapse::roworder(Stock, Year, type, age)
+                          
   # print(Stocks)
   Stocks <- Stocks$Stock
   
@@ -39,7 +41,7 @@ if(load.results==F)
   NE.tmp <- NULL
   vpa.tmp <- NULL
   am.tmp <- NULL
-  mr.tmp <- NULL
+  #mr.tmp <- NULL
   abund.tmp <- NULL
   full.abund.tmp <- NULL
   full.rem.tmp <- NULL
@@ -47,17 +49,17 @@ if(load.results==F)
   for(i in Stocks)
   {
   print(i)
-  ASR_sub <- ASR_long %>%
-    dplyr::select(Year, Stock, type, age, value) %>%
-    dplyr::filter(Stock==i)
+  ASR.sub <- ASR.long |>
+    collapse::fselect(Year, Stock, type, age, value) |>
+    collapse::fsubset(Stock==i)
 
   
     # Dropping the first 7 years as the 8 year olds are all missing
-  if(i == "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus") ASR_sub <- ASR_sub |> collapse::fsubset(Year >= 1972)
-  # maxage <- max(as.numeric(ASR_sub$age[!is.na(ASR_sub$value)]))
-  # maxYear <- max(ASR_sub$Year[!is.na(ASR_sub$value)])
-  # minYear <- min(ASR_sub$Year[!is.na(ASR_sub$value)])
-  # forplot <- ASR_sub[as.numeric(ASR_sub$age) < (maxage+1) & ASR_sub$Year %in% minYear:maxYear,]
+  if(i == "ICES-WGNSSK_NS  4-6a-20_Melanogrammus_aeglefinus") ASR.sub <- ASR.sub |> collapse::fsubset(Year >= 1972)
+  # maxage <- max(as.numeric(ASR.sub$age[!is.na(ASR.sub$value)]))
+  # maxYear <- max(ASR.sub$Year[!is.na(ASR.sub$value)])
+  # minYear <- min(ASR.sub$Year[!is.na(ASR.sub$value)])
+  # forplot <- ASR.sub[as.numeric(ASR.sub$age) < (maxage+1) & ASR.sub$Year %in% minYear:maxYear,]
   # 
   # # summary plots
   # print(ggplot() + geom_line(data=forplot, aes(Year, value)) + facet_grid(type~as.numeric(age), scales="free_y") +
@@ -66,7 +68,7 @@ if(load.results==F)
   #         ggtitle(i)
   # )
   
-  age.mat <- ASR_sub %>% dplyr::filter(type=="AM") %>% dplyr::rename(AM=value) %>% dplyr::select(-type)
+  age.mat <- ASR.sub |> collapse::fsubset(type=="AM") |> dplyr::rename(AM=value) |> collapse::fselect(-type)
   # All of the age at maturities are NA in 0 and 1 year olds, so make them 0's, do that carefully just
   # in case that changes later...
   am.0s <- length(which((!is.na(age.mat$AM[age.mat$age ==0]))))
@@ -77,18 +79,18 @@ if(load.results==F)
   if(am.2s == 0) age.mat$AM[age.mat$age ==2] <- 0
   
   #if(am.1s | am.0s | am.2s > 0) print("Stop, you need to check the age at maturity for either age 0 or 1 as there is data in there.")
-  nat.mort <-  ASR_sub %>% dplyr::filter(type=="NM") %>% dplyr::rename(NM=value) %>% dplyr::select(-type)
-  abund <- ASR_sub %>% dplyr::filter(type=="Num") %>% dplyr::rename(Num=value) %>% dplyr::select(-type)
-  weight.age <- ASR_sub %>% dplyr::filter(type=="WA") %>% dplyr::rename(WA=value) %>% dplyr::select(-type)
+  nat.mort <-  ASR.sub |> collapse::fsubset(type=="NM") |> dplyr::rename(NM=value) |> collapse::fselect(-type)
+  abund <- ASR.sub |> collapse::fsubset(type=="Num") |> dplyr::rename(Num=value) |> collapse::fselect(-type)
+  weight.age <- ASR.sub |> collapse::fsubset(type=="WA") |> dplyr::rename(WA=value) |> collapse::fselect(-type)
   if(i == Stocks[30]) weight.age$WA <- weight.age$WA/1000
-  removals <- ASR_sub %>% dplyr::filter(type=="Catch") %>% dplyr::rename(Catch=value) %>% dplyr::select(-type)
+  removals <- ASR.sub |> collapse::fsubset(type=="Catch") |> dplyr::rename(Catch=value) |> collapse::fselect(-type)
 
  # if(i=="ICES-WGBFAS_BS 22-32_Sprattus_sprattus") removals$Catch <- removals$Catch/1000
   
-  data <- age.mat %>%
-    full_join(nat.mort) %>%
-    full_join(abund) %>%
-    full_join(weight.age) %>%
+  data <- age.mat |>
+    full_join(nat.mort) |>
+    full_join(abund) |>
+    full_join(weight.age) |>
     full_join(removals)
 
   # Aahh??  Is this NA dropping useful data, needed to quick fix the age at maturity data...
@@ -99,20 +101,23 @@ if(load.results==F)
   data$prop.nat.mort <- 1-exp(-data$NM)
   #prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))] <- 1-exp(-prop.nat.mort[,-which(names(prop.nat.mort) %in% c("Year", "Stock", "type"))])
 
-  rem <- data %>% dplyr::group_by(Year,.drop=F) %>% dplyr::summarize(rem=sum(Catch,na.rm=T)) #%>% dplyr::pull(rem)
   
-  missing_rem<- NULL
-  if(any(is.na(rem$rem))) 
-  {
-    missing_rem <- unique(data$Year)[which(is.na(rem$rem))]
-    rem$rem[is.na(rem$rem)] <- median(rem$rem, na.rm=T)
-  }
+  rem <- data |> collapse::fgroup_by(Year) |> collapse::fsummarize(rem=sum(Catch,na.rm=T)) #|> dplyr::pull(rem)
+  #rem <- data |> dplyr::group_by(Year,.drop=F) |> collapse::fsummarize(rem=sum(Catch,na.rm=T)) #|> dplyr::pull(rem)
+  
+  # Never run, so not doing anything.
+  # missing_rem<- NULL
+  # if(any(is.na(rem$rem))) 
+  # {
+  #   missing_rem <- unique(data$Year)[which(is.na(rem$rem))]
+  #   rem$rem[is.na(rem$rem)] <- median(rem$rem, na.rm=T)
+  # }
   
   #rowSums(removals[,-which(names(removals) %in% c("Year", "Stock", "type"))], na.rm=T)
-  years <- data %>% dplyr::pull(Year) %>% unique() %>% sort()
+  years <- data |> dplyr::pull(Year) |> unique() |> sort()
   
   N.end <- sum(data[data$Year==max(years),]$Num)
-  vpa.abund <- data %>% dplyr::group_by(Year) %>% dplyr::summarize(vpa=sum(Num,na.rm=T)) %>% pull(vpa)
+  vpa.abund <- data |> dplyr::group_by(Year) |> dplyr::summarize(vpa=sum(Num,na.rm=T)) |> pull(vpa)
 
   # The real mx matrix, recruits produced per individual in each age class... Not perfect as I need to offset recruits/ssb, but close enough for the moment..
   #minage
@@ -126,20 +131,29 @@ if(load.results==F)
   #ssb
   data$ssb <- data$ssn * data$WA #I need to figure out how to line this up with the number of recruits for the right years in the data object.... got it right for the overall r.p.ssb below.
   #tot.ssb
-  annual <- data %>% group_by(Year) %>% summarize(tot.ssb = sum(ssb)) %>% left_join(annual)
+  annual <- data |> group_by(Year) |> summarize(tot.ssb = sum(ssb)) |> left_join(annual)
   
-  #tst <- data %>% group_by(Year) %>% summarize(tot.ssn = sum(ssn)) %>% left_join(annual)
+  #tst <- data |> group_by(Year) |> summarize(tot.ssn = sum(ssn)) |> left_join(annual)
 
-  #r.p.ssb This needs to be offset by the age of recruits
-  annual$r.p.ssb <- c(rep(NA,minage),annual$recruits[(minage+1):nrow(annual)]/annual$tot.ssb[1:(nrow(annual)-minage)])
+  #r.p.ssb This needs to be offset by the age of recruits. So here's my lining this up logic.  For age 0, we get
+  # the recruit and SSB estimates from the same survey, thus these age 0 recruits will have been produced by the SSB in the previous year...
+  # So the R in 1970 were produced by SSB in 1969 when min age =0
+  # If min.age = 1 then R in 1970 is produced by SSB in 1968... and so on.
+  # FIX 1 "Recruit year" = SSB year + min.age + 1 (or min.age +2 as SSB.year is the first column)
+  # Now for RPS there's another wrinkle because of this, because our model is N(1970) = lambda * N(1969) and lambda is made up of lx and mx
+  # so if the recruits show up in 1970, the fecundity term that gets us there (irrespective of the age offset) has to be for 1969, becuase
+  # that gets us to the babies that show up in 1970
+  # FIX 2 So "RPS year, recs.per.age year, and mx year" = SSB year + min.age
+  # I believe this to be correct, but we all need to discuss this to make sure the logic holds.
+  annual$r.p.ssb <- c(rep(NA,minage),annual$recruits[(minage+2):nrow(annual)]/annual$tot.ssb[1:(nrow(annual)-minage-1)],NA)
   # recs.per.age
   data <- left_join(data, annual)
   # So I need to make an offset SSB in the 'data' object to line up with the correct r.p.ssb field.  This is probably gonna suck...
   tmp <- NULL
   for(j in 1:length(years))
   {
-    tst <- data %>% dplyr::filter(Year == years[j]) %>% dplyr::select(ssb,ssn,Year,age)
-    tst$Year <- tst$Year + minage
+    tst <- data|> collapse::fsubset(Year == years[j]) |> collapse::fselect(ssb,ssn,Year,age)
+    tst$Year <- tst$Year + minage # We want this to line up the the RPS year, so just adding minage here.
     names(tst) <- c("ssb.offset","ssn.offset","Year","age")
     tmp[[j]] <- tst
   }
@@ -155,22 +169,23 @@ if(load.results==F)
   #if(!grepl("males",i))data$mx <- data$recs.per.age/data$ssn.offset/2 # Moms only! 
   data$mx[is.nan(data$mx)] <- 0 # if we don't have any spawners in an age class in a year their fecundity is 0
   # Easier to remove the years where we don't have recs.per.age...
-  #data <- data %>% dplyr::filter(Year %in% years[(minage+1):length(years)])
+  #data <- data |> collapse::fsubset(Year %in% years[(minage+1):length(years)])
   # Something is wrong with the decline rate method, but the exponential and logistic are working pretty... pretty... pretty good...
   
-  age.mat <- data %>% dplyr::select("Year", "age", "AM") %>% pivot_wider(names_from=age, values_from = AM) %>% dplyr::select(-Year)
-  prop.nat.mort <- data %>% dplyr::select("Year", "age", "prop.nat.mort") %>% 
-                            pivot_wider(names_from=age, values_from = prop.nat.mort) %>% 
-                            dplyr::select(-Year) %>% as.data.frame
+  age.mat <- data |> collapse::fselect("Year", "age", "AM") |> 
+                     pivot_wider(names_from=age, values_from = AM) |> collapse::fselect(-Year)
+  prop.nat.mort <- data |> collapse::fselect("Year", "age", "prop.nat.mort") |> 
+                            pivot_wider(names_from=age, values_from = prop.nat.mort) |> 
+                            collapse::fselect(-Year) |> as.data.frame()
   
-  weight.age <- data %>% dplyr::select("Year", "age", "WA") %>% pivot_wider(names_from=age, values_from = WA) %>% dplyr::select(-Year)
-  mx <- data %>% dplyr::select("Year", "age", "mx") %>% 
-                 pivot_wider(names_from=age, values_from = mx) %>% 
-                 dplyr::select(-Year) %>% as.data.frame()
+  weight.age <- data |> collapse::fselect("Year", "age", "WA") |> pivot_wider(names_from=age, values_from = WA) |> collapse::fselect(-Year)
+  mx <- data |> collapse::fselect("Year", "age", "mx") |> 
+                 pivot_wider(names_from=age, values_from = mx) |> 
+                 collapse::fselect(-Year) |> as.data.frame()
   # Get the abundance matrix
-  abund.age <- data %>% dplyr::select("Year", "age", "Num") %>% 
-                        pivot_wider(names_from=age, values_from = Num) %>% 
-                        dplyr::select(-Year) %>% as.data.frame()
+  abund.age <- data |> collapse::fselect("Year", "age", "Num") |> 
+                        pivot_wider(names_from=age, values_from = Num) |> 
+                        collapse::fselect(-Year) |> as.data.frame()
   
   # Now we can save out the catch and get an instantaneous F
     data$Catch[is.na(data$Catch)] <- 0
@@ -192,8 +207,8 @@ if(load.results==F)
       }
     }
   
-  full.rems <- data %>% dplyr::select("Year", "age", "Catch") %>% pivot_wider(names_from=age, values_from = Catch) %>% dplyr::select(-Year)
-  full.Fs <-  data %>% dplyr::select("Year", "age", "Fs") %>% pivot_wider(names_from=age, values_from = Fs) %>% dplyr::select(-Year)
+  full.rems <- data |> collapse::fselect("Year", "age", "Catch") |> pivot_wider(names_from=age, values_from = Catch) |> collapse::fselect(-Year)
+  full.Fs <-  data |> collapse::fselect("Year", "age", "Fs") |> pivot_wider(names_from=age, values_from = Fs) |> collapse::fselect(-Year)
     
     
     if(i == "DFO_2J3KL_Gadus_morhua")
@@ -255,14 +270,29 @@ if(load.results==F)
   
 
   
-  # For the years of mx without SSB info to inform them
-  if(minage >0 ) 
+  # I had filled the years with no SSB data to inform them.  instead I'm going to remove those years...
+  
+  
+   if(minage >0) 
   {
-    mx.fill <- as.data.frame(matrix(rep(colMeans(mx,na.rm=T),minage),nrow=minage,byrow=T),colnames = names(mx))
-    names(mx) <- names(mx.fill)
-   # mx <- rbind(mx[(minage+1):nrow(mx),],mx.fill) # or is it
-    mx <- rbind(mx.fill,mx[(minage+1):nrow(mx),]) # I think this is right!
-  }
+    rm <- -(1:minage)
+    years <- years[rm]
+    prop.nat.mort <- prop.nat.mort[rm,]
+    weight.age <- weight.age[rm,]
+    rem <- rem[rm,]
+    mx <- mx[rm,]
+    vpa.abund <- vpa.abund[rm]
+    age.mat <- age.mat[rm,]
+    abund.age <- abund.age[rm,]
+    full.Fs <- full.Fs[rm,]
+    full.rems <- full.rems[rm,]
+   }
+  #   mx.fill <- as.data.frame(matrix(rep(colMeans(mx,na.rm=T),minage),nrow=minage,byrow=T),colnames = names(mx))
+  #   names(mx) <- names(mx.fill)
+  #  # mx <- rbind(mx[(minage+1):nrow(mx),],mx.fill) # or is it
+  #   mx <- rbind(mx.fill,mx[(minage+1):nrow(mx),]) # I think this is right!
+  # }
+  
   
     years.tmp[[i]] <- years
     pnm.tmp[[i]] <- prop.nat.mort
@@ -273,14 +303,14 @@ if(load.results==F)
     NE.tmp[[i]] <- N.end
     vpa.tmp[[i]] <- vpa.abund
     am.tmp[[i]] <- age.mat
-    mr.tmp[[i]] <- missing_rem
+    #mr.tmp[[i]] <- missing_rem
     abund.tmp[[i]] <- abund.age
     fs.tmp[[i]] <- full.Fs
     full.rem.tmp[[i]] <- full.rems
   } #end input data loop
   
   save(years.tmp,pnm.tmp,waa.tmp,ages.tmp,rem.tmp,mx.tmp,NE.tmp,vpa.tmp,mr.tmp,
-       am.tmp,Stocks,ASR_stocks,ASR_long,abund.tmp,fs.tmp,full.rem.tmp,
+       am.tmp,Stocks,ASR.stocks,ASR.long,abund.tmp,fs.tmp,full.rem.tmp,
        file =  paste0(loc,"/Results/model_inputs_no_age_correction.Rdata"))
   
   } # end load results
@@ -317,7 +347,7 @@ if(load.results==F)
     #all.abund <- full.abund.tmp[[i]]
     #N.end <- vpa.abund[length(vpa.abund)]
     #Pick your step size
-    ss.size <- 0.01
+    ss.size <- 0.005
     sensistive.stocks <- c("AFSC_GOA_Theragra_chalcogramma",
                             "DFO_2J3KL_Gadus_morhua",
                             "DFO_3Pn-4RS_Gadus_morhua",
@@ -340,7 +370,8 @@ if(load.results==F)
                             "ICES-WGNSSK_NS 4-3aN_Trisopterus_esmarkii",
                             "NEFSC-GARMIII_SNE- MA_Limanda_ferruginea",
                             "NEFSC-GARMIII_MA_Paralichthys_dentatus",
-                            "NEFSC-GARMIII_5Y_Melanogrammus_Aeglefinus")
+                            "NEFSC-GARMIII_5Y_Melanogrammus_Aeglefinus",
+                            "NEFSC_NWA_Scomber _scombrus")
     
   #NE Arctic aeglefinus (high and lows)  (21) solved
   #Faroes 5b P. virens (high and lows)  (29) solved
@@ -367,10 +398,6 @@ if(load.results==F)
      for.tune.all.res[[i]] <- fast.for.tune
      for.tune.tmp <- data.frame(fast.for.tune$res,Stock = i)
      for.tune.summary[[i]] <- for.tune.tmp
-     
-     
-   
-     
   }
  
   saveRDS(for.tune.summary,paste0(loc,"/Results/forwards_fully_tuned_summary_no_age_correction_",what.2.tune,".Rds"))
@@ -400,11 +427,11 @@ if(load.results==F)
   ############ Meta data and clean up, could be it's own chunk really, but it's really fast, so meh...
   
   #  A quick way to get the other potentially interesting info for the stock...
-  drop <- which(names(ASR_long) %in% c("Year","type","age","value"))
+  drop <- which(names(ASR.long) %in% c("Year","type","age","value"))
   meta <- NULL
   for(i in Stocks) 
   {
-    meta[[i]] <- ASR_long[ASR_long$Stock == i,-drop][1,]
+    meta[[i]] <- ASR.long[ASR.long$Stock == i,-drop][1,]
     meta[[i]]$age.min <- min(ages.tmp[[i]])
     meta[[i]]$age.max <- max(ages.tmp[[i]])
   }
@@ -563,42 +590,67 @@ if(load.results==F)
   # Reset on the stocks...
   Stocks <- sort(names(for.tune.all))
   n.stocks <- length(Stocks)
-  
-  
-  
+
   
   # Doubling time, no fishing
   dt.res <- NULL
-  n.dt.sims <- 2000 # Number of simulations...
+  n.dt.sims <- 1000 # Increase to 1000 for final run, which takes like a full day or something 
   n.years <- 100
   for(i in Stocks)
   {
-    try <- for.tunes %>% dplyr::filter(Stock == i)
-    meta.tmp <- meta.sub %>% dplyr::filter(Stock == i)
+    str.time <- Sys.time()
+    try <- for.tune.all[[i]]
+    meta.tmp <- try$meta
+    age.4.sim <- meta.tmp$age.min:meta.tmp$age.max
     double.time <- NA
     pop <- 1000
     tmp.res <- NULL
   for(s in 1:n.dt.sims)
   {
-    tmp <- rep(0,n.years)
     
+    tmp <- rep(0,n.years)
     for(y in 2:n.years)
     {
-      lambda <- sample(na.omit(try$lambda),size=1)
-      pop[y] <- lambda*pop[y-1]
+      
+      # Get our sample for this run
+      f.pick <- sample(nrow(try$fecund.opt),size=1)
+      nm.pick <- sample(nrow(try$nm.opt),size=1)
+      fec.samp <- try$fecund.opt[f.pick,]
+      # This is instantaneous rate, which is what the Lotka function is expected (it is set up expecting instantaneous)
+      nm.samp <- try$nm.opt[nm.pick,] 
+      # now put these into Euler-lotka to get an r estimate
+      res <- simple.lotka.r(mort = nm.samp,fecund=fec.samp,ages=age.4.sim)
+      r.val <- res$res$r
+      # If r is > 5 (lambda = exp(5)) it generally means the simple.lotka didn't converge (bad combo of fec and nm)
+      # So we'll need to resample them until it is < 5
+      while(r.val >= 5)
+      {
+        print("Resampling due to bat shit r value")
+        f.pick <- sample(nrow(try$fecund.opt),size=1)
+        nm.pick <- sample(nrow(try$nm.opt),size=1)
+        fec.samp <- try$fecund.opt[f.pick,]
+        # This is instantaneous rate, which is what the Lotka function is expected (it is set up expecting instantaneous)
+        nm.samp <- try$nm.opt[nm.pick,] 
+        # now put these into Euler-lotka to get an r estimate
+        res <- simple.lotka.r(mort = nm.samp,fecund=fec.samp,ages=age.4.sim)
+        r.val <- res$res$r
+      } # end while loop
+      pop[y] <- exp(r.val)*pop[y-1]
       if(pop[y] >= 2*pop[1] & tmp[y] == 0) tmp[y:n.years] <- 1
     } # end the years loop
-    tmp.res[[s]] <- data.frame(year =1:100,doubled = tmp,sim=s)
+    tmp.res[[s]] <- data.frame(year =1:n.years,doubled = tmp,sim=s)
+    
     } # end sim loop
     res.tmp <- do.call("rbind",tmp.res)
     
   dt.res[[i]] <- data.frame(res.tmp,meta.tmp)
-  
+  count <- 0
+  print(paste0("Stock ",i," Sim ", s," time =", round(Sys.time()-str.time,digits=1)," minutes Stock number",count+1))
   } # end Stocks loop
   
   dub.time <- do.call("rbind",dt.res)
   
-  dub.time.summary <- dub.time %>% dplyr::group_by(Stock,year)  %>% dplyr::summarise(prop = sum(doubled)/n.dt.sims)
+  dub.time.summary <- dub.time |> collapse::fgroup_by(Stock,year)  |> collapse::fsummarise(prop = sum(doubled)/n.dt.sims)
   dub.time.summary <- left_join(dub.time.summary,meta.sub,by="Stock")
   
   # Now to get generation lengths + reproductive rates....
@@ -677,7 +729,7 @@ if(load.results==F)
     } # end the years loop
   
   # Do a years loop to get lambda with no fishing for each year, rather than by cohort...
-    for(yy in 1:n.years)
+    for(yy in 1:(n.years-1))
     {
       nm <- as.numeric(tst$nm.opt[yy,])
       z <- as.numeric(tst$z.opt[yy,])
@@ -708,7 +760,7 @@ if(load.results==F)
   res.year.final <- do.call('rbind',res.year.fin)
   res.lambda.final <- do.call('rbind',res.lambda.fin)
   
-  pop.dam <- res.cohort.final %>% dplyr::group_by(cohort,Stock) %>% dplyr::summarise(gen.len.opt = sum(x.mx.lx.opt)/sum(mx.lx.opt),
+  pop.dam <- res.cohort.final |> dplyr::group_by(cohort,Stock) |> dplyr::summarise(gen.len.opt = sum(x.mx.lx.opt)/sum(mx.lx.opt),
                                                                   gen.len.org = sum(x.mx.lx.org)/sum(mx.lx.org),
                                                                   R0.opt = sum(mx.lx.opt),R0.org = sum(mx.lx.org))
   pop.dam <- left_join(pop.dam,meta.sub,by="Stock")
@@ -730,57 +782,57 @@ if(load.results==F)
 
 ```{r simp-figs,include=F,echo=F,message=F,warning=F}
 load(file=paste0(loc,"/Results/all_cleaned_forward_tune_summaries_no_age_corection_",what.2.tune,".Rdata"))
-pop.dam <- data.frame(pop.dam)
+res.lambda.fin <- data.frame(res.lambda.final)
+
 six.species <- c('morhua','harengus','aeglefinus','virens','solea','platessa')
-pop.dam.6 <- pop.dam %>% dplyr::filter(Species %in% six.species)
-for.tunes.6 <- for.tunes %>% dplyr::filter(Species %in% six.species)
-dub.time.6 <- dub.time.summary %>% dplyr::filter(Species %in% six.species)
-res.lambda.final$decade <- floor(res.lambda.final$year/10)*10
-res.lambda.final <- res.lambda.final %>% dplyr::group_by(Stock,decade) %>% dplyr::mutate(mn.lam = mean(lam.fish,na.rm=T),
+pop.dam.6 <- pop.dam |> collapse::fsubset(Species %in% six.species)
+for.tunes.6 <- for.tunes |> collapse::fsubset(Species %in% six.species)
+dub.time.6 <- dub.time.summary |> collapse::fsubset(Species %in% six.species)
+res.lambda.fin$decade <- floor(res.lambda.fin$year/10)*10
+res.lambda.fin <- res.lambda.fin |> collapse::fgroup_by(Stock,decade) |> collapse::fmutate(mn.lam = mean(lam.fish,na.rm=T),
                                                                                  med.lam = median(lam.fish,na.rm=T),
                                                                                  sd.lam = sd(lam.fish,na.rm=T))
-res.lambda.final <- res.lambda.final %>% dplyr::group_by(Species,decade) %>% dplyr::mutate(lm.spec.mn = mean(mn.lam,na.rm=T))              
-res.lambda.final <- res.lambda.final %>% dplyr::group_by(Stock) %>% 
-                                            dplyr::mutate(lam.no.fish.mn = mean(lam.no.fish,na.rm=T),
+res.lambda.fin <- res.lambda.fin |> collapse::fgroup_by(Species,decade) |> collapse::fmutate(lm.spec.mn = mean(mn.lam,na.rm=T))              
+res.lambda.fin <- res.lambda.fin |> collapse::fgroup_by(Stock) |> 
+                                                          collapse::fmutate(lam.no.fish.mn = mean(lam.no.fish,na.rm=T),
                                                           lam.fish.mn = mean(lam.fish,na.rm=T),
                                                           lam.org.no.fish.mn = mean(lam.org.no.fish,na.rm=T),
                                                           lam.org.fish.mn = mean(lam.org.fish,na.rm=T),
                                                           lam.no.fish.med = median(lam.no.fish,na.rm=T),
                                                           lam.fish.med = median(lam.fish,na.rm=T),
                                                           lam.org.no.fish.med = median(lam.org.no.fish,na.rm=T),
-                                                          lam.org.fish.med = median(lam.org.fish,na.rm=T),) %>% data.frame()
+                                                          lam.org.fish.med = median(lam.org.fish,na.rm=T)) |> data.frame()
 
-res.lambda.final.6 <- res.lambda.final %>% dplyr::filter(Species %in% six.species)
+res.lambda.final.6 <- res.lambda.fin |> collapse::fsubset(Species %in% six.species)
 # Sort the data into a nice order...
-res.lambda.final <- res.lambda.final %>% dplyr::arrange(Species,Area.broad) %>%
-                                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(Species,Area.broad) %>%
-                                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-dub.time <- dub.time %>% dplyr::arrange(LME) %>%
-                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+res.lambda.fin <- res.lambda.fin |> collapse::roworder(Species,Area.broad) |>
+                                    collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+res.lambda.final.6 <- res.lambda.final.6 |> collapse::roworder(Species,Area.broad) |>
+                                            collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+dub.time <- dub.time |> collapse::roworder(LME) |>
+                        collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
 
-dub.time.summary <- dub.time.summary %>% dplyr::arrange(LME,Order,Species,Area.broad) %>%
-                                         dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
+dub.time.summary <- dub.time.summary |> collapse::roworder(LME,Order,Species,Area.broad) |>
+                                        collapse::fmutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
 
-dub.time.6 <- dub.time.6 %>% dplyr::arrange(LME) %>%
-                             dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
-pop.dam <- pop.dam %>% dplyr::arrange(Species,LME) %>%
-                       dplyr::mutate(Stock = forcats::fct_inorder(factor(Stock, ordered=TRUE)))
-pop.dam.6 <- pop.dam.6 %>% dplyr::arrange(LME,Area.broad) %>%
-                       dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+dub.time.6 <- dub.time.6 |> collapse::roworder(LME) |>
+                             collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+pop.dam <- pop.dam |> collapse::roworder(Species,LME) |>
+                       collapse::fmutate(Stock = forcats::fct_inorder(factor(Stock, ordered=TRUE)))
+pop.dam.6 <- pop.dam.6 |> collapse::roworder(LME,Area.broad) |>
+                       collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
 
-# res.lambda.final.6 <- res.lambda.final.6 %>% dplyr::arrange(LME,Area.broad) %>%
-#                                              dplyr::mutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
+# res.lambda.final.6 <- res.lambda.final.6 |> collapse::roworder(LME,Area.broad) |>
+#                                              collapse::fmutate(Stock.no.species = forcats::fct_inorder(factor(Stock.no.species, ordered=TRUE)))
             
 ################### Figures in main text################### Figures in main text################### Figures in main text################### 
 
 #hmm <- merge(tst,res.lambda.final.6,by="Stock")
-# Note the LIMITS I PUT ON THESE BECAUSE 4 STOCKS WERE SHITTY
-plot(res.lambda.final$lam.fish.med ~ res.lambda.final$lam.fish.mn)
+plot(res.lambda.fin$lam.fish.med ~ res.lambda.fin$lam.fish.mn)
 # So this is lambda with fishing included
 lambda.plt <- ggplot(res.lambda.final.6) + geom_boxplot(aes(y=lam.no.fish,x=Stock.no.species))  + 
                                            geom_point(aes(y=lam.no.fish.mn,x=Stock.no.species),color='blue',shape=8,fill='blue') +
-                                           xlab("") + scale_y_log10("lambda",breaks = c(0.1,0.4,0.6,0.8,1,1.25,1.75,3,5,10)) + 
+                                           xlab("") + scale_y_log10("lambda",breaks = c(0.1,0.4,0.6,0.8,1,1.25,1.75,3,5,10),limits=c(0.4,10)) + 
                                            geom_hline(yintercept = 1,linetype='dashed') +
                                            facet_wrap(~G.Species,scales='free')+
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
@@ -791,7 +843,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_no_fishing_6_",wha
 # With fishing
 lambda.plt.fish <- ggplot(res.lambda.final.6) + geom_boxplot(aes(y=lam.fish,x=Stock.no.species))  + 
                                            geom_point(aes(y=lam.fish.mn,x=Stock.no.species),color='blue',shape=8,fill='blue') +
-                                           xlab("") + scale_y_log10("lambda",breaks = c(0.4,0.6,0.8,1,1.25,1.75,3,5,10),limits=c(0.4,5)) + 
+                                           xlab("") + scale_y_log10("lambda",breaks = c(0.4,0.6,0.8,1,1.25,1.75,3,5,10),limits=c(0.4,10)) + 
                                            geom_hline(yintercept = 1,linetype='dashed') +
                                            facet_wrap(~G.Species,scales='free')+
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
@@ -803,36 +855,36 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_with_fishing_6_",w
 
 # Doubling Times
 
-dub.heatmap.cod <- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "G. morhua"), aes(x=year, y=Stock.no.species, fill= prop)) + xlab("") + ylab("")+                                     facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + 
+dub.heatmap.cod <- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "G. morhua"), aes(x=year, y=Stock.no.species, fill= prop)) + xlab("") + ylab("")+                                     facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + 
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + scale_x_continuous(labels=NULL) +
                             theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"),
                                   legend.key.width = unit(3,'cm'))
 
-dub.heatmap.herring<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "C. harengus"), aes(x=year, y=Stock.no.species, fill= prop)) + 
+dub.heatmap.herring<- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "C. harengus"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
                               facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.4, "cm"))
 
-dub.heatmap.haddock<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "M. aeglefinus"), aes(x=year, y=Stock.no.species, fill= prop)) + 
+dub.heatmap.haddock<- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "M. aeglefinus"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
                               facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.125, "cm"))
 
-dub.heatmap.virens<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "P. virens"), aes(x=year, y=Stock.no.species, fill= prop)) + 
+dub.heatmap.virens<- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "P. virens"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
                               facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.4, "cm"))
 
-dub.heatmap.solea<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "S. solea"), aes(x=year, y=Stock.no.species, fill= prop)) + 
+dub.heatmap.solea<- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "S. solea"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
                               facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.4, "cm"))
 
-dub.heatmap.platessa<- ggplot(dub.time.6 %>% dplyr::filter(G.Species == "P. platessa"), aes(x=year, y=Stock.no.species, fill= prop)) + 
+dub.heatmap.platessa<- ggplot(dub.time.6 |> collapse::fsubset(G.Species == "P. platessa"), aes(x=year, y=Stock.no.species, fill= prop)) + 
                               xlab("") + ylab("")+                                    
                               facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous() +
                               geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
@@ -886,45 +938,45 @@ dub.time.summary$Order.short[dub.time.summary$Order == "Scorpaeniformes "] <- "S
 dub.time.summary$Order.short[dub.time.summary$Order == "Scombriformes"] <- "Scomb"
 dub.time.summary$Order.short[dub.time.summary$Order == "Perciformes"] <- "Perci"
 
-dub.time.summary <- dub.time.summary %>%
-                            dplyr::arrange(G.Species,LME,Area.broad) %>%
-                            dplyr::mutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
+dub.time.summary <- dub.time.summary |>
+                            collapse::roworder(G.Species,LME,Area.broad) |>
+                            collapse::fmutate(Stock.short = forcats::fct_inorder(factor(Stock.short, ordered=TRUE)))
               
-dub.heatmap.gad <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Gadiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.gad <- ggplot(dub.time.summary |> collapse::fsubset(Order == "Gadiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+                                    
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                             theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.45, "cm"),
                                   legend.key.width = unit(3,'cm'))
 
-dub.heatmap.pl <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Pleuronectiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.pl <- ggplot(dub.time.summary |> collapse::fsubset(Order == "Pleuronectiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+                                    
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                             theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"))
 
-dub.heatmap.cl <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Clupeiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.cl <- ggplot(dub.time.summary |> collapse::fsubset(Order == "Clupeiformes"), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                             theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.35, "cm"),
                                   legend.key.width = unit(3,'cm'))
 
-dub.heatmap.per <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Perciformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.per <- ggplot(dub.time.summary |> collapse::fsubset(Order == "Perciformes"), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                             theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,2, "cm"),
                                   legend.key.width = unit(3,'cm'))
 
-dub.heatmap.scom <- ggplot(dub.time.summary %>% dplyr::filter(Order == "Scombriformes"), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.scom <- ggplot(dub.time.summary |> collapse::fsubset(Order == "Scombriformes"), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
                             theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,2.1, "cm"),
                                   legend.key.width = unit(3,'cm'))
 
-dub.heatmap.scorp <- ggplot(dub.time.summary %>% dplyr::filter(Order %in% "Scorpaeniformes "), aes(x=year, y=Stock.short, fill= prop)) + 
+dub.heatmap.scorp <- ggplot(dub.time.summary |> collapse::fsubset(Order %in% "Scorpaeniformes "), aes(x=year, y=Stock.short, fill= prop)) + 
                             xlab("") + ylab("")+
                             facet_wrap(~Order.short,nrow=3,scales='free_y',strip.position = "right") + 
                             geom_tile() + scale_fill_viridis(name = "Proportion",discrete=FALSE) + 
@@ -971,17 +1023,17 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_by_decade_6_",what
 
 
 
-gen.heatmap.ne <- ggplot(pop.dam %>% dplyr::filter(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + 
+gen.heatmap.ne <- ggplot(pop.dam |> collapse::fsubset(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + 
                                               xlab("") + ylab("")+  
                                               facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + 
                                               geom_tile() + scale_fill_viridis(name = "Generation length (years)",discrete=FALSE) + 
                                               theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.9, "cm"))
 
-gen.heatmap.nw <- ggplot(pop.dam %>% dplyr::filter(LME == "NW Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + xlab("") + ylab("")+                                    facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
+gen.heatmap.nw <- ggplot(pop.dam |> collapse::fsubset(LME == "NW Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + xlab("") + ylab("")+                                    facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Generation length (years)",discrete=FALSE) + 
                             theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.22, "cm"))
 
-gen.heatmap.pac <- ggplot(pop.dam %>% dplyr::filter(LME == "Pacific (Alaska)"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + xlab("") + ylab("")+
+gen.heatmap.pac <- ggplot(pop.dam |> collapse::fsubset(LME == "Pacific (Alaska)"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + xlab("") + ylab("")+
                             facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                             geom_tile() + scale_fill_viridis(name = "Generation length (years)",discrete=FALSE) + 
                             theme(legend.position = 'top',text = element_text(size=12),plot.margin = margin(0,0.5,0,0, "cm"),
@@ -992,7 +1044,7 @@ gen.heatmap
 
 save_plot(paste0(loc,"/Figures/tuned/No_age_correction/gen_heatmap_",what.2.tune,".png"),gen.heatmap,base_width = 20,base_height = 17)
 
-r0.heatmap.ne <- ggplot(pop.dam %>% dplyr::filter(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
+r0.heatmap.ne <- ggplot(pop.dam |> collapse::fsubset(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
                                     xlab("") + ylab("")+
                                     facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + 
                                     geom_tile() + 
@@ -1000,7 +1052,7 @@ r0.heatmap.ne <- ggplot(pop.dam %>% dplyr::filter(LME == "NE Atlantic"), aes(x=c
                                                         discrete=FALSE,trans='log') + 
                                     theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,0.9, "cm"))
 
-r0.heatmap.nw <- ggplot(pop.dam %>% dplyr::filter(LME == "NW Atlantic"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
+r0.heatmap.nw <- ggplot(pop.dam |> collapse::fsubset(LME == "NW Atlantic"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
                                     xlab("") + ylab("")+
                                     facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                                     geom_tile() + 
@@ -1008,7 +1060,7 @@ r0.heatmap.nw <- ggplot(pop.dam %>% dplyr::filter(LME == "NW Atlantic"), aes(x=c
                                                         discrete=FALSE,trans='log') + 
                                     theme(legend.position = 'none',text = element_text(size=12),plot.margin = margin(0,0.5,0,1.22, "cm"))
 
-r0.heatmap.pac <- ggplot(pop.dam %>% dplyr::filter(LME == "Pacific (Alaska)"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
+r0.heatmap.pac <- ggplot(pop.dam |> collapse::fsubset(LME == "Pacific (Alaska)"), aes(x=cohort, y=Stock.short, fill= R0.opt)) + 
                                      xlab("") + ylab("")+
                                      facet_wrap(~LME,nrow=3,scales='free_y',strip.position = "right") + scale_x_continuous(labels=NULL) +
                                      geom_tile() + 
@@ -1022,6 +1074,85 @@ r0.heatmap
 
 save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_",what.2.tune,".png"),r0.heatmap,base_width = 20,base_height = 17)
 
+# FIX: A density dependence figure, this isn't perfect as the lambda's aren't quiet lined up right because of recruitment offset
+# That said, recruitment in these cases also integrates all processes that happens from birth-recruitment
+# So maybe it is kinda reasonable?
+#
+
+# First need to get the abundance and lambdas with no fishing into one object.
+ft.tmp <- for.tunes |> collapse::fselect(year,Stock,vpa.abund,est.abund)
+dd.dat <- left_join(res.lambda.fin,ft.tmp,by=c('year','Stock'))
+# Now I need to get a relative abundance for each stock...
+dd.dat <- dd.dat |> collapse::fgroup_by(Stock) |> collapse::fmutate(max.abund = max(est.abund,na.rm=T))
+dd.dat <- data.frame(dd.dat)
+dd.dat$prop.abund <- dd.dat$est.abund/dd.dat$max.abund
+dd.dat.six <- dd.dat |>collapse::fsubset(Species %in% six.species)
+
+ggplot(dd.dat) + geom_point(aes(x=prop.abund,y=lam.no.fish-1)) + xlab("Proportion of Maximum Abundance") + ylab("r (no fishing)")
+
+# Density dependence by Species
+ggplot(dd.dat,aes(x=prop.abund,y=lam.no.fish,color=Species,group=Species)) + geom_point() + 
+                                                   geom_smooth(method="gam") + 
+                                                   geom_hline(yintercept = 1,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,1,by=0.1))+
+                                                   scale_y_log10(name = "lambda (no fishing)", breaks = c(0.5,0.75,1,1.5,2.5,3.5,5,7.5,10,12.5)) #+
+                                                   #scale_color_manual(values = colrs)
+# Density dependence by stock
+ggplot(dd.dat,aes(x=prop.abund,y=lam.no.fish,color=Stock.short,group=Stock.short)) + geom_point() + 
+                                                   geom_smooth(method="lm",se = F) + 
+                                                   geom_hline(yintercept = 1,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,1,by=0.1))+
+                                                   scale_y_log10(name = "lambda (no fishing)", limits=c(0.4,2),
+                                                                 breaks = seq(0.4,2,by=0.1)) +
+                                                   theme(legend.position = 'none')
+
+
+
+dd.dat.no.bigs <- dd.dat |> collapse::fsubset(lam.no.fish < 2)
+
+ggplot(dd.dat.no.bigs,aes(x=prop.abund,y=lam.no.fish)) + geom_point() + 
+                                                    geom_smooth(method="gam") + 
+                                                   geom_hline(yintercept = 1,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,1,by=0.1))+
+                                                   scale_y_continuous(name = "lambda (no fishing)")
+
+ggplot(dd.dat.no.bigs,aes(x=prop.abund,y=lam.no.fish,group=Stock.short,color=Stock.short)) + geom_point() + 
+                                                    geom_smooth(method="lm",se=F) + 
+                                                   geom_hline(yintercept = 1,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,2,by=0.1))+
+                                                   scale_y_log10(name = "lambda (no fishing)")
+
+
+# how about our big 6
+colrs <- c("blue","black","firebrick2","orange",'grey50','grey90')
+ggplot(dd.dat.six,aes(x=prop.abund,y=lam.no.fish,color=Species,group=Species)) + geom_point() + 
+                                                    geom_smooth(method="gam") + 
+                                                   geom_hline(yintercept = 1,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,1,by=0.1))+
+                                                   scale_y_log10(name = "lambda (no fishing)", breaks = c(0.5,0.75,1,1.5,2.5,3.5,5,7.5,10,12.5)) +
+                                                   scale_color_manual(values = colrs)
+
+dd.dat.six.no.bigs <- dd.dat.six |> collapse::fsubset(lam.no.fish < 2)
+
+ggplot(dd.dat.six.no.bigs,aes(x=prop.abund,y=lam.no.fish-1,color=Species,group=Species)) + geom_point() + 
+                                                    geom_smooth(method="gam") + 
+                                                   geom_hline(yintercept = 0,linewidth=2,linetype='dashed',color='blue') +
+                                                   scale_x_continuous(name = "Proportion of Maximum Abundance", breaks = seq(0,1,by=0.1))+
+                                                   scale_y_continuous(name = "r (no fishing)", breaks = seq(-1,1,by=0.2)) +
+                                                   scale_color_manual(values = colrs)
+
+
+just.bigs <- dd.dat  |> collapse::fsubset(lam.no.fish > 2) 
+sum(table(just.bigs$Stock.short)) # 48 of 68 are Haddock or cod. 13 of remaining 20 are small low trophic species
+
+dd.dat$lam.ratio <- dd.dat$lam.org.no.fish/dd.dat$lam.no.fish
+dd.dat$lam.ratio.z <- dd.dat$lam.org.fish/dd.dat$lam.fish
+# So the original lambda tended to be somewhere between 7 and 14% higher, depending on me(di)an choice.
+# Could be way off in some years for a few species (Haddock, Cod, Sand lance, horse makerel, pilchard(sardine)... interesting... )
+summary(dd.dat$lam.ratio)
+summary(dd.dat$lam.ratio.z)
+ggplot(dd.dat,aes(y=lam.ratio,x=Species)) + geom_violin() + scale_y_log10() + geom_hline(yintercept =1) + theme_few(base_size=9)
+ggplot(dd.dat,aes(y=lam.ratio.z,x=Species)) + geom_violin() + scale_y_log10() + geom_hline(yintercept =1) + theme_few(base_size=9)
 # Other figures....
 
 # windows(11,11)
@@ -1094,7 +1225,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_",what.2.tune,
 # linetypes <- rep(c(1,2,4),5)
 # 
 # windows(11,11)
-# cod.r0.ts.plt <- ggplot(pop.dam %>% dplyr::filter(Species == 'morhua')) + geom_line(aes(y=R0.opt,x=cohort,group=Area,color=Area,linetype=Area),size=1.5)  + 
+# cod.r0.ts.plt <- ggplot(pop.dam |> collapse::fsubset(Species == 'morhua')) + geom_line(aes(y=R0.opt,x=cohort,group=Area,color=Area,linetype=Area),size=1.5)  + 
 #                             scale_y_log10(name = "Lifetime Reproductive Output", breaks = c(0.001,0.01,0.1,1,5,10,50,100),minor_breaks = NULL) + 
 #                             scale_color_manual(values = vickis.cols) +
 #                             scale_linetype_manual(values = linetypes) +
@@ -1104,7 +1235,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_",what.2.tune,
 # 
 # 
 # windows(11,11)
-# ggplot(pop.dam %>% dplyr::filter(Species =="morhua")) + geom_boxplot(aes(y=R0.opt,x=Area))  + 
+# ggplot(pop.dam |> collapse::fsubset(Species =="morhua")) + geom_boxplot(aes(y=R0.opt,x=Area))  + 
 #                                                         scale_y_log10(name = "Lifetime Reproductive Output",breaks = c(0.001,0.01,0.1,1,5,10,50,100),minor_breaks = NULL) +
 #                                                         theme(axis.text.x = element_text(angle =45,hjust=1))
 # 
@@ -1125,7 +1256,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_",what.2.tune,
 #                                    
 # save_plot("D:/Github/ICM/Figures/tuned/Percentage_change_to_bycatch_by_species.png",bycatch.plt,base_width = 8,base_height = 8)
 #                                    
-# bycatch.plt.cod <- ggplot(for.tunes %>% dplyr::filter(Species == 'morhua')) + geom_boxplot(aes(y=per.excess.catch,x=Area)) + 
+# bycatch.plt.cod <- ggplot(for.tunes |> collapse::fsubset(Species == 'morhua')) + geom_boxplot(aes(y=per.excess.catch,x=Area)) + 
 #                                                                               ylab("Adjustment to catch (%)") +
 #                                                                               theme(axis.text.x = element_text(angle=45,hjust = 1))
 #                                                                               
@@ -1139,7 +1270,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_",what.2.tune,
 
 # Doubling time for the rest of the stocks...
 
-# dub.heatmap.no.6 <- ggplot(dub.time.summary %>% dplyr::filter(!Species %in% six.species), aes(x=year, y=Stock.short, fill= prop)) + 
+# dub.heatmap.no.6 <- ggplot(dub.time.summary |> collapse::fsubset(!Species %in% six.species), aes(x=year, y=Stock.short, fill= prop)) + 
 #                               xlab("") + ylab("")+                                    
 #                               #facet_wrap(~G.Species,nrow=3,scales='free_y',strip.position = "right") + 
 #                               scale_x_continuous() +

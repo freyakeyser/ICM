@@ -460,21 +460,21 @@ fast.tunes<-function(years,step.size=0.05,tuner="m",  direction = 'backwards',ag
     {
       index <- which(years == years[y+1])
       #browser() 
-      res$lambda[index] <- exp(r.tunes)
+      res$lambda[index-1] <- exp(r.tunes)
       #browser()
-      res$lambda.vpa.init[index] <- exp(r.est)
-      res$removals[index] <- tot.catch.tmp
-      res$removals.init[index] <- tot.catch.init
-      res$mean.fec[index] <- mean(as.numeric(fecund.tmp))
-      res$mean.vpa.fec[index] <- mean(as.numeric(fecund.init))
-      res$mean.nm[index] <- mean(as.numeric(nm.tmp))
-      res$mean.vpa.nm[index] <- mean(as.numeric(nm.init))
-      fecund.ts[index,] <- fecund.tmp
-      nm.ts[index,] <- nm.tmp
-      fm.ts[index,] <- fm.tmp
-      z.ts[index,] <- z.tmp
+      res$lambda.vpa.init[index-1] <- exp(r.est)
+      res$removals[index-1] <- tot.catch.tmp
+      res$removals.init[index-1] <- tot.catch.init
+      res$mean.fec[index-1] <- mean(as.numeric(fecund.tmp))
+      res$mean.vpa.fec[index-1] <- mean(as.numeric(fecund.init))
+      res$mean.nm[index-1] <- mean(as.numeric(nm.tmp))
+      res$mean.vpa.nm[index-1] <- mean(as.numeric(nm.init))
+      fecund.ts[index-1,] <- fecund.tmp
+      nm.ts[index-1,] <- nm.tmp
+      fm.ts[index-1,] <- fm.tmp
+      z.ts[index-1,] <- z.tmp
     } # end forwards
-    # Get teh results tidied up properly when going backwards, this is all about indices.
+    # FIX... These indicies might be wrong for going backwards now
     if(direction == 'backwards')
     {
       index <- which(years == years[y])

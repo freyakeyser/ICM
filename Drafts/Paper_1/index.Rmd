@@ -1,6 +1,6 @@
 ---
 title: |
-   "Observed life history characteristics of harvested marine species"
+   "Life history variability influence on the recovery potential of globally exploited teleosts "
 french_title: "Titre ici (*Nom latin de l'espèce*)"
 author: |
   David. M. Keith^1^ 
@@ -116,7 +116,7 @@ theme_set(theme_few(base_size = 14))
 loc <- 'D:/GitHub/ICM'
 
 # If we already have the results don't re-run the models or load data we don't need.
-load.results <- F
+load.results <- T
 # What tunning model are you running or did you run!
 what.2.tune <- 'fec_nm'
 
@@ -162,17 +162,17 @@ if(load.results==F)
   # Getting the species info back
   ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
   # And binding it all back together
-  ASR_trim <- cbind(ASRsp, ASRdat)
+  ASR.trim <- cbind(ASRsp, ASRdat)
   # need a unique ID for stock
-  #table(ASR_trim$Management, ASR_trim$Species)
-  ASR_trim$Stock <- paste0(ASR_trim$Management, "_", ASR_trim$Area, "_", ASR_trim$Genus, "_", ASR_trim$Species)
+  #table(ASR.trim$Management, ASR.trim$Species)
+  ASR.trim$Stock <- paste0(ASR.trim$Management, "_", ASR.trim$Area, "_", ASR.trim$Genus, "_", ASR.trim$Species)
   
-  ASR_long <- ASR_trim %>%
+  ASR.long <- ASR.trim %>%
     pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
     separate(col=name, into=c("type", "age"), sep = "\\.")
   
   # Something is weird with the mentella stock, I'm going to drop it...
-  ASR_long <- ASR_long %>% dplyr::filter(Stock != "ICES-AFWG_DEEP1-2_Sebastes_mentella")
+  ASR.long <- ASR.long %>% dplyr::filter(Stock != "ICES-AFWG_DEEP1-2_Sebastes_mentella")
 }# end if load results
 ```
 
