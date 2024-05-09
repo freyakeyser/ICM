@@ -109,12 +109,20 @@ library(ggthemes)
 library(cowplot)
 library(gtable)
 library(viridis)
+library(arm)
+library(mgcv)
+library(lme4)
+library(scales)
+library(ggh4x)
+library(gratia)
 theme_set(theme_few(base_size = 14))
 
 
 # The location of your data
 loc <- 'D:/GitHub/ICM'
-
+# The parameters for the doubling time simulation
+n.dt.sims <- 1000 # Increase to 1000 for final run, which takes like a full day or something 
+n.sim.years <- 100
 # If we already have the results don't re-run the models or load data we don't need.
 load.results <- T
 # What tunning model are you running or did you run!

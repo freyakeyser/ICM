@@ -19,4 +19,112 @@ options(tinytex.verbose = TRUE)
 ```
 
 
+# Figures {-}
 
+
+```{r lambda-bx-6-fig, echo=F, fig.cap="$\\lambda$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-bx-other-fig, echo=F, fig.cap="$\\lambda$ estimates for the remainded of the stocks in this analysis, plotted by the location of the stock. The abreviated species name is provided on the x axis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-sd-fig, echo=F, fig.cap="Standard deviation of the $\\lambda$ estimates for each stock, ordered by species, in this analysis. "}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-overall-plt, echo=F, fig.cap="Density dependence of $\\lambda$ The top panel shows $\\lambda_{F=0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95\\% confidence interval. The middle panel shows $\\lambda_{F>0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95% confidence interval. The bottom panel compares the GAM smooths for $\\lambda_{F=0}$ and $\\lambda_{F>0}$."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overall_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-nf-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F=0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_nf_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-fish-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F>0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-6-plt, echo=F, fig.cap="$R_0$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-other-plt, echo=F, fig.cap="$R_0$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-nf-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-fish-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-6-plt, echo=F, fig.cap="Generation length estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-other-plt, echo=F, fig.cap="Generation length estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-nf-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-fish-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+<!-- Now for the Doubling time -->
+
+\newpage
+```{r dub-time-map, echo=F, fig.cap="Doubling time estimate for each stock with no fishing mortality."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_order_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dub-ts, echo=F, fig.cap="The number of stocks which doubled in size by a given year with no fishing mortality  The dashed line represents the 77 stocks in the analysis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dub-vs-sd, echo=F, fig.cap="The number of stocks which doubled in size by a given year with no fishing mortality  The dashed line represents the 77 stocks in the analysis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"))
+```
+
+
+# Supplemental Figures {-}
