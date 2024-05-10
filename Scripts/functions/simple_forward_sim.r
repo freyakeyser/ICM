@@ -68,6 +68,7 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
   for(i in 1:n.sims)
   {
     # Using the fecundity and mortality data get the lotka r's for the stock
+    # DK Note: It might make more sense to put the fishing mortality right into here as we've now done with the backwards simulations.
     junk<-simple.lotka.r(yrs = years,mort = nm,ages=ages,fecund=fecund)   
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
