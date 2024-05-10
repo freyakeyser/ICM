@@ -1161,7 +1161,7 @@ comp.lam.diff.res.tab[,rounders] <- round(comp.lam.diff.res.tab[,rounders] ,digi
 tab.names <- c("Minimum Abundance",
                "$\\lambda_{F>0}^{Min-40}$",
                "$\\lambda_{F>0}^{Min-Max}$",
-               "$\\lambda_{F>0}^{40-Min}$",
+               "$\\lambda_{F>0}^{40-Max}$",
                "$\\lambda_{F=0}^{Min-40}$",
                "$\\lambda_{F=0}^{Min-Max}$",
                "$\\lambda_{F=0}^{40-Max}$",

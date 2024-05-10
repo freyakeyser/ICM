@@ -134,9 +134,9 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
       # The exponential model
       if(pop.model == 'exponential') 
       {
-        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up)
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last -removals.next ,r=r.up)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
-        pop.last <- exp.res$Pop.current
+        pop.last <- exp.res$Pop.current 
       } # end if(pop.model == 'exponential') 
       
       # So this one is the exponential, but when above whatever bound you have set the population growth rate becomes more negative
@@ -152,10 +152,10 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
           ratio <- K[y-1]/pop.last-1
           r.up <- rlnorm(1,ratio,0.05)-1
         }
-        exp.res <- for.proj(option = "exponential",pop.last = pop.last ,r=r.up)
+        exp.res <- for.proj(option = "exponential",pop.last = pop.last -removals.next,r=r.up)
         #browser()
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
-        pop.last <- exp.res$Pop.current
+        pop.last <- exp.res$Pop.current 
       }
       
       # If you are running the logistic model it's all pretty straightforward
@@ -164,7 +164,7 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
       if(pop.model == 'logistic')
       {
         #browser()
-        exp.res <- for.proj(option = "logistic",pop.last = pop.last,K=K[y-1],r=r.up)
+        exp.res <- for.proj(option = "logistic",pop.last = pop.last -removals.next,K=K[y-1],r=r.up)
         if(exp.res$Pop.current < 0) exp.res$Pop.current =0 # don't let it drop below 0
         pop.last <- min(exp.res$Pop.current)
       }
