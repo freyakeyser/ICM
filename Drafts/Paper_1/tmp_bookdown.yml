@@ -1,0 +1,12 @@
+book_filename: "paper_1"
+rmd_files: ["tmp-index.Rmd",
+            "tmp-01-analysis_no_age_correction.Rmd",
+            "tmp-02-intro.Rmd",
+            "tmp-03-methods.Rmd",
+            "tmp-04-results.Rmd",
+            "tmp-05-discussion.Rmd",
+            "tmp-06-references.Rmd",
+            "tmp-07-tables.Rmd",
+            "tmp-08-figures.Rmd"]
+
+delete_merged_file: true

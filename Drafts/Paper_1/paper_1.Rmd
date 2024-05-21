@@ -1,4 +1,268 @@
 ---
+title: |
+   "Life history variability influence on the recovery potential of globally exploited teleosts "
+french_title: "Titre ici (*Nom latin de l'espèce*)"
+author: |
+  David. M. Keith^1^ 
+  Freya M. Keyser^1^
+  Julie M. Charbonneau^2^
+  Heather 'The Boss' Bowlby^1^
+author_list: "Keith, D.M., Keyser, F.M., Charbonneau, J.M., Bowlby, H.T.B."
+address: |
+  ^1^Bedford Institute of Oceanography\
+     Fisheries and Oceans Canada, 1 Challenger Dr.\
+     Dartmouth, Nova Scotia, B2Y 4A2 , Canada\
+  \smallskip
+  ^2^Simon Fraser University\
+     Department of Biology\
+french_address: |
+  
+month: ""
+french_month: ""
+year: 2024
+report_number: nnn
+region: "Maritimes Region"
+french_region: "Maritimes Region"
+isbn: ""
+cat_no: ""
+citation_other_language: ""
+
+abstract: |
+  Here is the abstract text. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+  Start new paragraphs after a blank line and with 2 spaces indent. Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+french_abstract: |
+
+header: "Draft working paper --- Do not cite or circulate" # or "" to omit
+output:
+ csasdown::resdoc_word:
+   french: false
+   copy_sty: true
+   line_nums: true
+   line_nums_mod: 1
+   lot_lof: false
+   draft_watermark: false
+   include_section_nums: true
+   highlight: tango
+# ------------
+# End of options to set
+knit: (function(input, ...) {
+       csasdown::render('_bookdown.yml')
+      })
+link-citations: true
+bibliography: Y:/Zotero/MAR_SABHU.bib
+# Any extra LaTeX code for the header:
+# header-includes:
+# - \usepackage{tikz}
+---
+
+```{r setup, echo=FALSE, cache=FALSE, message=FALSE, results='hide', warning=FALSE}
+library(knitr)
+if (is_latex_output()) {
+  knitr_figs_dir <- "knitr-figs-pdf/"
+  knitr_cache_dir <- "knitr-cache-pdf/"
+  fig_out_type <- "png"
+} else {
+  knitr_figs_dir <- "knitr-figs-docx/"
+  knitr_cache_dir <- "knitr-cache-docx/"
+  fig_out_type <- "png"
+}
+fig_asp <- 0.618
+fig_width <- 9
+fig_out_width <- "6in"
+fig_dpi <- 180
+fig_align <- "center"
+fig_pos <- "htb"
+opts_chunk$set(
+  collapse = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  comment = "#>",
+  fig.path = knitr_figs_dir,
+  cache.path = knitr_cache_dir,
+  fig.asp = fig_asp,
+  fig.width = fig_width,
+  out.width = fig_out_width,
+  echo = FALSE,
+  #  autodep = TRUE,
+  #  cache = TRUE,
+  cache.comments = FALSE,
+  dev = fig_out_type,
+  dpi = fig_dpi,
+  fig.align = fig_align,
+  fig.pos = fig_pos
+)
+```
+
+```{r load-libraries-n-data, echo = FALSE, cache = FALSE, message = FALSE, results = 'hide', warning = FALSE}
+# add other packages here:
+library(dplyr)
+library(readr)
+library(tibble)
+library(csasdown)
+# OK, so using the ICES assessments here's what we get for North Sea cod.
+library(readxl)
+library(tidyverse)
+library(rio)
+library(ggthemes)
+library(cowplot)
+library(gtable)
+library(viridis)
+library(arm)
+library(mgcv)
+library(lme4)
+library(scales)
+library(ggh4x)
+library(gratia)
+theme_set(theme_few(base_size = 14))
+
+
+# The location of your data
+loc <- 'D:/GitHub/ICM'
+# The parameters for the doubling time simulation
+n.dt.sims <- 1000 # Increase to 1000 for final run, which takes like a full day or something 
+n.sim.years <- 100
+# If we already have the results don't re-run the models or load data we don't need.
+load.results <- F
+# What tunning model are you running or did you run!
+what.2.tune <- 'fec_nm'
+
+#source(paste0(loc,"/Scripts/functions/tuning_sim_fast.R"))
+
+# Download the functions we'll need from github
+funs <- c("https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/simple_Lotka_r.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/backwards_project.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/forward_project.r",
+          "https://raw.githubusercontent.com/dave-keith/ICM/main/Scripts/functions/tuning_sim_fast.r"
+)
+  # Now run through a quick loop to load each one, just be sure that your working directory is read/write!
+for(fun in funs) 
+{
+  download.file(fun,destfile = basename(fun))
+  source(paste0(getwd(),"/",basename(fun)))
+  file.remove(paste0(getwd(),"/",basename(fun)))
+}
+
+if(load.results==F)
+{
+  # Choose 5 ICES stocks that we have the necessary data for
+  #ASR <- read_xlsx("../Data/ASR_2018.xlsx" sheet = "ICES")
+  ASR1 <- read.csv(paste0(loc,"/Data/ICM_data_NE_atlantic_stocks.csv"))
+  ASR <- read.csv(paste0(loc,"/Data/ICM_data_NW_atlantic_stocks.csv"))
+  
+  
+  
+  ASR <- rbind(ASR1,ASR)
+  datatypes <- unique(gsub(x = names(ASR), pattern = "[^a-zA-Z]", replacement=""))
+  
+  # Replace 0's in Num.tot with NA so the rest of this works as Freya designed it to...
+  ASR$Num.tot[ASR$Num.tot == 0] <- NA
+  # we want:
+  # Year, Num, WA, Catch, AM, NM, StockID, Management, Area, Order, Family, Genus, Species
+  ASRdat <- ASR[,c(grep(x=names(ASR), "Num"),
+                   grep(x=names(ASR), "WA"),
+                   grep(x=names(ASR), "Catch"),
+                   grep(x=names(ASR), "AM"),
+                   grep(x=names(ASR), "NM"))]
+  # Making all the data numeric that should be numeric
+  ASRdat <- apply(X = ASRdat, 2, as.numeric)
+  # Getting the species info back
+  ASRsp <- ASR[, which(!1:length(names(ASR)) %in% grep(x=names(ASR), ".", fixed=T))]
+  # And binding it all back together
+  ASR.trim <- cbind(ASRsp, ASRdat)
+  # need a unique ID for stock
+  #table(ASR.trim$Management, ASR.trim$Species)
+  ASR.trim$Stock <- paste0(ASR.trim$Management, "_", ASR.trim$Area, "_", ASR.trim$Genus, "_", ASR.trim$Species)
+  
+  ASR.long <- ASR.trim %>%
+    pivot_longer(!c("Management", "Area", "Order", "Family", "Genus", "Species", "Stock", "Year","Meeting_or_reference","Model","Case","Notes")) %>%
+    separate(col=name, into=c("type", "age"), sep = "\\.")
+  
+  # Something is weird with the mentella stock, I'm going to drop it...
+  ASR.long <- ASR.long %>% dplyr::filter(Stock != "ICES-AFWG_DEEP1-2_Sebastes_mentella")
+}# end if load results
+```
+
+```{r bilingual-code, cache=FALSE}
+options(
+  # Prevent xtable from adding a timestamp comment to the table code it produces
+  xtable.comment = FALSE,
+  # Do not allow kableExtra to load packages, we add them manually in csasdown
+  kableExtra.latex.load_packages = FALSE,
+  # Stop chunk output (echo) running into the margins
+  width = 80,
+  # Do not use scientific notation (stops tables from showing 1.2e3, etc.)
+  scipen = 999)
+
+meta <- rmarkdown::metadata
+meta_out <- rmarkdown::metadata$output
+csl <- "csl/csas.csl"
+options(OutDec = ".")
+if (is.null(getOption("french"))) {
+  stop("`french` was not set up correctly in YAML header in index.Rmd. ",
+       "It must be true or false",
+       call. = FALSE)
+}
+if (getOption("french")) {
+  csl <- "csl/csas-french.csl"
+  options(OutDec = ",")
+}
+
+french <- isTRUE(getOption("french")) # for backwards compatibility
+
+# This hook simplifies document translation for the author.
+# When building in French, it draws a box around paragraphs contained in chunks
+#  which have the option `needs_trans = TRUE`. It also labels
+#  the box with a "Needs translation" tag in red and the chunk label in blue.
+# You need to change the `needs_trans` option to `FALSE` for a chunk once you
+#  have inserted the translated text into it. You will get a utf-8 error if
+#  you leave it as `TRUE` and there is French in the chunk.
+#  This function assumes you are translating from English to French.
+#  If you wrote your document in French and want to translate to English,
+#  put a ! before `getOption("french")` below and add the `need_trans`
+#  chunk options to your English paragraph chunks instead of the French ones.
+#  
+#  IMPORTANT NOTES
+#  - Use `csasdown::render()` to render the document. This runs a
+#    pre-processing step which ensures any inline R chunks
+#    `r print("Like this one")` are taken care of correctly and that all
+#    backslash variables (eg. \pi, \alpha, \@ref, \cite) are all processed
+#    correctly.
+#  - French latex places a space before the colon by default so if you need a colon
+#    with no space before it, use \\hc .
+knit_hooks$set(needs_trans = function(before, options){
+  if(getOption("french") && options$needs_trans){
+    if (before){
+      paste0("\\
+   \\begin{lrbox}{\\userinput}
+   \\begin{minipage}{\\dimexpr\\linewidth-2\\fboxsep-2\\fboxrule}
+   \\textcolor{red}{\\textbf{Needs translation - \\textcolor{blue}{knitr chunk: ", options$label, "}}}
+   \\begin{lstlisting}
+  ")
+    } else {
+      "
+   \\end{lstlisting}
+   \\end{minipage}
+   \\end{lrbox}
+   \\noindent
+   \\fbox{\\usebox{\\userinput}}
+  "
+    }
+  }
+})
+```
+
+---
+title: `r ifelse(fr(), meta$french_title, meta$title)`
+month: `r ifelse(fr(), meta$french_month, meta$month)`
+region: `r ifelse(fr(), meta$french_region, meta$region)`
+csl: `r csl`
+---
+
+<!--chapter:end:tmp-index.Rmd-->
+
+---
 output: word_document
 editor_options: 
   chunk_output_type: console
@@ -2492,3 +2756,412 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 # # None of the above really work at all....
 
 ```
+
+<!--chapter:end:tmp-01-analysis_no_age_correction.Rmd-->
+
+# INTRODUCTION  {#intro}
+
+Intro – life history paragraph, environmental variation paragraph, management ties paragraph, goals. 
+
+theoretical expectations related to productivity and life history for various species (e.g. herring vs. Cod) (ties to regional variation in lifetime reproductive rates and doubling time).  
+
+Evidence for specific species to make use of environmental conditions – boom in recruitment.  
+
+How our understanding of productivity is used in a management context – projections, reference points, risk, (ties directly to density dependence figure).  
+Species-environment relationship – is it different from what we expect and how does that influence our capacity for management of exploited fishes.  
+
+The under appreciated influence of regional variation in determining recovery potential of exploited teleosts.  - can’t look at a single species and expect it will behave the same way.  
+
+
+Objectives
+  - Quantify the life history variability of exploited marine teleosts
+  - Explore regional and taxonomic correlates of life history variability
+  - Based on the observed life history, quantify the recovery potential of marine teleosts in the absence of fishing
+  
+
+<!--chapter:end:tmp-02-intro.Rmd-->
+
+# Methods {#meth}
+
+
+## Data
+
+This analysis used age structured fisheries data obtained from stock assessments for stocks in the Atlantic and Pacific Oceans [@charbonneauAgestructuredmarinefishdatabase2022; @charbonneauEffectsFishingMortality2022]. This repository had sufficient data to run the analysis for 77 stocks from NE Atlantic, NW Atlantic, and the North Pacific, this included stocks managed by International Council for the Exploration of the Sea (ICES; `r n.stock.ices`), NOAA (NOAA;`r n.stock.noaa`), and Fisheries and Oceans Canada (DFO; `r n.stock.dfo` stocks). The time series used in this analysis started as early as `r min.year` and the most recent data were from `r max.year`, the average length of the time series for the stocks included in this analysis was `r mn.ts.len` years and the number of years used ranged between `r min.ts.len` and `r max.ts.len` years. The stocks used represented `r num.orders` orders, with the most represented orders being the Gadiformes (`r num.gads` stocks), Pleuronectiformes (`r num.pleur` stocks) and Clupeiformes (`r num.clup` stocks). The other three orders had relatively few stocks included in the analysis, with `r num.perci` Perciform stocks, `r num.scomb` Scombriform stocks, and just `r num.scorp` Scorpaeniform stock.  The most common species in this analysis were Atlantic cod (*G. morhua*) and the majority of the stocks (`r n.six`) in this analysis were represented by one of six species (*G. morhua* (`r num.cod`), *C. harengus* (`r num.her`), *M. aeglefinus* (`r num.had`),  *P. virens* (`r num.pol`), *S. solea* (`r num.sol`), and *P. platessa* (`r num.plat`)). 
+
+
+These data included age-specific estimates of abundance, weight, biomass, maturity, natural mortality, and fishery removals (Table \@ref(tab:tab-meta)), these data were all required to calculate survival-at-age and fecundity-at-age and to estimate the annual productivity of these stocks. For the age structured analysis, the last age class was considered the 'terminal' age in the analysis, thus we implicitly assumed there was no contribution to productivity from older aged individuals. In addition, for the majority of the stocks the first age class was age 1 (`r n.age.1` stocks) while another `r n.age.2.plus` of the stocks have a first age of 2 or greater. The young age classes not included for these stocks (e.g. Age 0) consisted of immature individuals that do not contribute to the productivity of the stock; however it has been noted that the exclusion of immature age classes in these types of analyses may lead to a slight overestimate of productivity [@pardoMaximumIntrinsicRate2016].
+
+
+## Life Table Reconstruction 
+
+The discrete time Euler-Lotka  equation was first proposed by Euler in 1760 (subsequently published by @moserGesetzeLebensdauer1839) and is a special case of the continuous time demographic model first proposed by Lotka in 1907 [@lotkaRelationsBirthRates1907; @sharpeProblemAgedistribution1911; @lotkaRelationBirthRate1918]:
+
+$$
+1 = \sum_{x=\alpha}^{\omega} \lambda^{-x} s_x f_x dx
+$$
+
+Where $x$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_x$ is the survivorship to age $x$, and $f_x$ is the fecundity of individuals of age $x$. Note that the discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945, @caswellMatrixPopulationModels2001]. The available stock assessment data are used to calculate survival-at-age and fecundity-at-age to estimate $\lambda$, assuming that each stock represents a discrete population with individual dynamics. 
+
+<!-- \begin{align} -->
+<!--   \begin{bmatrix} -->
+<!--     f_0  & f_1 & f_2  & f_3    & ...          & f_{\omega-1} \\ -->
+<!--     s_0  & 0   & 0    & 0      & ...          & 0 \\ -->
+<!--     0    & s_1 & 0    & 0      & ...          & 0 \\ -->
+<!--     0    & 0   & s_2  & 0      & ...          & 0 \\ -->
+<!--     0    & 0   & 0    & \ddots & ...          & 0 \\ -->
+<!--     0    & 0   & 0    & ...    & s_{\omega-2} & 0 \\ -->
+<!--   \end{bmatrix} -->
+<!-- \end{align} -->
+
+
+### Fecundity-at-age
+
+The number of spawners in year $y$ and age class $a$ ($SSN_{y,a}$) is the proportion of mature individuals ($Mat_{y,a}$) multiplied by the number of individuals in each age
+
+$$
+SSN_{y,a} = Mat_{y,a} N_{y,a}
+$$
+The Euler-Lotka equation requires fecundity to be the number of offspring produced by each female in each age class. Given the uncertainty of both fertilization and egg survival, using the number of eggs at a given length or size is inappropriate.  However, these data do have the number of recruits produced each year, and this can be combined with the spawning stock biomass to obtain an estimate of the number of recruits produced per kilogram of spawning biomass $RPS_{y}$, this is calculated as
+
+$$
+RPS_{y} = R_{y} SSB_{tot,(y-ra)} 
+$$
+
+Where $SSB_{yot,y-ra}$ is the total spawning stock biomass in year $y$. $R_{y}$ is the number of individuals in the youngest age class available for a specific stock (hereafter referred to as recruits) offset temporally by the age of the recruits. For example, if the age of the recruits ($ra$) is 2 years , we assume that the recruits in 2010 were produced by the spawning stock biomass in 2008 ($SSB_{tot,y-ra}$).  The number of recruits produced by each age class ($RPA_{y,a}$) can then be calculated by multiplying the spawner biomass in each age class $SSB_{y-ra,a}$ by the number of recruits produced per kilogram of SSB
+
+$$
+RPA_{y,a} =  SSB_{(y-ra),a} RPS_{y}
+$$
+This method does not account for any changes in reproductive success by age, each kilogram of spawning biomass contributes the same to the total total reproductive output, irrespective of their age. Finally, the age-specific fecundity ($Fec_{y,a}$) is calculated as number of offspring produced by each individual in the population. This is offset by one year, as the recruits observed in year $y+1$ enter into the Euler-Lotka formulation in year $y$.
+
+$$
+Fec_{y,a} =  \frac{RPA_{y+1,a}}{SSN_{(y-ra+1),a}}
+$$
+### Suvival-at-age
+
+The number of animals surviving to each age depends on age-specific mortality rates. Commercially-exploited fishes experience fishing mortality (F) once they grow large enough to become vulnerable to the gear (reference). Fishing mortality combines with natural mortality (M) to give total mortality (Z) affecting each age class in each year. Varying assumptions can be made about natural mortality during stock assessments, where it may be an assumed value for each age (EXAMPLE), allowed to vary over time and by age (EXAMPLE), or input as a constant across ages (EXAMPLE).  Due to challenges with separability in typical stock assessment models, natural mortality is often assumed for each age class, in some assessments it varies by age and over time, in other assessments it does not.  Irrespective of this, the stock assessment used in this analysis all provide an estimate of natural mortality by age and year, this value is typically an instantaneous rate and is convert to a proportional natural mortality for the Euler-Lotka model.  
+
+The data also contains the number of fish harvested by the fishery each year and for each age. This can be combined with the assessed numbers at age to get an estimate of fishing mortality in each year for each age.
+
+$$
+FM_{y,a} =  \frac{Catch_{y,a}}{N_{y,a}}
+$$
+This is combined with the natural mortality to get a total mortality estimate ($Z_{y,a}$) for each age in each year 
+
+$$
+Z_{y,a} =  FM_{y,a} + NM_{y,a}
+$$
+### Population Growth Rates $\lambda$
+
+The fecundity, natural mortality, and fishing mortality estimates were then used to obtain an estimate of $\lambda$ for a given year from the Euler-Lotka equation and used to predict the abundance in the following year.
+
+$$
+N_{y+1} = \lambda_{y} N_{y}
+$$
+The Euler-Lotka model was fit using an iterative minimization process, where predicted abundance in the following year was compared to the abundance estimate from the stock assessment for the corresponding year ($N_{y+1}$). Where necessary, the annual age-specific fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was within 5% of the abundance estimates from the stock assessment (median difference was `r med.per.diff`). This tolerance ensured that our analyses reflected the same understanding of stock productivity, natural mortality and fecundity as in the current assessments; effectively this methodology treats the abundance estimates from the stock assessments as the 'truth'.   
+
+The life table reconstruction resulted in stock-specific $\lambda$, fecundity, and natural mortality estimates for each year in which data were available accounting for the age structure and life history characteristics of each stock. In other words, we estimated the realized population growth rate using the changes in the population size of the stocks from year to year (realized population growth rates), based on the amount of mortality experienced and annual reproductive success. The realized $\lambda$
+included fishing mortality  ($\lambda_{F>0}$), although this method enabled the theoretical population growth rate in the absence of fishing  ($\lambda_{F=0}$) could also be calculated directly fomr the annual the natural mortality and fecundity estimates. 
+
+<!-- For consistency in the Euler-lotka estimates across all the stocks, the first age used in the analysis was 'age 0' (which is simply an estimate of abundance of fish in the year they were born). For some stocks this information is not available (see Table X, **possibly in an Appendix where we have meta-data**). For the stocks in which age 0 information is unavailable, an estimate of the abundance of the younger age classes were back calculated using average natural mortality provided for the youngest age class available. -->
+
+
+## Density Dependence
+
+Life table analyses make no assumptions about population regulation and thus do not incorporate a density-dependent relationship between spawners and recruits (Reference?). However, the data itself could be explored for evidence of density-dependence by modelling the estimated annual population growth rate against the proportion of maximum abundance observed that year for each stock. This was done twice, once using  ($\lambda_{F=0}$) and once using ($\lambda_{F>0}$).  Negative density dependence is observed when $\lambda$ increases as abundance declines, positive density dependence occurs when $\lambda$ declines with increasing abundance, while density independence is observed when $\lambda$ is not impacted by changes in abundance.
+
+Generalized Additive Mixed Models were used to allow for some non-linearity in the relationships (CITE MCGV and WOOD), the overall effect and the effect for each stock was modelled as
+
+\begin{align}
+\lambda_{i,j} \sim N(0,\sigma^2_{i,j}) \\
+E(\lambda_{i,j}) = \mu_{i,j} \\
+log(\mu_{i,j}) =  Prop_{i} + Stock_{j}  \times Prop_{i} \\
+Stocks_{i,j} \sim N(0,\sigma^2_{Stocks})
+\end{align}
+
+The interaction was modeled using the *fs* basis using the mgcv package in R, this treats the smooth curves as random effects and is used when a factor has a large number of levels (CITE!).  Various alternative modelling methods were explored (various model formulations, alternative error distributions, etc.) but all models had similar challenges overcoming either the underlying non-normality or the heteroskedasticity of the data. As such, the uncertainty surrounding the model output should be treated with caution, while we discuss the general trends this model provides we attempted to avoid discussion of the statistical significance of the trends.
+
+## Demographic Parameters
+
+There are numerous demographic parameters that can be derived from the outputs of the life table reconstruction. Here we focus on two that are strongly linked to recovery potential: lifetime reproductive success and generation time. Lifetime reproductive success describes the average number of spawners produced by one female spawner throughout her lifetime
+
+
+## Lifetime Reproductive Success 
+
+The lifetime reproductive success ($R_0$)  was calculated for each cohort in which fecundity and natural mortality were available for all age classes. It was calculated using only natural mortality (F=0) and with the combined effect of natural mortality and fishing mortality (F>0).  This was calculated for each cohort as
+
+$$
+R_0 = \sum_{x=\alpha}^{\omega} s_x f_x
+$$
+
+*Here we are treating the plus group as effectively 'terminal', i.e., it assumes that after the last age class the individuals make no contribution, which means these values are probably a bit low, but at this age they really aren't making much of a contribution on average*. 
+
+## Generaion Time
+
+The generation time was defined as the mean age of the spawners of the observed recruits in a cohort over its lifetime ($T_G$), here we calculated this for each cohort in which fecundity and natural mortality were available for all age classes. It was calculated twice, using only natural mortality (F=0) and with the combined effect of natural mortality and fishing mortality (F>0). 
+
+
+$$
+T_G = \frac{\sum_{x=\alpha}^{\omega} x s_x f_x}{\sum_{x=\alpha}^{\omega}  s_x f_x}
+$$
+
+## Recovery Potential
+
+The annual fecundity and natural mortality values  varied considerably for each stock. To account for this variability when evaluating recovery potential, we used a simulated population projection. For `r n.dt.sims` simulations, we took a random sample of the annual values for fecundity and natural mortality, used the life table reconstruction to estimate $\lambda$, and calculated abundance in the following year. Abundance of each stock was projected over `n.sim.years` years, and the percentage of the simulations in which the population size had doubled was recorded each year. For simplicity, we did not allow for density-dependent effects (e.g. potential population decline as abundance exceeds carrying capacity) because of uncertainty surrounding potential maximum population size for each species. Once a population had doubled, it was considered to have remained at that abundance or greater for the remainder of the projection. 
+
+
+<!--chapter:end:tmp-03-methods.Rmd-->
+
+# Results {#reses-peses}
+
+<!-- Throughout the results we will focus primarily the six most commonly found species in the analysis (*Gadus morhua, Melogrammus aeglefinus, Clupie harengus, Plueronecties platessa, Polluck virens* and *Solea Solea*).  The complete results for all of the stocks included in the analysis can be found in the Supplemental material. -->
+
+## Population growth rates ($\lambda$)
+
+The overall median population growth rate when excluding the effects of fishing ($\lambda_{F=0}$) was `r med.lambda.F0`, indicating that there was a latent potential for population growth for these stocks of approximately `r med.r.F0`%. When the effect of fishing was accounted for, the median population growth rate ($\lambda_{F>0}$) declined to `r med.lambda.F`, which suggested that the populations in this analysis may have been over-fished by approximately `r -med.r.F`% annually. However, for many of the stocks included in this analysis large recruitment events resulted in large estimates of $\lambda_{F>0}$, in some years, this led to a skewed distribution of the lambda estimates, with these large events being an integral component of the stocks population dynamics (Figures \@ref(fig:lambda-bx-6-fig) and \@ref(fig:lambda-bx-other-fig)). The mean $\lambda_{F>0}$ for the stocks in this analysis was `r mn.lambda.F` which would suggest there remains scope for population growth even after fishing. The mean$ \lambda_{F>0}$ was lower than the median for just `r n.stocks-n.mn.higher.med.fish` of the `r n.stocks` in this analysis. The majority of these stocks (`r n.nw.ice`) were in the central or NW Atlantic, and this included `r n.cod.low.mn`  of the `r n.cod` Atlantic cod stocks in this analysis.
+
+There were regional and species specific trends in both $\lambda_{F=0}$ and $\lambda_{F}$. Haddock (*M. aeglefinus*) and Atlantic cod (*G. morhua*) stocks had some of highest variability in lambda, both at the stock level and between stocks (Figure \@ref(fig:lambda-sd-fig)). For these two species, the variability of lambda within a stock declined as you moved from the Eastern Atlantic to the Western Atlantic (Figures \@ref(fig:lambda-bx-6-fig) and \@ref(fig:lambda-sd-fig))). The pattern was more pronounced for Atlantic cod, with stocks in the eastern Atlantic tending to have relatively low within stock variability. The two other species with stocks found in the NW and NE Atlantic (*C.harengus* and *P. virens*) the variability of lambda between the stocks was much lower than for Haddock and Atlantic cod and there were no clear differences between regions (Figures \@ref(fig:lambda-bx-6-fig) and \@ref(fig:lambda-sd-fig))). This was largely due to the within stock lambda variability being lower than the within stock variability of Haddock and Atlantic cod stocks in the NE Atlantic (Figure \@ref(fig:lambda-bx-6-fig)). Two other stocks (*A. dubious* and *T. esmarkii*) in the North Sea had highly variably lambda estimates, though notably the lambda was less variable than the estimates for Haddock and Atlantic cod in this area (Figure \@ref(fig:lambda-bx-other-fig)). For the remainder of other stocks in this analysis, years in which the value of $\lambda_{F=0}$ exceeded 1.5 were more rare. Exceptions to this included *M. merlangus* in the Celtic Sea, *P. dentatus* and *S. Chrysops* in the NW Atlantic, and the Gulf of Alaska *T. chalcogramma* stock in the Pacific Ocean (Figure \@ref(fig:lambda-bx-other-fig)).
+
+## Density Dependence
+
+Overall, the evidence suggested that negative density dependence was common as both $\lambda_{F=0}$ and $\lambda_{F>0}$ increased as abundance declined (Figure \@ref(fig:dd-overall-plt)). The strength of density dependence appeared to be more pronounced at low and high abundance levels (i.e., changes in abundance had larger impacts on $\lambda$ when abundance was below $\approx$ 0.4 or above $\approx$ 0.7). $\lambda_{F=0}$ only declined below 1 when the stocks approached their maximum observed abundance ($\approx$ `r pa.lam.nf.at.one`%), indicating that in the absence of fishing there was a latent capacity for population growth in these stocks.  However, when accounting for fishing mortality, $\lambda_{F>0}$ was below 1 until the stocks were below approximately `r pa.lam.fish.at.one`% of their maximum abundance. At lower abundances, the rate of increase in $\lambda_{F>0}$ was higher than $\lambda_{F=0}$, likely due to reductions in fishing mortality at low abundance, but overall $\lambda_{F>0}$ was lower than $\lambda_{F=0}$, suggesting that some fishing mortality was common even at very low abundance (Figure \@ref(fig:dd-overall-plt)).
+
+Generally, there was an increase in the variability of the $\lambda$ estimates as abundance declines, largely driven by an increase in the magnitude of the maximum value of $\lambda$ and a small increase in the frequency of low $\lambda$ values (Figure \@ref(fig:dd-overall-plt)). For example, values of $\lambda_{F>0}$ > `r pa.lam.fish.low.bigs` were not observed at abundances > `100*pa.big.threshold`% of the maximum (similar trends were observed for $\lambda_{F=0}$, with only one point being above `r pa.lam.nf.low.bigs` when the abundance was > `r 100*pa.big.threshold`% of the maximum). Similarly, the percentage of $\lambda_{F>0}$ values below `r lam.low.threshold` was `r 100*prop.low.high.abund`% when the proportion of the abundance was >= 0.3, but this increased to `r 100*prop.low.low.abund`% of the data when the proportion of the abundance was below 0.3.
+
+However, these general patterns were highly variable between stocks. All of the stocks included in this analysis had $\lambda_{F=0}$ estimates > 1 at their lowest observed abundances (Table \@ref(tab:tab-lambdas) and Figure \@ref(fig:dd-nf-stock-plt)). Stocks in the Northwest Atlantic (particularly Atlantic cod) and Alaska had some of the lowest $\lambda_{F=0}$ estimates at low abundance, while several stocks in the North Sea had among the highest $\lambda_{F=0}$ estimates at low abundance (Table \@ref(tab:tab-lambdas)).  Of the `r n.bl.40` stocks that had declined below 40% of the maximum abundance, only `r `n.low.40.nf` of the stocks had a $\lambda_{F=0}$ estimates < 1 at 40% of their maximum abundance; when the effects of fishing were included `r `n.low.40.nf` of the stocks had $\lambda_{F>0}$ estimates below 1 (Table \@ref(tab:tab-lambdas)).
+
+For the vast majority of stocks the lowest values of both $\lambda_{F=0}$ (`r n.low.lam.at.max.nf` of `r n.stocks`) and $\lambda_{F>0}$ (`r n.low.lam.at.max.fish` of `r n.stocks`) were found near the maximum abundance in the time series (Figures \@ref(fig:dd-nf-stock-plt) and \@ref(fig:dd-fish-stock-plt)). Atlantic cod in the Northwest Atlantic comprised `r n.cod.lam.not.at.max.nf` of the `r n.stocks - n.low.lam.at.max.nf` stocks in which the lowest $\lambda$ was observed below the maximum abundance, the low $\lambda$ occurred at population abundances that were remarkably similar for these Atlantic cod stocks (ranging between `r pa.low.cod.min` and `r pa.low.cod.max`). For two of the `r n.stocks - n.low.lam.at.max.nf` stocks, the lowest $\lambda_{F=0}$ estimates were less than 0.005 smaller than the estimate at the maximum abundance, for the other four stocks the decline in $\lambda_{F=0}$ from the highest abundance observed was somewhat pronounced, ranging from `r low.4.lam.40.nf` to `r low.lam.40.nf` (Tables \@ref(tab:tab-lambdas) and \@ref(tab:tab-lamda-diffs) and Figures \@ref(fig:dd-nf-stock-plt) and \@ref(fig:dd-fish-stock-plt) ).
+
+## Demographic Parameters
+
+The lifetime reproductive output and generation length were estimated for each cohort in which data were available. When excluding fishing mortality, the overall median lifetime reproductive output, (i.e., the number of females produced by one female that survive to reproduce) was `r r0.med` (mean = `r r0.mn`; Figures \@ref(fig:r0-6-plt) and \@ref(fig:r0-other-plt)). When the realized fishing mortality was accounted for, the median reproductive output dropped to `r r0.med.fish` (mean = `r r0.mn.fish`), this again highlighted the importance of large reproductive events for survival of these stocks and the latent capacity for population growth (Figures \@ref(fig:r0-6-plt) and \@ref(fig:r0-other-plt)). For stocks which were found across the north Atlantic, the lifetime reproductive output when excluding fishing mortality tended to decline as your move west, this again was most evident for the Atlantic cod stocks.  While the reproductive potential of cohorts within a stock could be highly variable, there were no clear temporal trends in the $R_0$ (Figures \@ref(fig:r0-nf-ts-plt) and \@ref(fig:r0-fish-ts-plt)).
+
+The generation lengths tended to become more similar between stocks both intra- and inter-specifically when accounting fishing mortality (Figures \@ref(fig:gl-6-plt) and \@ref(fig:gl-other-plt)). In addition, the generation length of *C. harengus*, generally considered a short lived species, in the Central and NW Atlantic tended to be higher than the generation length of Atlantic cod and haddock, especially for the stocks in the NE Atlantic (Figure \@ref(fig:gl-6-plt)). There were no obvious patterns in the temporal trends in the generation length (Figures \@ref(fig:gl-nf-ts-plt) and \@ref(fig:gl-fish-ts-plt)).
+
+## Recovery Potential
+
+The recovery potential in the absence of fishing was relatively high for the majority of species (Figure \@ref(fig:dub-time-map)). Of the `r n.stocks` stocks in this analysis, `r n.dub.10` had a high recovery potential (we define 'high' as at least `r 100*dub.p.high`% of the simulations having experienced a doubling in size) within 10 years, by year 20 this had increased to `r n.dub.20` stocks (Figure \@ref(fig:dub-ts)).
+
+The stocks in which recovery potential was low (we define low as < `r 100*dub.p.low`% of the simulations experiencing a doubling in size) exhibited clear regional trends. Of the `r n.not.dub.20` stocks in this analysis in which the recovery potential was low after 20 years, `r n.alaska.slow` of the stocks were in Alaska (`r n.alaska` stocks in total), and `r n.nwa.slow` stocks in NAFO Regions 2-4 in the NW Atlantic (`r n.nafo.24` stocks were in NAFO Regions 2-4). This contrasts to only `r n.nea.slow` of the `r n.nea` stocks in the NE Atlantic with a low recovery potential within 20 years in the absence of fishing (Figure \@ref(fig:dub-time-map)). 
+
+The recovery potential was influenced both by $\lambda_{F=0}$ and the variability in $\lambda_{F=0}$. Stocks with a median $\lambda_{F=0} < 1$  had moderate (defined as stocks in which 50-75% of the simulations doubled within 20 years) to high (> 75% doubled in size within 20 years) recovery potential whenever the standard deviation in lambda was greater than approximately 0.4 (Figure \@ref(fig:dub-vs-sd)). Stocks with a median $\lambda_{F=0}$ near 1 and with low variability were the stocks in which the recovery potential tended to be categorized as low (< 50% of the simulations doubled within 20 years).
+
+<!--chapter:end:tmp-04-results.Rmd-->
+
+# DISCUSSION {#disin}
+
+
+I think we disagree with @kindsvaterTenPrinciplesEvolutionary2016 because we can't generalize based on life-history very easily (cod haddock herring).
+
+Looks like density dependence is real. Dave's pet theory is there is solid evidence of density dependence for many stocks above around 0.4, below 0.4 the evidence suggest that density dependence weakens for some stocks, BUT, some stocks have an ability to very occasionally very spectacularly take advantage of the environment.  But not all stocks and species have this ability and the strength and frequency seems to be influenced by where you live and what species you are. Little evidence for high lambda for most stocks in the NW Atlantic, while many stocks assessed in the North Sea had anomalously high lambdas in 1 or more years. Cod show this  perfectly....
+
+Looks like the median lambda is around 0.2 at low abundance (mean is much higher because outliers) for many stocks. So potential growth at low abundance is around 20%, tends to trend towards 0 as you approach the maximum observed abundance. This is very interesting b/c on average is suggests that the maximum observed abundance may be a reasonable proxy for the carrying capacity of a stock. Of course there is a great deal of variability around this, which may be related to the timing of the start of the time series in relation to historical fishing activity, fishing pressure, environmental variability, etc... but still it is kinda interesting.  
+
+The recovery potential for some species is tied to the variability in their growth rate... Based on historically observed lambdas, all the Haddock stock in this analysis were likely to double in size within a decade of fishing cessation. The worst situation is low lambda + low variability... you can have a low lamda 'most of the time', but if highly variable the stock can take off (this in many ways is what fisheries science is based on)... Also of note these large events do tend to be far more likely when abundance is < 40% of maximum (of course this would be in part because it's easier to go from having \$10 to \$20 than it is to go from \$1,000 to \$2,000). 
+
+Idea- realized productivity of cod/haddock has been highly variable. But from life history theory you would have expected that to be herring/smelt. Episodic recruitment events. (boom and bust?) not population boom but more like a baby boom.  
+
+Likelihood of stock collapse related to life history characteristics, maybe reframe relative to large productivity events of cohorts – link to idea of cod/haddock above. No expectation that intersection between life history traits and environmental conditions to result in such marked differences among populations within a species in realized productivity.  
+
+Center around the idea of equilibrium theory? That management might be fairly good for stocks that aren’t very variable, but when you make a decision based on averages you can make really bad ones.  
+
+By ignoring the density dependence patterns observed in this analysis, the doubling time analysis would overestimate the doubling time for stocks that were at low abundance with classic negative density dependence dynamics, while it would underestimate it for stocks with positive density dependence. Here perhaps talk about infrequent big events and how using a theoretical rmax within a logistic model isn't a good idea because this will way over-estimate recovery potential at low abundance.
+
+The optimization procedure assumes that both the estimates of abundance and the fishery removals from the stock assessment are correct. *A couple sentences about why fisheries removals may be underestimated*. This would result in the estimates of the $\lambda$ excluding fishing mortality in this analysis being lower than reality, as this 'missing' mortality was accounted for by reductions in either fecundity or an increase in natural mortality. The optimization routine resulted in a median decrease in the no-fishing $\lambda$ estimates of approximately `r med.lam.per.diff`%, the overall directionality of this change is consistent with fishing mortality being generally underestimated.
+
+Fisheries appear to slightly weaken the effects of density dependence overall. Maybe due to fisheries having positive density dependence? Seemingly below around 0.5 fishing leads to a positive lambda, below 0.5 it is a negative lambda... that's kinda kooky cool!
+
+The stocks which reached very low abundance (< 10% of maximum) tended to have high values of lambda, suggesting strong compensation in stocks when they are at extremely low abundance. Oddly, the path to this isn't linear, and positive density dependence (or at least density independence was evident between 10 and 40% of maximum abundance).  
+
+Probably something worth citing in here @thorsonPredictingRecruitmentDensity2020
+
+<!--chapter:end:tmp-05-discussion.Rmd-->
+
+<!-- Do not edit this file! -->
+
+\clearpage
+
+# REFERENCES {-}
+
+<!--chapter:end:tmp-06-references.Rmd-->
+
+---
+output:
+  word_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+\clearpage
+\newpage
+
+# Tables {-}
+
+```{r, process}
+# This will be the meta data really...
+# remove columns we don't need.
+
+rm.meta <- which(names(meta.sub) %in% c("Meeting_or_reference","G.short","G.Species","Manage.short","LME","Area.broad","Area.long","Area.narrow","Stock.short","Stock","Model","Case","Notes","Area"))
+meta.4.tab <- meta.sub[,-rm.meta]
+re.ord <- c(8,2:7,1)
+meta.4.tab <- meta.4.tab[,re.ord]
+names(meta.4.tab) <- c("Stock", "Order", "Family", "Genus", "Species", "Minimum Age", "Maximum Age", "Management Body")
+
+```
+
+```{r,tab-lambdas}
+# The table with the lambda values
+csas_table(comp.lam.res.tab,caption ="A comparison of the $\\lambda_{F=0}$ and $\\lambda_{F>0} estimates for stock at the minimum and maximum abundance, along with the estimate at 40\\% of the maximum abundance. values greater than 1 indicate that the population would be expected to increase in size, while values less than 1 indicate the population is likely to decline in size")
+```
+
+\newpage
+
+```{r,tab-lamda-diffs}
+# Now make the table for the differences
+csas_table(comp.lam.diff.res.tab,caption ="A comparison of the difference in $\\lambda_{F=0}$ and $\\lambda_{F>0} for each stock at the minimum and maximum abundance, along with the change at 40\\% of the maximum abundance. Positive values indicate that the $\\lambda$ estimae has increased as abundance declines (consistent with negative density dependence), while negative values indicate the $\\lambda$ estimate has declined (considtent with positive density dependence)")
+```
+
+
+
+```{r,tab-meta}
+# Now make the table for the differences
+csas_table(meta.4.tab,caption ="Summary of the stocks included in this analysis.  The minimun and maximum ages are what was used in the stock assessment.")
+```
+
+
+
+<!--chapter:end:tmp-07-tables.Rmd-->
+
+---
+output:
+  pdf_document:
+    fig_caption: yes
+    extra_dependencies: float
+linkcolor: blue
+header-includes: \usepackage{float}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include=F, echo=F}
+knitr::opts_knit$set(eval.after = "fig.cap")
+knitr::opts_chunk$set(fig.pos = 'H')
+options(knitr.kable.NA = '')
+require(tidyverse)
+options(tinytex.verbose = TRUE)
+
+```
+
+
+# Figures {-}
+
+
+```{r lambda-bx-6-fig, echo=F, fig.cap="$\\lambda$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-bx-other-fig, echo=F, fig.cap="$\\lambda$ estimates for the remainded of the stocks in this analysis, plotted by the location of the stock. The abreviated species name is provided on the x axis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-sd-fig, echo=F, fig.cap="Standard deviation of the $\\lambda$ estimates for each stock, ordered by species, in this analysis. "}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-overall-plt, echo=F, fig.cap="Density dependence of $\\lambda$ The top panel shows $\\lambda_{F=0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95\\% confidence interval. The middle panel shows $\\lambda_{F>0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95% confidence interval. The bottom panel compares the GAM smooths for $\\lambda_{F=0}$ and $\\lambda_{F>0}$."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overall_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-nf-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F=0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_nf_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-fish-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F>0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-6-plt, echo=F, fig.cap="$R_0$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-other-plt, echo=F, fig.cap="$R_0$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-nf-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-fish-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-6-plt, echo=F, fig.cap="Generation length estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-other-plt, echo=F, fig.cap="Generation length estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-nf-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-fish-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+<!-- Now for the Doubling time -->
+
+\newpage
+```{r dub-time-map, echo=F, fig.cap="Doubling time estimate for each stock with no fishing mortality."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_order_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dub-ts, echo=F, fig.cap="The number of stocks which doubled in size by a given year with no fishing mortality  The dashed line represents the 77 stocks in the analysis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dub-vs-sd, echo=F, fig.cap="The recovery potential (low, moderate, or high) of each stock after 20 years compared to the median $\\lambda_{F=0}$ and the standard deviation of $\\lambda_{F=0}$."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"))
+```
+
+
+# Supplemental Figures {-}
+
+<!--chapter:end:tmp-08-figures.Rmd-->
+
