@@ -24,3 +24,7 @@ Fisheries appear to slightly weaken the effects of density dependence overall. M
 The stocks which reached very low abundance (< 10% of maximum) tended to have high values of lambda, suggesting strong compensation in stocks when they are at extremely low abundance. Oddly, the path to this isn't linear, and positive density dependence (or at least density independence was evident between 10 and 40% of maximum abundance).  
 
 Probably something worth citing in here @thorsonPredictingRecruitmentDensity2020
+
+
+While alternative frameworks have been suggested and are being implemented globally, (e.g., Ecosystem Based management) the uptake of these methods has been relatively slow due to a lack of mechanistic understanding, a lack of data, and the more complicated nature of the science advice alternative methods provide. 
+

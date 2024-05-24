@@ -1141,12 +1141,12 @@ rounders <- c("lam.fish.min","lam.fish.40","lam.fish.max",
 comp.lam.res.tab[,rounders]      <- round(comp.lam.res.tab[,rounders] ,digits=3)
 # Now give it pretty names
 tab.names <- c("Minimum Abundance",
-               "$\\lambda_{F>0}^{Min}$",
-               "$\\lambda_{F>0}^{40}$",
-               "$\\lambda_{F>0}^{Max}$",
-               "$\\lambda_{F=0}^{Min}$",
-               "$\\lambda_{F=0}^{40}$",
-               "$\\lambda_{F=0}^{Max}$",
+               "$\\lambda_{FM>0}^{Min}$",
+               "$\\lambda_{FM>0}^{40}$",
+               "$\\lambda_{FM>0}^{Max}$",
+               "$\\lambda_{FM=0}^{Min}$",
+               "$\\lambda_{FM=0}^{40}$",
+               "$\\lambda_{FM=0}^{Max}$",
                "Stock","Species")
 names(comp.lam.res.tab) <- tab.names
 
@@ -1161,12 +1161,12 @@ rounders <- c("lam.fish.min.40","lam.fish.min.max","lam.fish.40.max",
 comp.lam.diff.res.tab[,rounders] <- round(comp.lam.diff.res.tab[,rounders] ,digits=3)
 # Now give it pretty names
 tab.names <- c("Minimum Abundance",
-               "$\\lambda_{F>0}^{Min-40}$",
-               "$\\lambda_{F>0}^{Min-Max}$",
-               "$\\lambda_{F>0}^{40-Max}$",
-               "$\\lambda_{F=0}^{Min-40}$",
-               "$\\lambda_{F=0}^{Min-Max}$",
-               "$\\lambda_{F=0}^{40-Max}$",
+               "$\\lambda_{FM>0}^{Min-40}$",
+               "$\\lambda_{FM>0}^{Min-Max}$",
+               "$\\lambda_{FM>0}^{40-Max}$",
+               "$\\lambda_{FM=0}^{Min-40}$",
+               "$\\lambda_{FM=0}^{Min-Max}$",
+               "$\\lambda_{FM=0}^{40-Max}$",
                "Stock","Species")
 names(comp.lam.diff.res.tab) <- tab.names
 
@@ -1210,8 +1210,8 @@ min.year <- min(res.lambda.fin$year)
 max.year <- max(res.lambda.fin$year)
 stock.ts.len <- res.lambda.fin |> collapse::fgroup_by(Stock.short) |> collapse::fsummarise(n.years = length(year))
 mn.ts.len <- round(mean(stock.ts.len$n.years),digits=1)
-mn.ts.len <- min(stock.ts.len$n.years)
-mx.ts.len <- max(stock.ts.len$n.years)
+min.ts.len <- min(stock.ts.len$n.years)
+max.ts.len <- max(stock.ts.len$n.years)
 num.orders <- length(unique(meta.sub$Order))
 num.gads <- meta.sub |> collapse::fsubset(Order == "Gadiformes") |> nrow()
 num.pleur <- meta.sub |> collapse::fsubset(Order == "Pleuronectiformes") |> nrow()
@@ -1233,14 +1233,24 @@ num.plat <- meta.sub |> collapse::fsubset(Species == "platessa") |> nrow()
 n.six <- meta.sub |> collapse::fsubset(Species %in% six.species) |> nrow() 
 
 
-
-
 med.lambda.F0 <- round(median(res.lambda.fin$lam.no.fish),digits=3)
 med.r.F0 <- round(median(log(res.lambda.fin$lam.no.fish)),digits=3)*100
 med.lambda.F <- round(median(res.lambda.fin$lam.fish),digits=3)
-med.r.F <- round(median(log(res.lambda.fin$lam.fish)),digits=3)*100
+med.r.F <- round(median(log(res.lambda.fin$lam.fish)),digits=3)*100 # median in insensitive to doing median(log(lambda)) or log(median(lamdba)), which makes sense... it's the same point...
 mn.lambda.F <- round(mean(res.lambda.fin$lam.fish),digits=2)
-mn.r.F <- round(mean(res.lambda.fin$lam.fish),digits=2)
+# What proportion of the years was lambda < 1 when accounting for fishing
+prop.lam.fish.lt.1 <- 100*round(length(which(res.lambda.fin$lam.fish < 1))/nrow(res.lambda.fin),digits=2)
+# So if I take the log of the mean of the lambda's I get 0.02, if I take the mean of log(lambda) I get -0.02.  So that's solidly equivocal, but obviously with fishing it is shockingly close to 0 overall
+# but also this does make sense really, if it was way less than 0 then everything collapses...
+mn.r.F <- round(log(mean(res.lambda.fin$lam.fish)),digits=2) 
+# Curious the number of stock in which the mean with fishing is > 1 overall
+lambda.by.stock <- res.lambda.fin |> collapse::fgroup_by(Stock.short) |> collapse::fsummarise(mn.lam.nf = mean(lam.no.fish,na.rm=T),
+                                                                                              mn.lam.fish = mean(lam.fish,na.rm=T),
+                                                                                              med.lam.nf = median(lam.no.fish,na.rm=T),
+                                                                                              med.lam.fish = median(lam.fish,na.rm=T))
+
+num.mn.lambda.fish.lt.1 <- length(which(lambda.by.stock$mn.lam.fish < 1))
+
 # Mean - median...
 res.lambda.fin$med.mn.diff.no.fish <- res.lambda.fin$lam.no.fish.med - res.lambda.fin$lam.no.fish.mn
 res.lambda.fin$med.mn.diff.fish <- res.lambda.fin$lam.fish.med - res.lambda.fin$lam.fish.mn
@@ -1378,7 +1388,7 @@ dd.nf.overall.plt <-ggplot(no.stock.gam.nf.dat , aes(x=prop.abund,y=exp(fit))) +
                                 geom_ribbon(aes(ymin=exp(LCI),ymax=exp(UCI)),alpha=0.5,linewidth=0,fill=u.colors[1])+
                                 geom_line(color=u.colors[1],linewidth=1) + 
                                 xlab("") + 
-                                scale_y_log10(name = "Lambda(F=0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
+                                scale_y_log10(name = "Lambda(FM=0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
                                 geom_hline(yintercept = 1,color='firebrick2',linetype = 'dashed')+
                                 theme(legend.text=element_text(size=8),
                                       legend.spacing.y = unit(-0.1, 'cm'),
@@ -1395,7 +1405,7 @@ dd.fish.overall.plt <- ggplot(no.stock.gam.fish.dat, aes(x=prop.abund,y=exp(fit)
                                 geom_line(color=u.colors[2],linewidth=2) + 
                                 geom_ribbon(aes(ymin=exp(LCI),ymax=exp(UCI)),alpha=0.5,fill=u.colors[2])+
                                 xlab("") + 
-                                scale_y_log10(name = "Lambda (F>0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
+                                scale_y_log10(name = "Lambda (FM>0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
                                 geom_hline(yintercept = 1,color='firebrick2',linetype = 'dashed',linewidth=1.5)+
                                 theme(legend.text=element_text(size=8),
                                       legend.spacing.y = unit(-0.1, 'cm'),
@@ -1447,7 +1457,7 @@ dd.stocks.nf.plt <- ggplot(pred.dd.stock.gam.ss.nf,aes(x=prop.abund,y=lam.no.fis
                                 geom_line() + 
                                 geom_point(data = thin.pred.nf,size=2) +  
                                 xlab("Proportion of maximum abundance") + 
-                                scale_y_log10(name = "Lambda (F=0)",breaks = log_breaks(n=10)) +
+                                scale_y_log10(name = "Lambda (FM=0)",breaks = log_breaks(n=10)) +
                                 geom_ribbon(aes(ymin=lower,ymax=upper,color=G.Species),alpha=0.10,linewidth=0)+
                                 facet_manual(vars(Area.long),design=mat,scales='free_x')+
                                 #facet_wrap(~Area.long)  +
@@ -1475,7 +1485,7 @@ dd.stocks.fish.plt <- ggplot(pred.dd.stock.gam.ss.fish,aes(x=prop.abund,y=lam.fi
                                 geom_point(data = thin.pred.fish,size=2) +  
                                 geom_ribbon(aes(ymin=lower,ymax=upper,color=G.Species),alpha=0.10,linewidth=0)+
                                 xlab("Proportion of maximum abundance") + 
-                                scale_y_log10(name = "Lambda (F>0)",breaks = log_breaks(n=10)) +
+                                scale_y_log10(name = "Lambda (FM>0)",breaks = log_breaks(n=10)) +
                                 facet_manual(vars(Area.long),design=mat,scales='free_x')+
                                 #facet_wrap(~Area.long)  +
                                 scale_shape_manual(values=pty.gam) +

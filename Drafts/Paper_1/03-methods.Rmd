@@ -1,44 +1,23 @@
 # Methods {#meth}
 
-
 ## Data
 
-This analysis used age structured fisheries data obtained from stock assessments for stocks in the Atlantic and Pacific Oceans [@charbonneauAgestructuredmarinefishdatabase2022; @charbonneauEffectsFishingMortality2022]. This repository had sufficient data to run the analysis for 77 stocks from NE Atlantic, NW Atlantic, and the North Pacific, this included stocks managed by International Council for the Exploration of the Sea (ICES; `r n.stock.ices`), NOAA (NOAA;`r n.stock.noaa`), and Fisheries and Oceans Canada (DFO; `r n.stock.dfo` stocks). The time series used in this analysis started as early as `r min.year` and the most recent data were from `r max.year`, the average length of the time series for the stocks included in this analysis was `r mn.ts.len` years and the number of years used ranged between `r min.ts.len` and `r max.ts.len` years. The stocks used represented `r num.orders` orders, with the most represented orders being the Gadiformes (`r num.gads` stocks), Pleuronectiformes (`r num.pleur` stocks) and Clupeiformes (`r num.clup` stocks). The other three orders had relatively few stocks included in the analysis, with `r num.perci` Perciform stocks, `r num.scomb` Scombriform stocks, and just `r num.scorp` Scorpaeniform stock.  The most common species in this analysis were Atlantic cod (*G. morhua*) and the majority of the stocks (`r n.six`) in this analysis were represented by one of six species (*G. morhua* (`r num.cod`), *C. harengus* (`r num.her`), *M. aeglefinus* (`r num.had`),  *P. virens* (`r num.pol`), *S. solea* (`r num.sol`), and *P. platessa* (`r num.plat`)). 
-
+This analysis used age structured fisheries data obtained from stock assessments for stocks in the Atlantic and Pacific Oceans [@charbonneauAgestructuredmarinefishdatabase2022; @charbonneauEffectsFishingMortality2022]. This repository had sufficient data to run the analysis for `r n.stocks` stocks from NE Atlantic, NW Atlantic, and the North Pacific, this included stocks managed by International Council for the Exploration of the Sea (ICES; `r n.stock.ices`), NOAA (NOAA;`r n.stock.noaa`), and Fisheries and Oceans Canada (DFO; `r n.stock.dfo` stocks). The time series used in this analysis started as early as `r min.year` and the most recent data were from `r max.year`, the average length of the time series for the stocks included in this analysis was `r mn.ts.len` years and the number of years used ranged between `r min.ts.len` and `r max.ts.len` years. The stocks used represented `r num.orders` orders, with the most represented orders being the Gadiformes (`r num.gads` stocks), Pleuronectiformes (`r num.pleur` stocks) and Clupeiformes (`r num.clup` stocks). The other three orders had relatively few stocks included in the analysis, with `r num.perci` Perciform stocks, `r num.scomb` Scombriform stocks, and just `r num.scorp` Scorpaeniform stock.  The most common species in this analysis were Atlantic cod (*G. morhua*) and the majority of the stocks (`r n.six`) in this analysis were represented by one of six species (*G. morhua* (`r num.cod`), *C. harengus* (`r num.her`), *M. aeglefinus* (`r num.had`),  *P. virens* (`r num.pol`), *S. solea* (`r num.sol`), and *P. platessa* (`r num.plat`)). 
 
 These data included age-specific estimates of abundance, weight, biomass, maturity, natural mortality, and fishery removals (Table \@ref(tab:tab-meta)), these data were all required to calculate survival-at-age and fecundity-at-age and to estimate the annual productivity of these stocks. For the age structured analysis, the last age class was considered the 'terminal' age in the analysis, thus we implicitly assumed there was no contribution to productivity from older aged individuals. In addition, for the majority of the stocks the first age class was age 1 (`r n.age.1` stocks) while another `r n.age.2.plus` of the stocks have a first age of 2 or greater. The young age classes not included for these stocks (e.g. Age 0) consisted of immature individuals that do not contribute to the productivity of the stock; however it has been noted that the exclusion of immature age classes in these types of analyses may lead to a slight overestimate of productivity [@pardoMaximumIntrinsicRate2016].
 
-
 ## Life Table Reconstruction 
 
-The discrete time Euler-Lotka  equation was first proposed by Euler in 1760 (subsequently published by @moserGesetzeLebensdauer1839) and is a special case of the continuous time demographic model first proposed by Lotka in 1907 [@lotkaRelationsBirthRates1907; @sharpeProblemAgedistribution1911; @lotkaRelationBirthRate1918]:
-
-$$
-1 = \sum_{x=\alpha}^{\omega} \lambda^{-x} s_x f_x dx
-$$
-
-Where $x$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_x$ is the survivorship to age $x$, and $f_x$ is the fecundity of individuals of age $x$. Note that the discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945, @caswellMatrixPopulationModels2001]. The available stock assessment data are used to calculate survival-at-age and fecundity-at-age to estimate $\lambda$, assuming that each stock represents a discrete population with individual dynamics. 
-
-<!-- \begin{align} -->
-<!--   \begin{bmatrix} -->
-<!--     f_0  & f_1 & f_2  & f_3    & ...          & f_{\omega-1} \\ -->
-<!--     s_0  & 0   & 0    & 0      & ...          & 0 \\ -->
-<!--     0    & s_1 & 0    & 0      & ...          & 0 \\ -->
-<!--     0    & 0   & s_2  & 0      & ...          & 0 \\ -->
-<!--     0    & 0   & 0    & \ddots & ...          & 0 \\ -->
-<!--     0    & 0   & 0    & ...    & s_{\omega-2} & 0 \\ -->
-<!--   \end{bmatrix} -->
-<!-- \end{align} -->
-
+Information on births and deaths can describe a closed population’s demographics and how they are affected by age and time. To do so knowledge of the  population’s age specific fecundity and mortality is required, these values can then be used within the Euler-Lotka equation [@lotkaRelationsBirthRates1907] to estimate the population growth rate ($\lambda$) in a given year. These data could be derived from the data available for the `r n.stocks` stocks used in this analysis. 
 
 ### Fecundity-at-age
 
-The number of spawners in year $y$ and age class $a$ ($SSN_{y,a}$) is the proportion of mature individuals ($Mat_{y,a}$) multiplied by the number of individuals in each age
+The number of spawners in year $y$ and age class $a$ ($NS_{y,a}$) is the proportion of mature individuals in each age class ($Mat_{y,a}$) multiplied by the number of individuals in each age class
 
 $$
-SSN_{y,a} = Mat_{y,a} N_{y,a}
+NS_{y,a} = Mat_{y,a} N_{y,a}
 $$
-The Euler-Lotka equation requires fecundity to be the number of offspring produced by each female in each age class. Given the uncertainty of both fertilization and egg survival, using the number of eggs at a given length or size is inappropriate.  However, these data do have the number of recruits produced each year, and this can be combined with the spawning stock biomass to obtain an estimate of the number of recruits produced per kilogram of spawning biomass $RPS_{y}$, this is calculated as
+Fecundity is required to be the number of offspring produced by each female in each age class. Given the uncertainty of both fertilization and egg survival, using the number of eggs at a given length or size is inappropriate.  However, these data do have the number of recruits produced each year, and this can be combined with the spawning stock biomass to obtain an estimate of the number of recruits produced per kilogram of spawning biomass $RPS_{y}$, this is calculated as
 
 $$
 RPS_{y} = R_{y} SSB_{tot,(y-ra)} 
@@ -49,25 +28,47 @@ Where $SSB_{yot,y-ra}$ is the total spawning stock biomass in year $y$. $R_{y}$ 
 $$
 RPA_{y,a} =  SSB_{(y-ra),a} RPS_{y}
 $$
-This method does not account for any changes in reproductive success by age, each kilogram of spawning biomass contributes the same to the total total reproductive output, irrespective of their age. Finally, the age-specific fecundity ($Fec_{y,a}$) is calculated as number of offspring produced by each individual in the population. This is offset by one year, as the recruits observed in year $y+1$ enter into the Euler-Lotka formulation in year $y$.
+This method does not account for any changes in reproductive success by age, each kilogram of spawning biomass contributes the same to the total total reproductive output, irrespective of their age. Finally, the age-specific fecundity ($f_{y,a}$) is calculated as number of offspring produced by each individual in the population. This is offset by one year, as the recruits observed in year $y+1$ enter into the Euler-Lotka formulation in year $y$.
 
 $$
-Fec_{y,a} =  \frac{RPA_{y+1,a}}{SSN_{(y-ra+1),a}}
+f_{y,a} =  \frac{RPA_{y+1,a}}{NS_{(y-ra+1),a}}
 $$
-### Suvival-at-age
 
-The number of animals surviving to each age depends on age-specific mortality rates. Commercially-exploited fishes experience fishing mortality (F) once they grow large enough to become vulnerable to the gear (reference). Fishing mortality combines with natural mortality (M) to give total mortality (Z) affecting each age class in each year. Varying assumptions can be made about natural mortality during stock assessments, where it may be an assumed value for each age (EXAMPLE), allowed to vary over time and by age (EXAMPLE), or input as a constant across ages (EXAMPLE).  Due to challenges with separability in typical stock assessment models, natural mortality is often assumed for each age class, in some assessments it varies by age and over time, in other assessments it does not.  Irrespective of this, the stock assessment used in this analysis all provide an estimate of natural mortality by age and year, this value is typically an instantaneous rate and is convert to a proportional natural mortality for the Euler-Lotka model.  
+### Survivorship-to-age
 
-The data also contains the number of fish harvested by the fishery each year and for each age. This can be combined with the assessed numbers at age to get an estimate of fishing mortality in each year for each age.
+The number of animals surviving to each age depends on age-specific mortality rates. Commercially-exploited fishes experience fishing mortality ($FM$) once they grow large enough to become vulnerable to the gear (reference). Fishing mortality combines with natural mortality ($NM$) to give total mortality ($Z$) affecting each age class in each year. Varying assumptions can be made about natural mortality during stock assessments, where it may be an assumed value for each age (EXAMPLE), allowed to vary over time and by age (EXAMPLE), or input as a constant across ages (EXAMPLE).  Due to challenges with separability in typical stock assessment models, natural mortality is often assumed for each age class, in some assessments it varies by age and over time, in other assessments it does not.  Irrespective of this, the stock assessment used in this analysis all provide an estimate of natural mortality by age and year, this value is typically an instantaneous rate and is converted to a proportional natural mortality for the Euler-Lotka model.  
+
+The data also contained the number of fish harvested by the fishery each year and for each age. These can be divided by the assessed numbers at age to get an estimate of fishing mortality in each year for each age.
 
 $$
 FM_{y,a} =  \frac{Catch_{y,a}}{N_{y,a}}
 $$
-This is combined with the natural mortality to get a total mortality estimate ($Z_{y,a}$) for each age in each year 
+Together, fishing mortality ($FM_{y,a}$) and natural mortality ($NM_{y,a}$) provide a total mortality estimate ($Z_{y,a}$) for each age in each year 
 
 $$
 Z_{y,a} =  FM_{y,a} + NM_{y,a}
 $$
+Survival-at-age is simply
+
+$$
+l_{y,a} = 1= Z_{y,a}
+$$
+The Euler-Lotka equation requires suvivorship-to-age, which is the cumulative survival to age $a$. The survival of individuals to the first available age class ($s_{y,1}$) was assumed to be 1 [this may lead to a slight overestimate of $\lambda$; @pardoMaximumIntrinsicRate2016], for the remainder of the age classes it was calculated as
+
+$$
+s_{y,a} =  s_{y,(a-1)} \times l_{y,(a-1)}
+$$
+### Euler-Lotka
+
+The discrete time Euler-Lotka  equation was first proposed by Euler in 1760 (subsequently published by @moserGesetzeLebensdauer1839) and is a special case of the continuous time demographic model first proposed by Lotka in 1907 [@lotkaRelationsBirthRates1907; @sharpeProblemAgedistribution1911; @lotkaRelationBirthRate1918]:
+
+$$
+1 = \sum_{a=\alpha}^{\omega} \lambda_y^{-a} s_{y,a} f_{y,a} dx
+$$
+
+Where $a$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_a$ is the survivorship to age $a$, and $f_a$ is the fecundity of individuals of age $a$. This equation is solved for each year ($y$) in which the data are available. Note that the discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945, @caswellMatrixPopulationModels2001]. Survivorship-at-age and fecundity-at-age were calcualted using the available stock assessment data, which enabled $\lambda$ to be estimated; note that this assumed that each stock represented a discrete population with individual dynamics. 
+
+
 ### Population Growth Rates $\lambda$
 
 The fecundity, natural mortality, and fishing mortality estimates were then used to obtain an estimate of $\lambda$ for a given year from the Euler-Lotka equation and used to predict the abundance in the following year.
@@ -75,17 +76,17 @@ The fecundity, natural mortality, and fishing mortality estimates were then used
 $$
 N_{y+1} = \lambda_{y} N_{y}
 $$
-The Euler-Lotka model was fit using an iterative minimization process, where predicted abundance in the following year was compared to the abundance estimate from the stock assessment for the corresponding year ($N_{y+1}$). Where necessary, the annual age-specific fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was within 5% of the abundance estimates from the stock assessment (median difference was `r med.per.diff`). This tolerance ensured that our analyses reflected the same understanding of stock productivity, natural mortality and fecundity as in the current assessments; effectively this methodology treats the abundance estimates from the stock assessments as the 'truth'.   
 
-The life table reconstruction resulted in stock-specific $\lambda$, fecundity, and natural mortality estimates for each year in which data were available accounting for the age structure and life history characteristics of each stock. In other words, we estimated the realized population growth rate using the changes in the population size of the stocks from year to year (realized population growth rates), based on the amount of mortality experienced and annual reproductive success. The realized $\lambda$
-included fishing mortality  ($\lambda_{F>0}$), although this method enabled the theoretical population growth rate in the absence of fishing  ($\lambda_{F=0}$) could also be calculated directly fomr the annual the natural mortality and fecundity estimates. 
+The Euler-Lotka model was fit using an iterative minimization process, where predicted abundance in the following year was compared to the abundance estimate from the stock assessment for the corresponding year ($N_{y+1}$). Where necessary, the annual age-specific fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was within 5% of the abundance estimates from the stock assessment (median difference was `r med.per.diff`). This tolerance ensured that our analyses reflected the same understanding of stock productivity, natural mortality and fecundity as in the current assessments; effectively this methodology treats the abundance estimates from the stock assessments as the 'truth'. The minimization procedure resulted in the final estimates of $\lambda$ being approximately `r med.lam.per.diff` smaller than the initial estimates.
+
+The life table reconstruction resulted in stock-specific $\lambda$, fecundity, and natural mortality estimates for each year in which data were available accounting for the age structure and life history characteristics of each stock. In other words, we estimated the realized population growth rate using the changes in the population size of the stocks from year to year (realized population growth rates), based on the amount of mortality experienced and annual reproductive success. The realized $\lambda$ included fishing mortality  ($\lambda_{FM>0}$), although this method enabled the theoretical population growth rate excluding fishing mortality ($\lambda_{FM=0}$) to be calculated directly from the annual the natural mortality and fecundity estimates. 
 
 <!-- For consistency in the Euler-lotka estimates across all the stocks, the first age used in the analysis was 'age 0' (which is simply an estimate of abundance of fish in the year they were born). For some stocks this information is not available (see Table X, **possibly in an Appendix where we have meta-data**). For the stocks in which age 0 information is unavailable, an estimate of the abundance of the younger age classes were back calculated using average natural mortality provided for the youngest age class available. -->
 
 
 ## Density Dependence
 
-Life table analyses make no assumptions about population regulation and thus do not incorporate a density-dependent relationship between spawners and recruits (Reference?). However, the data itself could be explored for evidence of density-dependence by modelling the estimated annual population growth rate against the proportion of maximum abundance observed that year for each stock. This was done twice, once using  ($\lambda_{F=0}$) and once using ($\lambda_{F>0}$).  Negative density dependence is observed when $\lambda$ increases as abundance declines, positive density dependence occurs when $\lambda$ declines with increasing abundance, while density independence is observed when $\lambda$ is not impacted by changes in abundance.
+Life table analyses make no assumptions about population regulation and thus do not incorporate a density-dependent relationship between spawners and recruits (Reference?). However, the data could be explored for evidence of density-dependence by modelling each stock's estimated annual population growth rate against the relative population size (proportion of maximum abundance) that year. This was done twice, once using  ($\lambda_{FM=0}$) and once using ($\lambda_{FM>0}$).  Negative density dependence is observed when $\lambda$ increases as abundance declines, positive density dependence occurs when $\lambda$ declines with increasing abundance, while density independence is observed when $\lambda$ is not impacted by changes in abundance.
 
 Generalized Additive Mixed Models were used to allow for some non-linearity in the relationships (CITE MCGV and WOOD), the overall effect and the effect for each stock was modelled as
 
@@ -98,31 +99,30 @@ Stocks_{i,j} \sim N(0,\sigma^2_{Stocks})
 
 The interaction was modeled using the *fs* basis using the mgcv package in R, this treats the smooth curves as random effects and is used when a factor has a large number of levels (CITE!).  Various alternative modelling methods were explored (various model formulations, alternative error distributions, etc.) but all models had similar challenges overcoming either the underlying non-normality or the heteroskedasticity of the data. As such, the uncertainty surrounding the model output should be treated with caution, while we discuss the general trends this model provides we attempted to avoid discussion of the statistical significance of the trends.
 
-## Demographic Parameters
+## Recovery Potential
 
-There are numerous demographic parameters that can be derived from the outputs of the life table reconstruction. Here we focus on two that are strongly linked to recovery potential: lifetime reproductive success and generation time. Lifetime reproductive success describes the average number of spawners produced by one female spawner throughout her lifetime
+There are numerous demographic parameters that can be derived from the outputs of the life table reconstruction. Here we focus on three that are strongly linked to recovery potential: doubling time, lifetime reproductive success, and generation time. The doubling time estimates were performing using a simulation technique based on the fecundity and natural mortality estimates used to calcualte $\lambda$.  Lifetime reproductive success describes the average number of spawners produced by one female spawner throughout her lifetime. A value greater than 1 indicates that the average female has produced sufficient offspring over their lifetime to replace themselves. Generation time here is calculated for each cohort and is the mean age of spawners that produced recruits.
 
+### Doubling Time
 
-## Lifetime Reproductive Success 
+The annual fecundity and natural mortality values varied considerably for each stock. To account for this variability when evaluating recovery potential, we used a simulated population projection. For `r n.dt.sims` simulations, we took a random sample of the annual values for fecundity and natural mortality, used the life table reconstruction to estimate $\lambda$, and calculated abundance in the following year. Abundance of each stock was projected over `n.sim.years` years, and the percentage of the simulations in which the population size had doubled was recorded each year. For simplicity, we did not incorporate density-dependent effects (e.g., potential population decline as abundance exceeds carrying capacity) or any correlation (either temporally or between fecundity and natural mortality). Once a population had doubled, it was considered to have remained at that abundance or greater for the remainder of the projection. 
 
-The lifetime reproductive success ($R_0$)  was calculated for each cohort in which fecundity and natural mortality were available for all age classes. It was calculated using only natural mortality (F=0) and with the combined effect of natural mortality and fishing mortality (F>0).  This was calculated for each cohort as
+### Lifetime Reproductive Success 
+
+Lifetime reproductive success ($R_0$)  was calculated for each cohort in which fecundity and natural mortality were available for complete cohorts (i.e., cohorts in which all available age classes are represented). It was calculated by using only natural mortality component (FM=0) and with the combined effect of natural mortality and fishing mortality ($FM>0$), respectively. This provided an understanding of the reproductive potential from observed stock characteristics alone, and how it changed with fishing pressure. This was calculated for each cohort as:
 
 $$
 R_0 = \sum_{x=\alpha}^{\omega} s_x f_x
 $$
+This formulation ignores any contribution from a plus group, by assuming that the last observed age in the data represents the longevity of the cohort. This simplifying assumption will cause a slight underestimation in the means these values, given that the oldest sampled age class is typically younger than the theoretical longevity of the species based on growth (REFERENCE). 
 
 *Here we are treating the plus group as effectively 'terminal', i.e., it assumes that after the last age class the individuals make no contribution, which means these values are probably a bit low, but at this age they really aren't making much of a contribution on average*. 
 
-## Generaion Time
+### Generation Time
 
-The generation time was defined as the mean age of the spawners of the observed recruits in a cohort over its lifetime ($T_G$), here we calculated this for each cohort in which fecundity and natural mortality were available for all age classes. It was calculated twice, using only natural mortality (F=0) and with the combined effect of natural mortality and fishing mortality (F>0). 
-
+The generation time was defined as the mean age of the spawners that produced the observed recruits in a cohort ($T_G$). A value was calculated for each cohort in which fecundity and natural mortality were available for the complete cohort (i.e., cohorts in which all available age classes are represented). As with lifetime reproductive success it was calculated in two ways, using only the natural mortality component ($FM=0$) and using combined effect of natural mortality and fishing mortality ($FM>0$).
 
 $$
 T_G = \frac{\sum_{x=\alpha}^{\omega} x s_x f_x}{\sum_{x=\alpha}^{\omega}  s_x f_x}
 $$
-
-## Recovery Potential
-
-The annual fecundity and natural mortality values  varied considerably for each stock. To account for this variability when evaluating recovery potential, we used a simulated population projection. For `r n.dt.sims` simulations, we took a random sample of the annual values for fecundity and natural mortality, used the life table reconstruction to estimate $\lambda$, and calculated abundance in the following year. Abundance of each stock was projected over `n.sim.years` years, and the percentage of the simulations in which the population size had doubled was recorded each year. For simplicity, we did not allow for density-dependent effects (e.g. potential population decline as abundance exceeds carrying capacity) because of uncertainty surrounding potential maximum population size for each species. Once a population had doubled, it was considered to have remained at that abundance or greater for the remainder of the projection. 
 
