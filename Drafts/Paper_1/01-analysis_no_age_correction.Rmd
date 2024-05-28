@@ -1193,6 +1193,7 @@ lam.sd.p.rec$prop.cat[lam.sd.p.rec$prop < dub.p.low] <- "Low"
 lam.sd.p.rec$prop.cat[lam.sd.p.rec$prop >= dub.p.high] <- "High"
 lam.sd.p.rec$prop.cat <- factor(lam.sd.p.rec$prop.cat,levels=c("Low","Moderate","High"))
 
+
 ```
 
 
@@ -1365,7 +1366,7 @@ new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(y=la
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.6,base_width = 19,base_height = 15)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.others,base_width = 19,base_height = 15)
 
 
 # Standard deviation figure
