@@ -1,6 +1,6 @@
 ---
 title: |
-   "Life history variability influence on the recovery potential of globally exploited teleosts "
+   "Variability in the recovery potential of globally exploited teleosts "
 french_title: "Titre ici (*Nom latin de l'espèce*)"
 author: |
   David. M. Keith^1^ 

@@ -1285,7 +1285,7 @@ pa.lam.fish.at.one <- 100*round(no.stock.gam.fish.dat$prop.abund[min(which(no.st
 pa.big.threshold <- 0.65
 pa.low.threshold <- 0.8
 lam.low.threshold <- 0.8
-pa.lam.fish.low.bigs <- max(dd.dat$lam.fish[dd.dat$prop.abund >= pa.big.threshold])
+pa.lam.fish.low.bigs <- round(max(dd.dat$lam.fish[dd.dat$prop.abund >= pa.big.threshold]),digits=2)
 pa.lam.nf.low.bigs <- round(rev(sort(dd.dat$lam.no.fish[dd.dat$prop.abund >= pa.big.threshold]))[2],digits =2)
 # What proportion of the stocks had large declines overall, and then the proportion when the population was below 30%
 dd.dat.high <- dd.dat |> collapse::fsubset(prop.abund >= 0.3)

@@ -58,6 +58,7 @@ The Euler-Lotka equation requires suvivorship-to-age, which is the cumulative su
 $$
 s_{y,a} =  s_{y,(a-1)} \times l_{y,(a-1)}
 $$
+
 ### Euler-Lotka
 
 The discrete time Euler-Lotka  equation was first proposed by Euler in 1760 (subsequently published by @moserGesetzeLebensdauer1839) and is a special case of the continuous time demographic model first proposed by Lotka in 1907 [@lotkaRelationsBirthRates1907; @sharpeProblemAgedistribution1911; @lotkaRelationBirthRate1918]:
@@ -66,7 +67,7 @@ $$
 1 = \sum_{a=\alpha}^{\omega} \lambda_y^{-a} s_{y,a} f_{y,a} dx
 $$
 
-Where $a$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_a$ is the survivorship to age $a$, and $f_a$ is the fecundity of individuals of age $a$. This equation is solved for each year ($y$) in which the data are available. Note that the discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945, @caswellMatrixPopulationModels2001]. Survivorship-at-age and fecundity-at-age were calcualted using the available stock assessment data, which enabled $\lambda$ to be estimated; note that this assumed that each stock represented a discrete population with individual dynamics. 
+Where $a$ is the age, $\alpha$ is the age at first reproduction, $\omega$ is the maximum age, $\lambda$ is the discrete rate of population growth ($\lambda = e^r$), $s_a$ is the survivorship to age $a$, and $f_a$ is the fecundity of individuals of age $a$. This equation is solved for each year ($y$) in which the data are available. Note that the discrete time Euler-Lotka equation can be shown to be the characteristic polynomial of the Leslie Matrix, where $f_0$ is the fecundity of the first age class with mature individuals [@leslieUseMatricesCertain1945, @caswellMatrixPopulationModels2001]. Survivorship-at-age and fecundity-at-age were calculated using the available stock assessment data, which enabled $\lambda$ to be estimated; note that this assumed that each stock represented a discrete population with individual dynamics. 
 
 
 ### Population Growth Rates $\lambda$
@@ -77,7 +78,7 @@ $$
 N_{y+1} = \lambda_{y} N_{y}
 $$
 
-The Euler-Lotka model was fit using an iterative minimization process, where predicted abundance in the following year was compared to the abundance estimate from the stock assessment for the corresponding year ($N_{y+1}$). Where necessary, the annual age-specific fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was within 5% of the abundance estimates from the stock assessment (median difference was `r med.per.diff`). This tolerance ensured that our analyses reflected the same understanding of stock productivity, natural mortality and fecundity as in the current assessments; effectively this methodology treats the abundance estimates from the stock assessments as the 'truth'. The minimization procedure resulted in the final estimates of $\lambda$ being approximately `r med.lam.per.diff` smaller than the initial estimates.
+The Euler-Lotka model was fit using an iterative minimization process, where predicted abundance in the following year was compared to the abundance estimate from the stock assessment for the corresponding year ($N_{y+1}$). Where necessary, the annual age-specific fecundity and natural mortality estimates were adjusted until the $\lambda$ estimate from the Euler-Lotka equation resulted in an abundance time-series estimate ($N_{y+1}$) that was within 5% of the abundance estimates from the stock assessment (the median difference was `r med.per.diff`). This tolerance ensured that our analyses reflected the same understanding of stock productivity, natural mortality and fecundity as in the current assessments; effectively this methodology treats the abundance estimates from the stock assessments as the 'truth'. The minimization procedure resulted in the final estimates of $\lambda$ being approximately `r med.lam.per.diff`% smaller than the initial estimates.
 
 The life table reconstruction resulted in stock-specific $\lambda$, fecundity, and natural mortality estimates for each year in which data were available accounting for the age structure and life history characteristics of each stock. In other words, we estimated the realized population growth rate using the changes in the population size of the stocks from year to year (realized population growth rates), based on the amount of mortality experienced and annual reproductive success. The realized $\lambda$ included fishing mortality  ($\lambda_{FM>0}$), although this method enabled the theoretical population growth rate excluding fishing mortality ($\lambda_{FM=0}$) to be calculated directly from the annual the natural mortality and fecundity estimates. 
 
@@ -116,7 +117,7 @@ R_0 = \sum_{x=\alpha}^{\omega} s_x f_x
 $$
 This formulation ignores any contribution from a plus group, by assuming that the last observed age in the data represents the longevity of the cohort. This simplifying assumption will cause a slight underestimation in the means these values, given that the oldest sampled age class is typically younger than the theoretical longevity of the species based on growth (REFERENCE). 
 
-*Here we are treating the plus group as effectively 'terminal', i.e., it assumes that after the last age class the individuals make no contribution, which means these values are probably a bit low, but at this age they really aren't making much of a contribution on average*. 
+**NOTE to Y'all: Here we are treating the plus group as effectively 'terminal', i.e., it assumes that after the last age class the individuals make no contribution, which means these values are probably a bit low, but at this age they really aren't making much of a contribution on average**.
 
 ### Generation Time
 

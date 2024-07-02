@@ -29,7 +29,7 @@ knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxp
 
 
 \newpage
-```{r lambda-bx-other-fig, echo=F, fig.cap="$\\lambda$ estimates for the remainded of the stocks in this analysis, plotted by the location of the stock. The abreviated species name is provided on the x axis."}
+```{r lambda-bx-other-fig, echo=F, fig.cap="$\\lambda$ estimates for the remainder of the stocks in this analysis, plotted by the location of the stock. The abreviated species name is provided on the x axis."}
 knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"))
 
 ```
