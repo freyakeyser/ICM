@@ -21,7 +21,7 @@
 # sim:        Are you doing a retrospecitive "retro" or a projection 'project' simulations. Main difference is really that you don't know removals in the
 #             project case, but do know projections in the retrospective.
 # repo.loc    Where is your repo.  Deaults to pulling from online Github Repo using 'repo'.  If you put in the directory to point at
-#             like D:/Github/ICM that'll work, or you can go with 'preload', which means you have the necessary functions already loaded
+#             like D:/Github/ICM that'll work, or you can go with 'preload', which means you have the necessary functions already loaded 
 
 
 simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.start = NULL,
@@ -53,6 +53,7 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
   if(pop.model == 'exp') pop.model <- 'exponential'
   if(pop.model == 'log') pop.model <- 'logistic'
   # If doing the projections we start from the year before the simulations period, so we add in the N.start year.
+  #if(years > 1)  
   years <- c(min(years)-1,years)
   #Initialize a bunch of objects
   n.years<-length(years)
@@ -67,9 +68,11 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
   #Calculate r for your example
   for(i in 1:n.sims)
   {
+    #browser()
     # Using the fecundity and mortality data get the lotka r's for the stock
     # DK Note: It might make more sense to put the fishing mortality right into here as we've now done with the backwards simulations.
-    junk<-simple.lotka.r(yrs = years,mort = nm,ages=ages,fecund=fecund)   
+    if(max(years) > 1) junk<-simple.lotka.r(yrs = years,mort = nm,ages=ages,fecund=fecund)   
+    if(max(years) == 1) junk<-simple.lotka.r(yrs = years,mort = c(nm),ages=ages,fecund=c(fecund))
     tmp <-junk$res[,2] 
     if(length(tmp) == 1) tmp <- rep(tmp,n.years)
     r.vec[[i]] <- data.frame(r = c(tmp[-length(tmp)],NA),years = years[],n.sims=i) # How I have it set up the last entry should be an NA  as we don't use that
@@ -127,9 +130,15 @@ simp.for.sim<-function(years,nm=NULL,fecund = NULL,ages =NULL,rems,K=NULL,N.star
       {
         # FIX: I've added in harvest controls for the projections, basically if population is < 20% of K (B0), then harvesting rate declines by 90%
         # This is something to discuss and make customizable.
-        if(pop.last < 0.2*K[y-1]) removals.next <- 0.1*fm[y-1]*pop.last
-        if(pop.last >= 0.2*K[y-1]) removals.next <- fm[y-1]*pop.last
-      } 
+        if(!is.null(K))
+        {
+          if(pop.last < 0.2*K[y-1]) removals.next <- 0.1*fm[y-1]*pop.last
+          if(pop.last >= 0.2*K[y-1]) removals.next <- fm[y-1]*pop.last
+        } 
+        # If you have not supplied a carrying capacity
+        if(is.null(K)) removals.next <- fm[y-1]*pop.last
+        
+      } # end the project sims 
      
       r.up <- r.tmp$r[y-1] # So we grab the r associated with the lead in year so r aligns with the initial population numbers
       # The exponential model
