@@ -800,6 +800,9 @@ for.tune.summary <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_summary_no
 Stocks <- unique(res.lambda.final$Stock)
 res.lambda.fin <- data.frame(res.lambda.final)
 six.species <- c('morhua','harengus','aeglefinus','virens','solea','platessa')
+pop.dam <- pop.dam |> collapse::fgroup_by(Stock) |> 
+                           collapse::fmutate(med.gen.len = median(gen.len.opt,na.rm=T),med.r0 = median(R0.opt,na.rm=T)) |>
+                           as.data.frame()
 pop.dam.6 <- pop.dam |> collapse::fsubset(Species %in% six.species)
 for.tunes.6 <- for.tunes |> collapse::fsubset(Species %in% six.species)
 dub.time.6 <- dub.time.summary |> collapse::fsubset(Species %in% six.species)
@@ -871,7 +874,12 @@ pop.dam.fish$Area.long[pop.dam.fish$Area == "AI"] <- "Aleutian Islands"
 pop.dam.fish$Area.long <- factor(pop.dam.fish$Area.long,levels = c("Baltic Sea", "North Sea","Celtic Sea",
                                                          "Irish Sea","Bay of Biscay","NE Arctic",
                                                          "Faroes","Iceland","NAFO 2-4","NAFO 5-6","Gulf of Alaska","Bering Sea & AI","Aleutian Islands"),ordered = T)
-pop.dam <- data.frame(pop.dam)
+
+pop.dam.fish <- pop.dam.fish |> collapse::fgroup_by(Stock) |> 
+                           collapse::fmutate(med.gen.len = median(gen.len.opt,na.rm=T),med.r0 = median(R0.opt,na.rm=T)) |>
+                           as.data.frame()
+
+#pop.dam <- data.frame(pop.dam)
 
 pop.dam.fish <- pop.dam.fish |> collapse::roworder(Species,LME) |>
                                 collapse::fmutate(Stock = forcats::fct_inorder(factor(Stock, ordered=TRUE)))
@@ -936,10 +944,13 @@ res.lambda.fin.long <- res.lambda.fin |> tidyr::pivot_longer(cols = c(lam.no.fis
 res.lambda.fin.long$Stock.no.species <- factor(res.lambda.fin.long$Stock.no.species,levels = sns.order,ordered = T)
 res.lambda.fin.long$group <- substr(res.lambda.fin.long$group,5,20)
 res.lambda.fin.long$group <- gsub("\\."," ",res.lambda.fin.long$group)
-res.lambda.fin.long.others <- res.lambda.fin.long |> collapse::fsubset(!Species %in% six.species)
+res.lambda.fin.long <- res.lambda.fin.long |> collapse::fgroup_by(group,Stock) |> collapse::fmutate(med.lam.stock = median(lambda,na.rm=T))
+
+res.lambda.fin.long.others <- res.lambda.fin.long |> as.data.frame() |> collapse::fsubset(!Species %in% six.species)
 res.lambda.fin.long.others$G.Species <- gsub("\\.","",res.lambda.fin.long.others$G.Species)
 res.lambda.fin.long.others$G.Species.short <- substr(res.lambda.fin.long.others$G.Species,1,5)
-res.lambda.fin.long.6 <- res.lambda.fin.long |> collapse::fsubset(Species %in% six.species)
+
+res.lambda.fin.long.6 <- res.lambda.fin.long |> as.data.frame() |> collapse::fsubset(Species %in% six.species)
 res.lambda.fin.long.6$G.Species <- gsub("\\.","",res.lambda.fin.long.6$G.Species)
 
 # GAM FOR DENSITY DEPENENCE# GAM FOR DENSITY DEPENENCE# GAM FOR DENSITY DEPENENCE# GAM FOR DENSITY DEPENENCE# GAM FOR DENSITY DEPENENCE
@@ -1141,12 +1152,12 @@ rounders <- c("lam.fish.min","lam.fish.40","lam.fish.max",
 comp.lam.res.tab[,rounders]      <- round(comp.lam.res.tab[,rounders] ,digits=3)
 # Now give it pretty names
 tab.names <- c("Minimum Abundance",
-               "$\\lambda_{FM>0}^{Min}$",
-               "$\\lambda_{FM>0}^{40}$",
-               "$\\lambda_{FM>0}^{Max}$",
-               "$\\lambda_{FM=0}^{Min}$",
-               "$\\lambda_{FM=0}^{40}$",
-               "$\\lambda_{FM=0}^{Max}$",
+               "$\\lambda_{F>0}^{Min}$",
+               "$\\lambda_{F>0}^{40}$",
+               "$\\lambda_{F>0}^{Max}$",
+               "$\\lambda_{F=0}^{Min}$",
+               "$\\lambda_{F=0}^{40}$",
+               "$\\lambda_{F=0}^{Max}$",
                "Stock","Species")
 names(comp.lam.res.tab) <- tab.names
 
@@ -1161,12 +1172,12 @@ rounders <- c("lam.fish.min.40","lam.fish.min.max","lam.fish.40.max",
 comp.lam.diff.res.tab[,rounders] <- round(comp.lam.diff.res.tab[,rounders] ,digits=3)
 # Now give it pretty names
 tab.names <- c("Minimum Abundance",
-               "$\\lambda_{FM>0}^{Min-40}$",
-               "$\\lambda_{FM>0}^{Min-Max}$",
-               "$\\lambda_{FM>0}^{40-Max}$",
-               "$\\lambda_{FM=0}^{Min-40}$",
-               "$\\lambda_{FM=0}^{Min-Max}$",
-               "$\\lambda_{FM=0}^{40-Max}$",
+               "$\\lambda_{F>0}^{Min-40}$",
+               "$\\lambda_{F>0}^{Min-Max}$",
+               "$\\lambda_{F>0}^{40-Max}$",
+               "$\\lambda_{F=0}^{Min-40}$",
+               "$\\lambda_{F=0}^{Min-Max}$",
+               "$\\lambda_{F=0}^{40-Max}$",
                "Stock","Species")
 names(comp.lam.diff.res.tab) <- tab.names
 
@@ -1192,8 +1203,6 @@ lam.sd.p.rec$prop.cat <- "Moderate"
 lam.sd.p.rec$prop.cat[lam.sd.p.rec$prop < dub.p.low] <- "Low"
 lam.sd.p.rec$prop.cat[lam.sd.p.rec$prop >= dub.p.high] <- "High"
 lam.sd.p.rec$prop.cat <- factor(lam.sd.p.rec$prop.cat,levels=c("Low","Moderate","High"))
-
-
 ```
 
 
@@ -1206,7 +1215,9 @@ n.stock.ices <- meta.sub |> collapse::fsubset(Manage.short == "ICES") |> nrow()
 n.stock.noaa <- meta.sub |> collapse::fsubset(Manage.short %in% c("AFSC","NEFSC")) |> nrow()
 n.age.0 <- meta.sub |> collapse::fsubset(age.min == 0) |> nrow()
 n.age.1 <- meta.sub |> collapse::fsubset(age.min == 1) |> nrow()
+n.age.2 <- meta.sub |> collapse::fsubset(age.min == 2) |> nrow()
 n.age.2.plus <- meta.sub |> collapse::fsubset(age.min >= 2) |> nrow()
+n.age.3.plus <- meta.sub |> collapse::fsubset(age.min > 2) |> nrow()
 min.year <- min(res.lambda.fin$year)
 max.year <- max(res.lambda.fin$year)
 stock.ts.len <- res.lambda.fin |> collapse::fgroup_by(Stock.short) |> collapse::fsummarise(n.years = length(year))
@@ -1248,8 +1259,23 @@ mn.r.F <- round(log(mean(res.lambda.fin$lam.fish)),digits=2)
 lambda.by.stock <- res.lambda.fin |> collapse::fgroup_by(Stock.short) |> collapse::fsummarise(mn.lam.nf = mean(lam.no.fish,na.rm=T),
                                                                                               mn.lam.fish = mean(lam.fish,na.rm=T),
                                                                                               med.lam.nf = median(lam.no.fish,na.rm=T),
-                                                                                              med.lam.fish = median(lam.fish,na.rm=T))
+                                                                                              med.lam.fish = median(lam.fish,na.rm=T),
+                                                                                              years.lt.1.nf = length(which(lam.no.fish<1)),
+                                                                                              years.lt.1.fish = length(which(lam.fish<1)),
+                                                                                              n.years = length(lam.fish))
 
+# Figure out what proportion of the time stocks have a lambda < 1 and what stocks usually have a lambda less than one
+prop.lam.lt.1.nf <-   round(100*median(lambda.by.stock$years.lt.1.nf/lambda.by.stock$n.years),digits = 1)    
+prop.lam.lt.1.fish <-   round(100*median(lambda.by.stock$years.lt.1.fish/lambda.by.stock$n.years),digits = 1)
+prop.usually.lt.1.nf <- round(100*length(which(lambda.by.stock$years.lt.1.nf/lambda.by.stock$n.years >= 0.5)) /n.stocks,digits=1)                        
+prop.usually.lt.1.fish <- round(100*length(which(lambda.by.stock$years.lt.1.fish/lambda.by.stock$n.years >= 0.5)) /n.stocks,digits=1)                        
+
+max.median.stock <- lambda.by.stock[lambda.by.stock$med.lam.nf == max(lambda.by.stock$med.lam.nf,na.rm=T),]
+max.median.lam.nf <- round(max.median.stock$med.lam.nf,digits=2)
+min.median.stock <- lambda.by.stock[lambda.by.stock$med.lam.nf == min(lambda.by.stock$med.lam.nf,na.rm=T),]
+min.median.lam.nf <- round(min.median.stock$med.lam.nf,digits=2)                                          
+mean.nf.of.min.median.lam.nf <- round(min.median.stock$mn.lam.nf,digits=2)
+mean.fish.of.min.median.lam.nf <- round(min.median.stock$mn.lam.fish,digits=2)
 num.mn.lambda.fish.lt.1 <- length(which(lambda.by.stock$mn.lam.fish < 1))
 
 # Mean - median...
@@ -1312,8 +1338,11 @@ n.nea <- length(unique(dub.time.summary$Stock.short[dub.time.summary$Manage.shor
 n.nafo.24 <- length(unique(dub.time.summary$Stock.short[dub.time.summary$Area.broad %in% "NAFO 2-4"]))
 # Now the don't recover ones...
 n.alaska.slow <- length(slow.20$Stock.short[slow.20$Manage.short== "AFSC"])
-n.nwa.slow <- length(slow.20$Stock.short[slow.20$Manage.short %in% c("DFO-TRAC","NEFSC")])
+n.nwa.slow <- length(slow.20$Stock.short[slow.20$Manage.short %in% c("DFO-TRAC","NEFSC")]) # All in NAFO 2-4
 n.nea.slow <- length(slow.20$Stock.short[slow.20$Manage.short %in% "ICES"])
+
+prop.slow.alaska <- round(100*n.alaska.slow/n.alaska,digits=0)
+prop.slow.n24 <- round(100*n.nwa.slow/n.nafo.24,digits=0)
 
 # Need to grab all the per.diff's, which I seem to have dropped
 for.diffs <- do.call('rbind',for.tune.summary)
@@ -1335,52 +1364,127 @@ mod.by.stock.lam.pd <- res.lambda.fin |> collapse::fgroup_by(Stock.short) |> col
 
 # New lambda plot with the fishing and no fishing beside each other
 # This is likely Figure 1
-mat <- matrix(c(2, 2, 2, 2, 2, 2, 2, 2,  2,  2,
-                3, 3, 3, 3, 3, 3, 5, 5,  5,  5, 
-                1, 1, 1, 1, 1, 1, 1, 1, NA, NA,
-                4, 4, 4, 6, 6, 6, 6, NA, NA, NA), 
-                4, 10, byrow = TRUE)
-new.lam.plt.6 <- ggplot(res.lambda.fin.long.6) + geom_boxplot(aes(y=lambda,interaction(group,Stock.no.species),color=group)) +
-                                           #geom_boxplot(aes(y=lam.no.fish,x=G.Species))  + 
-                                           scale_x_discrete(NULL, guide = "axis_nested") +
-                                           xlab("") + scale_y_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
-                                           geom_hline(yintercept = 1,linetype='dashed') +
-                                           facet_manual(vars(G.Species),design=mat,scales='free_x')+
+
+
+
+# mat <- matrix(c(2, 2, 2, 2, 2, 2, 2, 2,  2,  2,
+#                 3, 3, 3, 3, 3, 3, 5, 5,  5,  5, 
+#                 1, 1, 1, 1, 1, 1, 1, 1, NA, NA,
+#                 4, 4, 4, 6, 6, 6, 6, NA, NA, NA), 
+#                 4, 10, byrow = TRUE)
+# new.lam.plt.6 <- ggplot(res.lambda.fin.long.6) + geom_boxplot(aes(y=lambda,interaction(group,Stock.no.species),color=group)) +
+#                                            #geom_boxplot(aes(y=lam.no.fish,x=G.Species))  + 
+#                                            scale_x_discrete(NULL, guide = "axis_nested") +
+#                                            xlab("") + scale_y_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
+#                                            geom_hline(yintercept = 1,linetype='dashed') +
+#                                            facet_manual(vars(G.Species),design=mat,scales='free_x')+
+#                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
+#                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
+
+
+
+## New Figure...
+
+mat <- matrix(c(rep(2,14),
+                rep(3,8), rep(NA,1), rep(5,5),
+                rep(NA,2),rep(4,4),rep(NA,1),rep(6,5),rep(NA,2),
+                rep(NA,2),rep(1,9),rep(NA,3)),
+                nrow=14, ncol=4,byrow=F)
+
+new.lam.plt.6 <- ggplot(res.lambda.fin.long.6) + geom_boxplot(aes(x=lambda,interaction(group,Stock.no.species),fill=group,color=group)) +
+                                           geom_point(aes(x=med.lam.stock,interaction(group,Stock.no.species)),color="firebrick2",fill="firebrick2",shape=8) +
+                                           scale_y_discrete(NULL, guide = "axis_nested") +
+                                           scale_color_manual(values = c("grey","blue")) +
+                                           scale_fill_manual(values = c("grey",'blue')) +
+                                           xlab("") + scale_x_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
+                                           geom_vline(xintercept = 1,linetype='dashed') +
+                                           facet_manual(vars(G.Species),design=mat,scales='free_y')+
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"),new.lam.plt.6,base_width = 19,base_height = 15)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"),new.lam.plt.6,base_width = 20,base_height = 10)
+
+
+
+
+
+
 
 # The other stocks, perhaps we put this in a supplement...
-mat <- matrix(c(1, 2, 2, 2, 2, 3, 4, 5,6,NA,NA,
-                7, 7, rep(8,9),
-                9, 9, rep(10,7),11,11),
-                3, 11, byrow = TRUE)
+# mat <- matrix(c(1, 2, 2, 2, 2, 3, 4, 5,6,NA,NA,
+#                 7, 7, rep(8,9),
+#                 9, 9, rep(10,7),11,11),
+#                 3, 11, byrow = TRUE)
+# 
+# new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(y=lambda,interaction(group,G.Species.short),color=group,fill=group)) +
+#                                            #geom_boxplot(aes(y=lam.no.fish,x=G.Species))  + 
+#                                            scale_x_discrete(NULL, guide = "axis_nested") +
+#                                            xlab("") + scale_y_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
+#                                            geom_hline(yintercept = 1,linetype='dashed') +
+#                                            facet_manual(vars(Area.long),design=mat,scales='free_x')+
+#                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
+#                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(y=lambda,interaction(group,G.Species.short),color=group)) +
-                                           #geom_boxplot(aes(y=lam.no.fish,x=G.Species))  + 
-                                           scale_x_discrete(NULL, guide = "axis_nested") +
-                                           xlab("") + scale_y_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
-                                           geom_hline(yintercept = 1,linetype='dashed') +
-                                           facet_manual(vars(Area.long),design=mat,scales='free_x')+
+
+
+mat <- matrix(c(rep(NA,1),rep(1,1), rep(2,4), rep(3,1), rep(4,1),rep(5,1),rep(6,1),rep(NA,1),
+                rep(7,2),rep(8,9),
+                rep(9,2),rep(10,7),rep(11,2)),
+                nrow=11, ncol=3,byrow=F)
+
+new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(x=lambda,interaction(group,G.Species.short),color=group,fill=group)) +
+                                           geom_point(aes(x=med.lam.stock,interaction(group,G.Species.short)),color="firebrick2",fill="firebrick2",shape=8) +
+                                           scale_y_discrete(NULL, guide = "axis_nested") +
+                                           scale_color_manual(values = c("grey","blue")) +
+                                           scale_fill_manual(values = c("grey",'blue')) +
+                                           xlab("") + scale_x_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
+                                           geom_vline(xintercept = 1,linetype='dashed') +
+                                           facet_manual(vars(Area.long),design=mat,scales='free_y')+
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.others,base_width = 19,base_height = 15)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.others,base_width = 20,base_height = 10)
 
 
-# Standard deviation figure
-colrs.sd <- rep(c(rep('blue',4),rep('orange',4),rep('grey',4),rep('black',4)),20)
-pty.sd <- rep(rep(c(21,4,9,8),4),20)
+# # Standard deviation figure
+# colrs.sd <- rep(c(rep('blue',4),rep('orange',4),rep('grey',4),rep('black',4)),20)
+# pty.sd <- rep(rep(c(21,4,9,8),4),20)
+# 
+# lam.sd.plt <- ggplot(res.lambda.fin ) + 
+#                                        geom_point(aes(y = lam.no.fish.sd,x=G.Species,group=Area.long,color=Area.long,shape = Area.long,fill=Area.long),size=3) +
+#                                        scale_y_log10("Standard deviation (Lambda)",log_breaks(n=8)) +
+#                                        scale_color_manual(values=colrs.sd) + scale_shape_manual(values = pty.sd) + scale_fill_manual(values=colrs.sd)+
+#                                        theme(axis.text.x = element_text(angle =45,hjust=1),
+#                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
+# 
+# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 10)
+# 
 
-lam.sd.plt <- ggplot(res.lambda.fin ) + 
-                                       geom_point(aes(y = lam.no.fish.sd,x=G.Species,group=Area.long,color=Area.long,shape = Area.long,fill=Area.long),size=3) +
-                                       scale_y_log10("Standard deviation (Lambda)",log_breaks(n=8)) +
-                                       scale_color_manual(values=colrs.sd) + scale_shape_manual(values = pty.sd) + scale_fill_manual(values=colrs.sd)+
-                                       theme(axis.text.x = element_text(angle =45,hjust=1),
-                                                 plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
+# New figure....
+res.chhp <- res.lambda.fin |> collapse::fsubset(Species %in% c("morhua","aeglefinus","harengus","virens"))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 10)
+res.chhp$locale <- "Eastern Atlantic"
+res.chhp$locale[!res.chhp$Manage.short %in% "ICES"] <- "Western Atlantic"
+res.chhp$locale[res.chhp$Area.broad %in% c("Ice-Faroe","NEA")] <- "Northern Atlantic"
+res.chhp$locale[res.chhp$Manage.short %in% "AFSC"] <- "Pacific"
+
+
+res.chhp.summary <- res.chhp |> collapse::fgroup_by(locale,G.Species) |> collapse::fsummarise(avg.sd = mean(lam.no.fish.sd,na.rm=T),
+                                                                                 sd.of.sd = sd(lam.no.fish.sd,na.rm=T))
+res.chhp.summary$locale <- factor(res.chhp.summary$local,levels = c("Western Atlantic", "Northern Atlantic","Eastern Atlantic"))
+
+colrs.sd <- c("blue","orange","black","firebrick2")
+
+lam.sd.plt <- ggplot(res.chhp.summary,aes(y = avg.sd,x=locale,group=G.Species,color=G.Species)) + 
+                                              geom_point(position=position_dodge(width=0.3),size=2) + 
+                                              geom_line(position=position_dodge(width=0.3),size=1.25) +
+                                              scale_color_manual(values=colrs.sd) + 
+                                              geom_errorbar(aes(ymin=avg.sd - sd.of.sd, ymax=avg.sd+sd.of.sd,x=locale),width=0 ,position=position_dodge(width=0.3)) +
+                                              xlab("") + ylab("Standard devation (Lambda)") + theme(legend.title = element_blank())
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 6)
+
+
+
 
 # Overall density dependence
 # MAIN PAPER FIGURE#
@@ -1389,7 +1493,7 @@ dd.nf.overall.plt <-ggplot(no.stock.gam.nf.dat , aes(x=prop.abund,y=exp(fit))) +
                                 geom_ribbon(aes(ymin=exp(LCI),ymax=exp(UCI)),alpha=0.5,linewidth=0,fill=u.colors[1])+
                                 geom_line(color=u.colors[1],linewidth=1) + 
                                 xlab("") + 
-                                scale_y_log10(name = "Lambda(FM=0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
+                                scale_y_log10(name = "Lambda(F=0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
                                 geom_hline(yintercept = 1,color='firebrick2',linetype = 'dashed')+
                                 theme(legend.text=element_text(size=8),
                                       legend.spacing.y = unit(-0.1, 'cm'),
@@ -1406,7 +1510,7 @@ dd.fish.overall.plt <- ggplot(no.stock.gam.fish.dat, aes(x=prop.abund,y=exp(fit)
                                 geom_line(color=u.colors[2],linewidth=2) + 
                                 geom_ribbon(aes(ymin=exp(LCI),ymax=exp(UCI)),alpha=0.5,fill=u.colors[2])+
                                 xlab("") + 
-                                scale_y_log10(name = "Lambda (FM>0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
+                                scale_y_log10(name = "Lambda (F>0)",breaks = log_breaks(n=10),limits=c(0.2,12)) +
                                 geom_hline(yintercept = 1,color='firebrick2',linetype = 'dashed',linewidth=1.5)+
                                 theme(legend.text=element_text(size=8),
                                       legend.spacing.y = unit(-0.1, 'cm'),
@@ -1436,14 +1540,6 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overal
 
 
 
-
-new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(y=lambda,interaction(group,G.Species.short),color=group)) +
-                                           #geom_boxplot(aes(y=lam.no.fish,x=G.Species))  + 
-                                           scale_x_discrete(NULL, guide = "axis_nested") +
-                                           xlab("") + scale_y_log10("Lambda",breaks = log_breaks(n=8),limits=c(0.2,12)) + 
-                                           geom_hline(yintercept = 1,linetype='dashed') +
-                                           facet_manual(vars(Area.long),design=mat,scales='free_x')
-  
 # Density dependence by stock 
 cols.gam <- rep(c("black","blue","orange",'firebrick2','lightgreen'),6)
 pty.gam <- c(rep(0,5),rep(1,5),rep(2,5),rep(3,5),rep(4,5),rep(5,5))
@@ -1458,7 +1554,7 @@ dd.stocks.nf.plt <- ggplot(pred.dd.stock.gam.ss.nf,aes(x=prop.abund,y=lam.no.fis
                                 geom_line() + 
                                 geom_point(data = thin.pred.nf,size=2) +  
                                 xlab("Proportion of maximum abundance") + 
-                                scale_y_log10(name = "Lambda (FM=0)",breaks = log_breaks(n=10)) +
+                                scale_y_log10(name = "Lambda (F=0)",breaks = log_breaks(n=10)) +
                                 geom_ribbon(aes(ymin=lower,ymax=upper,color=G.Species),alpha=0.10,linewidth=0)+
                                 facet_manual(vars(Area.long),design=mat,scales='free_x')+
                                 #facet_wrap(~Area.long)  +
@@ -1486,7 +1582,7 @@ dd.stocks.fish.plt <- ggplot(pred.dd.stock.gam.ss.fish,aes(x=prop.abund,y=lam.fi
                                 geom_point(data = thin.pred.fish,size=2) +  
                                 geom_ribbon(aes(ymin=lower,ymax=upper,color=G.Species),alpha=0.10,linewidth=0)+
                                 xlab("Proportion of maximum abundance") + 
-                                scale_y_log10(name = "Lambda (FM>0)",breaks = log_breaks(n=10)) +
+                                scale_y_log10(name = "Lambda (F>0)",breaks = log_breaks(n=10)) +
                                 facet_manual(vars(Area.long),design=mat,scales='free_x')+
                                 #facet_wrap(~Area.long)  +
                                 scale_shape_manual(values=pty.gam) +
@@ -1501,35 +1597,50 @@ dd.stocks.fish.plt <- ggplot(pred.dd.stock.gam.ss.fish,aes(x=prop.abund,y=lam.fi
 
 save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"),dd.stocks.fish.plt,base_width = 10,base_height = 10)
 
+
+pop.dam <- pop.dam |> collapse::fgroup_by(Stock) |> 
+                           collapse::fmutate(med.gen.len = median(gen.len.opt,na.rm=T),med.r0 = median(R0.opt,na.rm=T)) |>
+                           as.data.frame()
 # Lifetime reproductive success 
-mat <- matrix(c(2, 2, 2, 2, 2, 2, 2, 2,  2,  2,
-                3, 3, 3, 3, 3, 3, 5, 5,  5,  5, 
-                1, 1, 1, 1, 1, 1, 1, 1, NA, NA,
-                4, 4, 4, 6, 6, 6, 6, NA, NA, NA), 
-                4, 10, byrow = TRUE)
-r0.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(y=R0.opt,interaction(group,Stock.no.species),color=group))  + 
-                                       scale_x_discrete(NULL, guide = "axis_nested") + scale_y_log10(name = "Lifetime Reproductive Output")+
-                                       geom_hline(yintercept = 1,linetype='dashed',color='blue')+
-                                       facet_manual(vars(G.Species),design=mat,scales='free_x')+
+mat <- matrix(c(rep(2,14),
+                rep(3,8), rep(NA,1), rep(5,5),
+                rep(NA,2),rep(4,4),rep(NA,1),rep(6,5),rep(NA,2),
+                rep(NA,2),rep(1,9),rep(NA,3)),
+                nrow=14, ncol=4,byrow=F)
+
+
+r0.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=R0.opt,interaction(group,Stock.no.species),fill=group,color=group)) +
+                                           geom_point(aes(x=med.r0,interaction(group,Stock.no.species)),color="firebrick2",fill="firebrick2",shape=8) +
+                                           scale_y_discrete(NULL, guide = "axis_nested") +
+                                           scale_color_manual(values = c("grey","blue")) +
+                                           scale_fill_manual(values = c("grey",'blue')) +
+                                       #scale_x_discrete(NULL, guide = "axis_nested") + 
+                                        scale_x_log10(name = "Lifetime Reproductive Output")+
+                                       geom_vline(xintercept = 1,linetype='dashed',color='blue')+
+                                       facet_manual(vars(G.Species),design=mat,scales='free_y')+
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"),r0.boxplt.6,base_width = 19,base_height = 15)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"),r0.boxplt.6,base_width = 20,base_height = 10)
 
-mat <- matrix(c(1, 2, 2, 2, 2, 3, 4, 5,6,NA,NA,
-                7, 7, rep(8,9),
-                9, 9, rep(10,7),11,11),
-                3, 11, byrow = TRUE)
+mat <- matrix(c(rep(NA,1),rep(1,1), rep(2,4), rep(3,1), rep(4,1),rep(5,1),rep(6,1),rep(NA,1),
+                rep(7,2),rep(8,9),
+                rep(9,2),rep(10,7),rep(11,2)),
+                nrow=11, ncol=3,byrow=F)
 
-r0.boxplot.others <- ggplot(pop.dam.all.others) +   geom_boxplot(aes(y=R0.opt,interaction(group,G.Species.short),color=group))  + 
-                                                    scale_x_discrete(NULL, guide = "axis_nested") + 
-                                                    scale_y_log10(name = "Lifetime Reproductive Output")+
-                                                    geom_hline(yintercept = 1,linetype='dashed',color='blue')+
-                                                    facet_manual(vars(Area.long),design=mat,scales='free')+
+r0.boxplot.others <- ggplot(pop.dam.all.others) +   geom_boxplot(aes(x=R0.opt,interaction(group,G.Species.short),fill=group,color=group)) +
+                                                   geom_point(aes(x=med.r0,interaction(group,G.Species.short)),color="firebrick2",fill="firebrick2",shape=8) +
+                                                   scale_y_discrete(NULL, guide = "axis_nested") +
+                                                   scale_color_manual(values = c("grey","blue")) +
+                                                   scale_fill_manual(values = c("grey",'blue')) +
+                                                    #scale_x_discrete(NULL, guide = "axis_nested") + 
+                                                    scale_x_log10(name = "Lifetime Reproductive Output")+
+                                                    geom_vline(xintercept = 1,linetype='dashed',color='blue')+
+                                                    facet_manual(vars(Area.long),design=mat,scales='free_y')+
                                                     theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                           plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"),r0.boxplot.others,base_width = 15,base_height = 10)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"),r0.boxplot.others,base_width = 20,base_height = 10)
 
 
 
@@ -1602,37 +1713,52 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.
 
 
 # Generation length
-mat <- matrix(c(2, 2, 2, 2, 2, 2, 2, 2,  2,  2,
-                3, 3, 3, 3, 3, 3, 5, 5,  5,  5, 
-                1, 1, 1, 1, 1, 1, 1, 1, NA, NA,
-                4, 4, 4, 6, 6, 6, 6, NA, NA, NA), 
-                4, 10, byrow = TRUE)
-gen.boxplt.6 <- ggplot(pop.dam.all.6) +
-                            geom_boxplot(aes(y=gen.len.opt,interaction(group,Stock.no.species),color=group))  + 
-                            scale_x_discrete(NULL, guide = "axis_nested") +
-                            scale_y_continuous("Generation Length (years)",limits=c(0,13),breaks= seq(0,20,by=2)) +
-                             facet_manual(vars(G.Species),design=mat,scales='free_x')+
-                                           theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
-                                                 plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
+mat <- matrix(c(rep(2,14),
+                rep(3,8), rep(NA,1), rep(5,5),
+                rep(NA,2),rep(4,4),rep(NA,1),rep(6,5),rep(NA,2),
+                rep(NA,2),rep(1,9),rep(NA,3)),
+                nrow=14, ncol=4,byrow=F)
+
+
+r0.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=R0.opt,interaction(group,Stock.no.species),fill=group,color=group)) +
+                                           geom_point(aes(x=med.r0,interaction(group,Stock.no.species)),color="firebrick2",fill="firebrick2",shape=8) +
+                                           scale_y_discrete(NULL, guide = "axis_nested") +
+                                           scale_color_manual(values = c("grey","blue")) +
+                                           scale_fill_manual(values = c("grey",'blue')) +
+                                       #scale_x_discrete(NULL, guide = "axis_nested") + 
+                                        scale_x_log10(name = "Lifetime Reproductive Output")+
+                                       geom_vline(xintercept = 1,linetype='dashed',color='blue')+
+  
+gen.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=gen.len.opt,interaction(group,Stock.no.species),fill=group,color=group)) +
+                                        geom_point(aes(x=med.gen.len,interaction(group,Stock.no.species)),color="firebrick2",fill="firebrick2",shape=8) +
+                                        scale_y_discrete(NULL, guide = "axis_nested") +
+                                        scale_color_manual(values = c("grey","blue")) +
+                                        scale_fill_manual(values = c("grey",'blue')) +
+                                        scale_x_continuous("Generation Length (years)",limits=c(0,13),breaks= seq(0,20,by=2)) +
+                                        facet_manual(vars(G.Species),design=mat,scales='free_y')+
+                                         theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
+                                               plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
                             
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"),gen.boxplt.6,base_width = 19,base_height = 15)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"),gen.boxplt.6,base_width = 20,base_height = 10)
 
 # Then the generation length for others.
-mat <- matrix(c(1, 2, 2, 2, 2, 3, 4, 5,6,NA,NA,
-                7, 7, rep(8,9),
-                9, 9, rep(10,7),11,11),
-                3, 11, byrow = TRUE)
+mat <- matrix(c(rep(NA,1),rep(1,1), rep(2,4), rep(3,1), rep(4,1),rep(5,1),rep(6,1),rep(NA,1),
+                rep(7,2),rep(8,9),
+                rep(9,2),rep(10,7),rep(11,2)),
+                nrow=11, ncol=3,byrow=F)
 
-gen.boxplt.others <- ggplot(pop.dam.all.others) +
-                            geom_boxplot(aes(y=gen.len.opt,interaction(group,G.Species.short),color=group))  + 
-                            scale_x_discrete(NULL, guide = "axis_nested") +
-                            scale_y_continuous("Generation Length (years)",limits=c(0,13),breaks= seq(0,20,by=2)) +
-                            facet_manual(vars(Area.long),design=mat,scales='free')+
-                                           theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
-                                                 plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
+gen.boxplt.others <- ggplot(pop.dam.all.others) + geom_boxplot(aes(x=gen.len.opt,interaction(group,G.Species.short),fill=group,color=group)) +
+                                                  geom_point(aes(x=med.gen.len,interaction(group,G.Species.short)),color="firebrick2",fill="firebrick2",shape=8) +
+                                                  scale_y_discrete(NULL, guide = "axis_nested") +
+                                                  scale_color_manual(values = c("grey","blue")) +
+                                                  scale_fill_manual(values = c("grey",'blue')) +
+                                                  scale_x_continuous("Generation Length (years)",limits=c(0,13),breaks= seq(0,20,by=2)) +
+                                                  facet_manual(vars(Area.long),design=mat,scales='free_y')+
+                                                  theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
+                                                        plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"),gen.boxplt.others,base_width = 15,base_height = 10)
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"),gen.boxplt.others,base_width = 20,base_height = 10)
 
 
 
@@ -1744,19 +1870,52 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series
 
 # Doubling time and variability
 
+colrs.cat <- c("firebrick2","white","blue")
+# Can I show this thing better?
+lam.sd.p.rec.ordered <- lam.sd.p.rec[order(lam.sd.p.rec$prop.cat,lam.sd.p.rec$lam.no.fish.sd,lam.sd.p.rec$lam.no.fish.med,lam.sd.p.rec$Stock),]
+lam.sd.p.rec.ordered$Stock <- factor(lam.sd.p.rec.ordered$Stock,levels =rev(lam.sd.p.rec.ordered$Stock))
+
+
+lam.sd.p.rec.ordered$lme.short <- "NWA"
+lam.sd.p.rec.ordered$lme.short[lam.sd.p.rec.ordered$LME == "NE Atlantic"] <- "NEA"
+lam.sd.p.rec.ordered$lme.short[lam.sd.p.rec.ordered$LME == "Pacific (Alaska)"] <- "Pac"
+lam.sd.p.rec.ordered$spec.lme <- paste0(lam.sd.p.rec.ordered$G.Species," (",lam.sd.p.rec.ordered$lme.short,")")
+
+
+
+p1 <- ggplot(lam.sd.p.rec.ordered) + geom_bar(aes(x=lam.no.fish.med,y=Stock,group = prop.cat,fill=prop.cat,color=prop.cat),stat='identity') + 
+                                     scale_y_discrete("",position='right',breaks = NULL) +
+                                     scale_fill_manual(values=colrs.cat) +
+                                     scale_color_manual(values=rep('black',3)) +
+                                     geom_vline(xintercept =1,linetype = 'dashed') + scale_x_reverse("Median lambda") +
+                                     theme(legend.position = 'none',
+                                           plot.margin = margin(t=53,b=8,l=5),)
+
+p2 <- ggplot(lam.sd.p.rec.ordered) + geom_bar(aes(x=lam.no.fish.sd,y=Stock,group = prop.cat,fill=prop.cat,color=prop.cat),stat='identity')  + 
+                                     theme(legend.position = 'top',legend.title = element_blank()) + scale_x_continuous("Standard deviation (lambda)") +
+                                     scale_y_discrete("",position='left',labels = rev(lam.sd.p.rec.ordered$spec.lme)) + 
+                                     scale_fill_manual(values=colrs.cat) +
+                                     scale_color_manual(values=rep('black',3)) +
+                                     theme(axis.text.y = element_text(hjust=0.5),
+                                           plot.margin = margin(t=53,l=-30,b=8),
+                                           axis.ticks.y = element_blank(),
+                                           legend.position = c(-0.3,1.02),legend.direction = 'horizontal',)
+
+p3 <- cowplot::plot_grid(p1,p2)
+p3
+
+save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"),p3,base_width = 11,base_height = 15)
 
 
 # Is there a relationship between median and sd?
-colrs.cat <- c("blue","black","orange")
-pts.cat <- 21:23
-sd.rec.plt <- ggplot(lam.sd.p.rec, aes(y=lam.no.fish.med,x=lam.no.fish.sd,color=prop.cat,group=prop.cat)) + 
-                       geom_point(size =3,aes(shape=prop.cat,fill=prop.cat)) + 
-                       geom_hline(yintercept=1,linetype="dashed") + 
-                       scale_y_continuous(name="median Lambda") + scale_x_continuous(name="standard deviation Lambda") +
-                       scale_color_manual(values=colrs.cat) + scale_fill_manual(values=colrs.cat) +  
-                       scale_shape_manual(values=pts.cat) + theme(legend.title = element_blank())
+# pts.cat <- 21:23
+# sd.rec.plt <- ggplot(lam.sd.p.rec, aes(y=lam.no.fish.med,x=lam.no.fish.sd,color=prop.cat,group=prop.cat)) +
+#                        geom_point(size =3,aes(shape=prop.cat,fill=prop.cat)) +
+#                        geom_hline(yintercept=1,linetype="dashed") +
+#                        scale_y_continuous(name="median Lambda") + scale_x_continuous(name="standard deviation Lambda") +
+#                        scale_color_manual(values=colrs.cat) + scale_fill_manual(values=colrs.cat) +
+#                        scale_shape_manual(values=pts.cat) + theme(legend.title = element_blank())
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"),sd.rec.plt,base_width = 10,base_height = 10)
 
 
 ```
