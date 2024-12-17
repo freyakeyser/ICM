@@ -1343,6 +1343,10 @@ n.nea.slow <- length(slow.20$Stock.short[slow.20$Manage.short %in% "ICES"])
 
 prop.slow.alaska <- round(100*n.alaska.slow/n.alaska,digits=0)
 prop.slow.n24 <- round(100*n.nwa.slow/n.nafo.24,digits=0)
+# standard deviation in which rebuilding time was also above the low category
+sd.rebuild.safe <- ceiling(max(lam.sd.p.rec$lam.no.fish.sd[lam.sd.p.rec$prop.cat == "Low"])*100)/100
+lam.rebuild.safe <- ceiling(max(lam.sd.p.rec$lam.no.fish.med[lam.sd.p.rec$prop.cat == "Low"])*100)/100
+
 
 # Need to grab all the per.diff's, which I seem to have dropped
 for.diffs <- do.call('rbind',for.tune.summary)
@@ -1727,7 +1731,7 @@ r0.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=R0.opt,interaction(gro
                                            scale_fill_manual(values = c("grey",'blue')) +
                                        #scale_x_discrete(NULL, guide = "axis_nested") + 
                                         scale_x_log10(name = "Lifetime Reproductive Output")+
-                                       geom_vline(xintercept = 1,linetype='dashed',color='blue')+
+                                       geom_vline(xintercept = 1,linetype='dashed',color='blue')
   
 gen.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=gen.len.opt,interaction(group,Stock.no.species),fill=group,color=group)) +
                                         geom_point(aes(x=med.gen.len,interaction(group,Stock.no.species)),color="firebrick2",fill="firebrick2",shape=8) +
