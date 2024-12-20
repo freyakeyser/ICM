@@ -24,14 +24,14 @@ names(meta.4.tab) <- c("Stock", "Order", "Family", "Genus", "Species", "Minimum 
 
 ```{r,tab-lambdas}
 # The table with the lambda values
-csas_table(comp.lam.res.tab,caption ="A comparison of the $\\lambda_{F=0}$ and $\\lambda_{F>0} estimates for stock at the minimum and maximum abundance, along with the estimate at 40\\% of the maximum abundance. values greater than 1 indicate that the population would be expected to increase in size, while values less than 1 indicate the population is likely to decline in size")
+csas_table(comp.lam.res.tab,caption ="A comparison of the $\\lambda_{F=0}$ and $\\lambda_{F>0}$ estimates for stock at the minimum and maximum abundance, along with the estimate at 40\\% of the maximum abundance. values greater than 1 indicate that the population would be expected to increase in size, while values less than 1 indicate the population is likely to decline in size")
 ```
 
 \newpage
 
 ```{r,tab-lamda-diffs}
 # Now make the table for the differences
-csas_table(comp.lam.diff.res.tab,caption ="A comparison of the difference in $\\lambda_{F=0}$ and $\\lambda_{F>0} for each stock at the minimum and maximum abundance, along with the change at 40\\% of the maximum abundance. Positive values indicate that the $\\lambda$ estimae has increased as abundance declines (consistent with negative density dependence), while negative values indicate the $\\lambda$ estimate has declined (considtent with positive density dependence)")
+csas_table(comp.lam.diff.res.tab,caption ="A comparison of the difference in $\\lambda_{F=0}$ and $\\lambda_{F>0}$ for each stock at the minimum and maximum abundance, along with the change at 40\\% of the maximum abundance. Positive values indicate that the $\\lambda$ estimae has increased as abundance declines (consistent with negative density dependence), while negative values indicate the $\\lambda$ estimate has declined (considtent with positive density dependence)")
 ```
 
 

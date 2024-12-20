@@ -43,6 +43,7 @@ output:
    draft_watermark: false
    include_section_nums: true
    highlight: tango
+   number_sections: false
 # ------------
 # End of options to set
 knit: (function(input, ...) {

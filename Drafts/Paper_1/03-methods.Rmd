@@ -34,7 +34,7 @@ Then we calculated the total number of recruits produced by each age class ($RPA
 $$
 RPA_{y,a} =  SSB_{(y-ra),a} RPS_{y}
 $$
-Fish are expected to have variability in reproductive success by age (ref, ref). However, we had to make the simplifying assumption that each kilogram of spawning biomass contributed the same to the total total reproductive output, irrespective of age. We calculated the age-specific fecundity ($f_{y,a}$) as the number of offspring produced by each spawner in the stock. The number of spawners in year $y$ and age class $a$ ($NS_{y,a]$) is the proportion of mature individuals in each age class ($Mat_{y,a}$) multiplied by the number of individuals in each age class:
+Fish are expected to have variability in reproductive success by age (ref, ref). However, we had to make the simplifying assumption that each kilogram of spawning biomass contributed the same to the total total reproductive output, irrespective of age. We calculated the age-specific fecundity ($f_{y,a}$) as the number of offspring produced by each spawner in the stock. The number of spawners in year $y$ and age class $a$ ($NS_{y,a}$) is the proportion of mature individuals in each age class ($Mat_{y,a}$) multiplied by the number of individuals in each age class:
 
 $$
 NS_{y,a} = Mat_{y,a} N_{y,a}
