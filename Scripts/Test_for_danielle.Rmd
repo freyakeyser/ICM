@@ -58,15 +58,6 @@ for(fun in funs)
   file.remove(paste0(getwd(),"/",basename(fun)))
 }
 
-
-```
-
-   
-  So now I can try to do some tuning, both forwards and backwards, lets see what we get from that...
-  
-```{r tunes,include=F,echo=F,warning=F,message=F}
-  
-  
   ########################## Now run the tuning sims
   #
   
@@ -143,11 +134,6 @@ for(fun in funs)
      for.tune.tmp <- data.frame(fast.for.tune$res,Stock = i)
      for.tune.summary[[i]] <- for.tune.tmp
   #}
- 
- 
-
-
-
 ```
 
 STOP HERE DANIELLE, THE REST OF THIS STUFF IS JUST TAKING MODEL OUTPUT AND PLOTING OR MAKING SECONDARY PRODUCTS FROM THE RESULTS.
