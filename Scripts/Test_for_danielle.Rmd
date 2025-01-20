@@ -159,11 +159,11 @@ if(load.results==F)
 {
   # We are now looking at everything, lifetime reproductive success
   
-  for.tune.summary <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_summary_no_age_correction_",what.2.tune,".Rds"))
-  for.tune.all <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_all_no_age_corection_res_",what.2.tune,".Rds"))
+  #for.tune.summary <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_summary_no_age_correction_",what.2.tune,".Rds"))
+  #for.tune.all <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_all_no_age_corection_res_",what.2.tune,".Rds"))
   
   
-  load(file =  paste0(loc,"/Results/model_inputs_no_age_correction.Rdata"))
+  #load(file =  paste0(loc,"/Results/model_inputs_no_age_correction.Rdata"))
   # Get the stocks...
   Stocks <- names(for.tune.summary)
   n.stocks <- length(Stocks)
@@ -533,18 +533,18 @@ if(load.results==F)
   # saveRDS(pop.dam,paste0("D:/Github/ICM/Results/R0_and_gen_length_",what.2.tune,".Rds"))
   # saveRDS(dub.time.summary,paste0("D:/Github/ICM/Results/doubling_time_",what.2.tune,".Rds"))
   # saveRDS(for.tunes,paste0("D:/Github/ICM/Results/forward_tunes_for_figures_",what.2.tune,".Rds"))
-  save(dub.time.summary,pop.dam,res.year.final,res.cohort.final,for.tunes,dub.time,for.tune.all,res.lambda.final,meta,meta.sub,
-       file=paste0(loc,"/Results/all_cleaned_forward_tune_summaries_no_age_corection_",what.2.tune,".Rdata"))
+  #save(dub.time.summary,pop.dam,res.year.final,res.cohort.final,for.tunes,dub.time,for.tune.all,res.lambda.final,meta,meta.sub,
+  #     file=paste0(loc,"/Results/all_cleaned_forward_tune_summaries_no_age_corection_",what.2.tune,".Rdata"))
   
-  write.csv(meta.sub, paste0(loc,"/Data/metadata_no_age_corection.csv"))
+  #write.csv(meta.sub, paste0(loc,"/Data/metadata_no_age_corection.csv"))
 } # end if load results
 ```
 
 
 
 ```{r clean-up-and-stats,include=F,echo=F,message=F,warning=F}
-load(file=paste0(loc,"/Results/all_cleaned_forward_tune_summaries_no_age_corection_",what.2.tune,".Rdata"))
-for.tune.summary <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_summary_no_age_correction_",what.2.tune,".Rds"))
+#load(file=paste0(loc,"/Results/all_cleaned_forward_tune_summaries_no_age_corection_",what.2.tune,".Rdata"))
+#for.tune.summary <- readRDS(paste0(loc,"/Results/forwards_fully_tuned_summary_no_age_correction_",what.2.tune,".Rds"))
 
 Stocks <- unique(res.lambda.final$Stock)
 res.lambda.fin <- data.frame(res.lambda.final)
@@ -1155,7 +1155,7 @@ new.lam.plt.6 <- ggplot(res.lambda.fin.long.6) + geom_boxplot(aes(x=lambda,inter
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"),new.lam.plt.6,base_width = 20,base_height = 10)
+##save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"),new.lam.plt.6,base_width = 20,base_height = 10)
 
 
 
@@ -1196,7 +1196,7 @@ new.lam.plt.others <- ggplot(res.lambda.fin.long.others) + geom_boxplot(aes(x=la
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.others,base_width = 20,base_height = 10)
+##save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"),new.lam.plt.others,base_width = 20,base_height = 10)
 
 
 # # Standard deviation figure
@@ -1210,7 +1210,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_spec
 #                                        theme(axis.text.x = element_text(angle =45,hjust=1),
 #                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 # 
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 10)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 10)
 # 
 
 # New figure....
@@ -1234,7 +1234,7 @@ lam.sd.plt <- ggplot(res.chhp.summary,aes(y = avg.sd,x=locale,group=G.Species,co
                                               scale_color_manual(values=colrs.sd) + 
                                               geom_errorbar(aes(ymin=avg.sd - sd.of.sd, ymax=avg.sd+sd.of.sd,x=locale),width=0 ,position=position_dodge(width=0.3)) +
                                               xlab("") + ylab("Standard devation (Lambda)") + theme(legend.title = element_blank())
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 6)
+##save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"),lam.sd.plt,base_width = 10,base_height = 6)
 
 
 
@@ -1289,7 +1289,7 @@ dd.fish.nf.plt <- ggplot(t.smooth, aes(x=prop.abund,y=exp(fit),group=Scenario,co
 dd.overall.combo <- plot_grid(dd.nf.overall.plt,dd.fish.overall.plt,dd.fish.nf.plt,nrow=3)
 
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overall_",what.2.tune,".png"),dd.overall.combo,base_width = 10,base_height = 10)
+##save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overall_",what.2.tune,".png"),dd.overall.combo,base_width = 10,base_height = 10)
 
 
 
@@ -1321,7 +1321,7 @@ dd.stocks.nf.plt <- ggplot(pred.dd.stock.gam.ss.nf,aes(x=prop.abund,y=lam.no.fis
                                  guides(color = guide_legend(ncol=1,byrow=T),
                                         shape = guide_legend(ncol=1,byrow=T))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_nf_stocks_",what.2.tune,".png"),dd.stocks.nf.plt,base_width = 10,base_height = 10)
+##save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_nf_stocks_",what.2.tune,".png"),dd.stocks.nf.plt,base_width = 10,base_height = 10)
 
 mat <- matrix(c(2, 2,13,13, 5, 5, 9, 9,
                 3, 3,12,12, 6, 6, 8, 8,
@@ -1348,7 +1348,7 @@ dd.stocks.fish.plt <- ggplot(pred.dd.stock.gam.ss.fish,aes(x=prop.abund,y=lam.fi
                                  guides(color = guide_legend(ncol=1,byrow=T),
                                         shape = guide_legend(ncol=1,byrow=T))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"),dd.stocks.fish.plt,base_width = 10,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"),dd.stocks.fish.plt,base_width = 10,base_height = 10)
 
 
 pop.dam <- pop.dam |> collapse::fgroup_by(Stock) |> 
@@ -1374,7 +1374,7 @@ r0.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=R0.opt,interaction(gro
                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"),r0.boxplt.6,base_width = 20,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"),r0.boxplt.6,base_width = 20,base_height = 10)
 
 mat <- matrix(c(rep(NA,1),rep(1,1), rep(2,4), rep(3,1), rep(4,1),rep(5,1),rep(6,1),rep(NA,1),
                 rep(7,2),rep(8,9),
@@ -1393,7 +1393,7 @@ r0.boxplot.others <- ggplot(pop.dam.all.others) +   geom_boxplot(aes(x=R0.opt,in
                                                     theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                           plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"),r0.boxplot.others,base_width = 20,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"),r0.boxplot.others,base_width = 20,base_height = 10)
 
 
 
@@ -1426,7 +1426,7 @@ r0.heatmap.pac <- ggplot(pop.dam |> collapse::fsubset(LME == "Pacific (Alaska)")
 r0.heatmap <- cowplot::plot_grid(r0.heatmap.pac,r0.heatmap.nw,r0.heatmap.ne,nrow = 3,rel_heights = c(3,4,10))
 
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_nf_",what.2.tune,".png"),r0.heatmap,base_width = 20,base_height = 17)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_nf_",what.2.tune,".png"),r0.heatmap,base_width = 20,base_height = 17)
 
 
 
@@ -1459,7 +1459,7 @@ r0.heatmap.pac.fish <- ggplot(pop.dam.fish |> collapse::fsubset(LME == "Pacific 
 r0.heatmap.fish <- cowplot::plot_grid(r0.heatmap.pac.fish,r0.heatmap.nw.fish,r0.heatmap.ne.fish,nrow = 3,rel_heights = c(3,4,10))
 
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.tune,".png"),r0.heatmap.fish,base_width = 20,base_height = 17)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.tune,".png"),r0.heatmap.fish,base_width = 20,base_height = 17)
 
 
 
@@ -1493,7 +1493,7 @@ gen.boxplt.6 <- ggplot(pop.dam.all.6) + geom_boxplot(aes(x=gen.len.opt,interacti
                                                plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
                             
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"),gen.boxplt.6,base_width = 20,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"),gen.boxplt.6,base_width = 20,base_height = 10)
 
 # Then the generation length for others.
 mat <- matrix(c(rep(NA,1),rep(1,1), rep(2,4), rep(3,1), rep(4,1),rep(5,1),rep(6,1),rep(NA,1),
@@ -1511,7 +1511,7 @@ gen.boxplt.others <- ggplot(pop.dam.all.others) + geom_boxplot(aes(x=gen.len.opt
                                                   theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
                                                         plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"),gen.boxplt.others,base_width = 20,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"),gen.boxplt.others,base_width = 20,base_height = 10)
 
 
 
@@ -1534,7 +1534,7 @@ gen.heatmap.pac <- ggplot(pop.dam |> collapse::fsubset(LME == "Pacific (Alaska)"
 
 gen.heatmap <- cowplot::plot_grid(gen.heatmap.pac,gen.heatmap.nw,gen.heatmap.ne,nrow = 3,rel_heights = c(3,4,10))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_nf_",what.2.tune,".png"),gen.heatmap,base_width = 15,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_nf_",what.2.tune,".png"),gen.heatmap,base_width = 15,base_height = 10)
 
 
 gen.heatmap.ne.fish <- ggplot(pop.dam.fish |> collapse::fsubset(LME == "NE Atlantic"), aes(x=cohort, y=Stock.short, fill= gen.len.opt)) + 
@@ -1555,7 +1555,7 @@ gen.heatmap.pac.fish <- ggplot(pop.dam.fish |> collapse::fsubset(LME == "Pacific
 
 gen.heatmap.fish <- cowplot::plot_grid(gen.heatmap.pac.fish,gen.heatmap.nw.fish,gen.heatmap.ne.fish,nrow = 3,rel_heights = c(3,4,10))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_fish_",what.2.tune,".png"),gen.heatmap.fish,base_width = 15,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_fish_",what.2.tune,".png"),gen.heatmap.fish,base_width = 15,base_height = 10)
 
 
 
@@ -1609,7 +1609,7 @@ dub.heatmap.scorp <- ggplot(dub.time.summary |> collapse::fsubset(Order %in% "Sc
 dub.heatmap <- cowplot::plot_grid(dub.heatmap.gad,dub.heatmap.pl,dub.heatmap.cl,dub.heatmap.per,dub.heatmap.scom,dub.heatmap.scorp,
                                   nrow = 6,rel_heights = c(39,20,11,4,3,3))
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_order_",what.2.tune,".png"),dub.heatmap,base_width = 20,base_height = 20)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_order_",what.2.tune,".png"),dub.heatmap,base_width = 20,base_height = 20)
 
 
 
@@ -1619,7 +1619,7 @@ dub.ts.plt <- ggplot(n.dub,aes(x=years,y=count)) +
                     geom_hline(yintercept = length(Stocks),linetype="dashed") + 
                     xlab("") + ylab("Number of Stocks")
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series_",what.2.tune,".png"),dub.ts.plt,base_width = 10,base_height = 10)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series_",what.2.tune,".png"),dub.ts.plt,base_width = 10,base_height = 10)
 
 # Doubling time and variability
 
@@ -1657,7 +1657,7 @@ p2 <- ggplot(lam.sd.p.rec.ordered) + geom_bar(aes(x=lam.no.fish.sd,y=Stock,group
 p3 <- cowplot::plot_grid(p1,p2)
 p3
 
-save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"),p3,base_width = 11,base_height = 15)
+#save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"),p3,base_width = 11,base_height = 15)
 
 
 # Is there a relationship between median and sd?
@@ -1721,7 +1721,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                                  dub.heatmap.virens, dub.heatmap.solea,dub.heatmap.platessa,nrow = 6,rel_heights = c(14,9,8,5,5,4))
 # dub.heatmap.sp6
 # 
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_sp6_",what.2.tune,".png"),dub.heatmap.sp6,base_width = 20,base_height = 17)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_sp6_",what.2.tune,".png"),dub.heatmap.sp6,base_width = 20,base_height = 17)
 # 
 # 
 # # What about a plot of the sd of lamda by stock
@@ -1782,7 +1782,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             guides(colour = guide_legend(ncol = 1))+
 #                             theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm'))
 # #lambda.ts.plt
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_timeseries_6_",what.2.tune,".png"),lambda.ts.plt,base_width = 12,base_height = 10)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_timeseries_6_",what.2.tune,".png"),lambda.ts.plt,base_width = 12,base_height = 10)
 # 
 # 
 # lambda.dec.plt <- ggplot(res.lambda.final.6,aes(y=med.lam,x=as.factor(decade))) +
@@ -1792,7 +1792,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             #scale_x_continuous(breaks=seq(1940,2020,by=10))+
 #                             geom_hline(yintercept = 1,linetype='dashed') +
 #                             facet_wrap(~G.Species,scales='free_y') 
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_by_decade_6_",what.2.tune,".png"),lambda.dec.plt,base_width = 12,base_height = 12)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_by_decade_6_",what.2.tune,".png"),lambda.dec.plt,base_width = 12,base_height = 12)
 # 
 # 
 
@@ -1865,7 +1865,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                                            theme(axis.text.x = element_text(angle =45,hjust=1),legend.position = 'none',
 #                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 # 
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_no_fishing_6_",what.2.tune,".png"),lambda.plt,base_width = 12,base_height = 10)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_no_fishing_6_",what.2.tune,".png"),lambda.plt,base_width = 12,base_height = 10)
 # 
 # # With fishing
 # lambda.plt.fish <- ggplot(res.lambda.final.6) + geom_boxplot(aes(y=lam.fish,x=Stock.no.species))  + 
@@ -1877,7 +1877,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                                                  plot.margin = margin(0,0.5,0,0.5, "cm"),axis.title.y = element_text(margin = margin(r = 30)))
 # 
 # 
-# save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_with_fishing_6_",what.2.tune,".png"),lambda.plt.fish,base_width = 12,base_height = 10)
+# #save_plot(paste0(loc,"/Figures/tuned/No_age_correction/lambda_with_fishing_6_",what.2.tune,".png"),lambda.plt.fish,base_width = 12,base_height = 10)
 # 
 # 
 # 
@@ -2127,7 +2127,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm')) 
 # r0.ts.plt
 # 
-# save_plot("D:/Github/ICM/Figures/tuned/R0_timeseries_6.png",r0.ts.plt,base_width = 30,base_height = 12)
+# #save_plot("D:/Github/ICM/Figures/tuned/R0_timeseries_6.png",r0.ts.plt,base_width = 30,base_height = 12)
 # 
 # r0.boxplt <- ggplot(pop.dam) + geom_boxplot(aes(y=R0.opt,x=Stock.no.species))  + 
 #                             scale_y_log10(name = "Lifetime Reproductive Output")+#, breaks = c(0.001,0.01,0.1,1,5,10,50,100),minor_breaks = NULL) + 
@@ -2154,7 +2154,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             guides(colour = guide_legend(ncol = 1))+
 #                             theme(axis.text.x = element_text(angle =45,hjust=1),legend.key.width = unit(5,'cm')) 
 # gen.ts.plt
-# save_plot("D:/Github/ICM/Figures/tuned/Gen_time_series_6.png",gen.ts.plt,base_width = 20,base_height = 12)
+# #save_plot("D:/Github/ICM/Figures/tuned/Gen_time_series_6.png",gen.ts.plt,base_width = 20,base_height = 12)
 
 # 
 # ggplot(for.tunes) + geom_jitter(aes(y=lambda,x=Species,group=Stock.short,color=Stock.short)) + 
@@ -2174,7 +2174,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             scale_y_log10(name = "Lifetime Reproductive Output")+#, breaks = c(0.001,0.01,0.05,0.1,0.5,1,5,10,50,100),minor_breaks = NULL) + 
 #                             facet_wrap(~Species,scales = 'free')+
 #                             theme(axis.text.x = element_text(angle =45,hjust=1))
-# save_plot("D:/Github/ICM/Figures/tuned/R0_ignoring_fishing.png",r0.plt,base_width = 8,base_height = 8)
+# #save_plot("D:/Github/ICM/Figures/tuned/R0_ignoring_fishing.png",r0.plt,base_width = 8,base_height = 8)
 # 
 # 
 # 
@@ -2188,7 +2188,7 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                             scale_linetype_manual(values = linetypes) +
 #                             theme(legend.key.width  = unit(2, "cm"))
 # cod.r0.ts.plt
-# #save_plot("D:/Github/ICM/Figures/tuned/R0_timeseries_ignoring_fishing.png",r0.plt,base_width = 8,base_height = 8)
+# ##save_plot("D:/Github/ICM/Figures/tuned/R0_timeseries_ignoring_fishing.png",r0.plt,base_width = 8,base_height = 8)
 # 
 # 
 # windows(11,11)
@@ -2211,13 +2211,13 @@ save_plot(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_
 #                                    ylab("Adjustment to catch (%)") +
 #                                    theme(axis.text.x = element_text(angle=45,hjust = 1))
 #                                    
-# save_plot("D:/Github/ICM/Figures/tuned/Percentage_change_to_bycatch_by_species.png",bycatch.plt,base_width = 8,base_height = 8)
+# #save_plot("D:/Github/ICM/Figures/tuned/Percentage_change_to_bycatch_by_species.png",bycatch.plt,base_width = 8,base_height = 8)
 #                                    
 # bycatch.plt.cod <- ggplot(for.tunes |> collapse::fsubset(Species == 'morhua')) + geom_boxplot(aes(y=per.excess.catch,x=Area)) + 
 #                                                                               ylab("Adjustment to catch (%)") +
 #                                                                               theme(axis.text.x = element_text(angle=45,hjust = 1))
 #                                                                               
-# save_plot("D:/Github/ICM/Figures/tuned/Percentage_change_to_bycatch_by_cod_stock.png",bycatch.plt.cod,base_width = 8,base_height = 8)
+# #save_plot("D:/Github/ICM/Figures/tuned/Percentage_change_to_bycatch_by_cod_stock.png",bycatch.plt.cod,base_width = 8,base_height = 8)
 # 
 # # bycatch.plt <- ggplot(for.tunes) + geom_boxplot(aes(y=per.excess.catch,x=Area)) + facet_wrap(~Species,scales = 'free_x')
 # #                                    ylab("Adjustment to catch (%)") +
