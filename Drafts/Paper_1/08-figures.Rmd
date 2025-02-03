@@ -1,0 +1,76 @@
+---
+output:
+  pdf_document:
+    fig_caption: yes
+    extra_dependencies: float
+linkcolor: blue
+header-includes: \usepackage{float}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include=F, echo=F}
+knitr::opts_knit$set(eval.after = "fig.cap")
+knitr::opts_chunk$set(fig.pos = 'H')
+options(knitr.kable.NA = '')
+require(tidyverse)
+options(tinytex.verbose = TRUE)
+
+```
+
+
+# Figures {-}
+
+
+```{r lambda-bx-6-fig, echo=F, fig.cap="$\\lambda$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_6_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-bx-other-fig, echo=F, fig.cap="$\\lambda$ estimates for the remainder of the stocks in this analysis, plotted by the location of the stock. The abbreviated species name is provided on the x axis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_boxplot_other_species_",what.2.tune,".png"))
+
+```
+
+
+\newpage
+```{r lambda-sd-fig, echo=F, fig.cap="The average standard deviation of $\\lambda_{F = 0}$  for Atlantic herring (*C. harenugs*), Atlantic cod (*G. morhua*), haddock (*M. aeglefinus*), and pollock (*P. virens) stocks in the western Atlantic (NAFO regions 2-5), Northern Altantic (Iceland, Faroe's, and the northeast Arctic), and Eastern Atlantic (Irish, Celtic, North, and Baltic Seas). The errorbars represent one standard deviation. "}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Lambda_sd_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-overall-plt, echo=F, fig.cap="Density dependence of $\\lambda$ The top panel shows $\\lambda_{F=0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95\\% confidence interval. The middle panel shows $\\lambda_{F>0}$ against the proportion of maximum abundance, with a GAM smooth and the GAM estimated 95% confidence interval. The bottom panel compares the GAM smooths for $\\lambda_{F=0}$ and $\\lambda_{F>0}$."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_overall_",what.2.tune,".png"))
+```
+
+
+
+\newpage
+```{r r0-6-plt, echo=F, fig.cap="$R_0$ estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_6_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-6-plt, echo=F, fig.cap="Generation length estimates for each stock of G. morhua, M. aeglefinus, P. virens, C. harengus, P. platessa, and S. solea."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_6_species_",what.2.tune,".png"))
+```
+
+<!-- Now for the Doubling time -->
+
+\newpage
+```{r dub-time-map, echo=F, fig.cap="Doubling time estimate for each stock with no fishing mortality."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_heatmap_by_order_",what.2.tune,".png"))
+```
+
+
+
+\newpage
+```{r dub-vs-sd, echo=F, fig.cap="The recovery potential (low, moderate, or high) of each stock after 20 years compared to the median $\\lambda_{F=0}$ and the standard deviation of $\\lambda_{F=0}$."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_sd_effects_",what.2.tune,".png"))
+```
+
+

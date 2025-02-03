@@ -1,0 +1,17 @@
+book_filename: "paper_1"
+rmd_files: ["index.Rmd",
+            "01-analysis_no_age_correction.Rmd",
+            "02-intro.Rmd",
+            "03-methods.Rmd",
+            "04-results.Rmd",
+            "05-discussion.Rmd",
+            "06-references.Rmd",
+            "07-tables.Rmd",
+            "08-figures.Rmd",
+            "appendix.Rmd"]
+            
+delete_merged_file: true
+
+language:
+  label:
+    fig: !expr function(x) sprintf("Figure %s. ", x)

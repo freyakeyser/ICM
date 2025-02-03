@@ -8,11 +8,14 @@
 #              string that will tell the function to calculate the natural mortality based on life history data.
 # ages:        What are the ages you are using 
 # fecund:      How are you estimating 
-# wt.at.age:  The weight of individuals for each age
-#mat.ogive.K  Only used if you provide just the age at 50% maturity.  Default is -50 which is effectively a knife edge maturation, as you approach 0 this becomes more smooth.
+# wt.at.age:   The weight of individuals for each age
+#mat.ogive.K   Only used if you provide just the age at 50% maturity.  Default is -50 which is effectively a knife edge maturation, as you approach 0 this becomes more smooth.
+# sim          Are we doing a retrospective analysis or a forward projection.  default = 'retro', set sim = 'project' for forward projections
+# proj.sim     How do you want to get your samples if you are doing the forward projection. You can 'sample' from the past directly 
+#              or use past data and add uncertainty through a lognormal distribution based on the historic data using proj.sim = 'dist'
 
 lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL,fecund = NULL,
-                  mat.ogive.K = -50,
+                  mat.ogive.K = -50, sim = 'project',proj.sim = 'dist',
                   L.inf = NULL,K = NULL,t0 = NULL, a.len.wgt = NULL, b.len.wgt = NULL, a.fec.len = NULL, b.fec.len = NULL,
                   sd.mat = 0,sd.nm = 0,sd.wt = 0,sd.fecund = 0
                   # The above are needed if 1) no weight at age data (L.inf,K, t0, a.len.wgt, b.len.wgt) 
@@ -21,6 +24,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
                   #                         4) if using the 'eggs' method to estimate fecundity. (L.inf,K, t0, a.fec.len,b.fec.len)
 ) 
 {
+  
   if(is.character(nat.mort)[1]) nm.c <- nat.mort else nm.c <- "Using data"
   if(is.character(fecund)[1]) fecund.c <- fecund else fecund.c <- "Using data"
   # Some warning messages if you didn't include something you needed...
@@ -32,10 +36,10 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     if(is.null(L.inf) | is.null(K)) stop("You need to specify K and L infinity from von B to use the Then-Pauly method")
   }
   
-  if(is.null(wt.at.age))
-  {
-    if(is.null(L.inf) | is.null(K) | is.null(t0)) stop("You need to specify K, L infinity, and t0 if weight at age vector isn't specified")
-  }
+  # if(is.null(wt.at.age))
+  # {
+  #   if(is.null(L.inf) | is.null(K) | is.null(t0)) stop("You need to specify K, L infinity, and t0 if weight at age vector isn't specified")
+  # }
   
   if(fecund.c == 'eggs')
   {
@@ -45,10 +49,14 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   
   # The Euler-Lotka Function to optimize on to find the intrinsic rate of growth for your population
   eulerlotka <- function(r) (sum(lx * mx * exp(-r * ages)) - 1)^2
-  
   # Set up a dataframe
   res <- data.frame(yrs = NA, r = NA)
   if(length(yrs) > 1) n.yrs <- length(yrs) else n.yrs <- 2 # Needs to be 2 if just doing it for one year to work how I have loop set up
+  
+ 
+  if(sim == 'retro')
+  {
+  
   # Get the maximum age
   max.age <- max(ages)
   # If you are using the fecund = ages, then we need to start from age 0
@@ -65,15 +73,15 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     mat.ogive <- 1/(1+exp(-(mat.K)*(age.at.50.mat-ages)))
     
   } # end if(length(age.mat) == 1) 
-  
+ 
   # If you have given me the maturity ogive than rename it
   if(length(age.mat) > 1) 
   {
-    if(is.vector(age.mat)) mat.ogive <- rlnorm(length(age.mat),age.mat,sd.nm)
+    if(is.vector(age.mat)) mat.ogive <- rlnorm(length(age.mat),age.mat,sd.mat)
     if(!is.vector(age.mat)) 
     {
       mat.ogive <- as.data.frame(age.mat) # Get it set up, then overwrite it with the uncertainty
-      for(i in 1:nrow(age.mat)) mat.ogive[i,] <- rlnorm(length(age.mat[i,]),as.numeric(log(age.mat[i,])),sd.nm)
+      for(i in 1:nrow(age.mat)) mat.ogive[i,] <- rlnorm(length(age.mat[i,]),as.numeric(log(age.mat[i,])),sd.mat)
     }
     
     
@@ -93,7 +101,7 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
   {  
     W.age <- as.data.frame(wt.at.age)
     # Add in uncertainty
-    if(is.vector(wt.at.age)) W.age <- rlnorm(length(wt.at.age),wt.at.age,sd.nm)
+    if(is.vector(wt.at.age)) W.age <- rlnorm(length(wt.at.age),wt.at.age,sd.wt)
     if(!is.vector(wt.at.age)) for(i in 1:nrow(wt.at.age)) W.age[i,] <- rlnorm(length(wt.at.age[i,]),as.numeric(log(wt.at.age[i,])),sd.wt)
   }
   
@@ -161,15 +169,19 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
       mx.t <- nat.mort*W.age*mat.ogive/unlist(spr$Reference_Point[2])/2 # Divided by 2 because Euler below in terms of number of females produced
       # note that give all the inputs already have variation attributed to them, there is no need in the SPR to add in more variability.
     } # end if(fecund == "SPR")
+    
   } # end if(is.character(fecund))  
+ 
   # Or if we directly had an estimate of fecundity (number of recruits per individual)
   if(!is.character(fecund)) 
   { 
+   
     mx.t <- fecund
     spr <- NULL
     if(is.null(nrow(fecund))) mx.t <- rlnorm(length(mx.t),mx.t,sd.fecund)
     if(nrow(mx.t) > 1) for(m in 1:nrow(mx.t)) mx.t[m,] <- rlnorm(length(mx.t[m,]),as.numeric(log(mx.t[m,])),sd.fecund)
   }
+  #browser() 
   # remove columns associated with NAs in mx, and remove NAs from mx
   if(any(is.na(colSums(mx)))) {
     ages <- ages[-which(is.na(colSums(mx)))]
@@ -177,31 +189,84 @@ lotka.r<-function(yrs = 1,age.mat=4,nat.mort = NULL,ages = ages,wt.at.age = NULL
     mx <- mx[-which(is.na(colSums(mx)))]
     mx.t <- mx.t[-which(is.na(colSums(mx.t)))]
   }
+  } # end the section to get mx and lx for retrospective analyses
+  ################################### END RETRO SECTION ################################### END RETRO SECTION################################### END RETRO SECTION
+  
+ 
+
+  
+  #################################### PROJECTION SECTION#################################### PROJECTION SECTION#################################### PROJECTION SECTION
+  # Now build the projection script for lotka.r
+  if(sim == 'project')
+  {
+    # Things we aren't using in projections (yet at least)
+    spr = NA
+    mat.ogive = NA
+    W.age = NA
+    # going to start simple here and just have it set up to work for the stocks we have the necessary data for
+    mx.t <- matrix(nrow=n.yrs,ncol= ncol(fecund))
+    nm.t <- nat.mort
+    # So grab a sample from the past as our basis
+    f.sample <- round(runif(n.yrs,min=1,max = nrow(fecund)))
+    m.sample <- round(runif(n.yrs,min=1,max = nrow(nat.mort)))
+    # then you get your sample for the projections
+    mx.t <- fecund[f.sample,]
+    nat.mort <- nat.mort[m.sample,]
+    
+    # Now if you want to add uncertainty to this run through a loop and add uncertainty.
+    if(proj.sim == 'dist')
+    {
+      for(y in 1:n.yrs)
+      {
+        # Now if you want to use the fecund/nat.mort data and add noise to that...
+        # But need to be a bit careful here, I don't want them all jumbled around across the ages
+        # as they all would tend to respond similarly (i.e. a year with high M probably won't just be high m for one ages)
+        # So going to take mean of whole vector and adjust them all accordingly...
+        log.mean.nm <- log(mean(as.numeric(nat.mort[y,])))
+        log.mean.mx <- log(mean(as.numeric(mx.t[y,])))
+        nm.deva <- rlnorm(1,log.mean.nm,sd.nm)/exp(log.mean.nm )
+        mx.deva <- rlnorm(1,log.mean.mx,sd.fecund)/exp(log.mean.mx )
+        mx.t[y,] <- mx.t[y,]*mx.deva
+        nat.mort[y,] <- nat.mort[y,]*nm.deva  
+      } # end for(y in 1:n.yrs) loop
+     } # end if(proj.sim == 'dist')
+
+  }
+  
+  ################################### END PROJECTION SECTION ################################### END PROJECTION SECTION################################### END PROJECTION SECTION
+  
+  
+  
+  #################################### Calculate Lotka SECTION #################################### Calculate Lotka SECTION #################################### Calculate Lotka SECTION
   mx.tmp <- NULL
   lx.tmp <- NULL
   
   # Now run this through all the yrs 
   for(j in 1:(n.yrs))
   { 
+    #browser() 
     # Get the r estimate for each year if we are running through a bunch of years
     # Just use the first year if we don't have same length nat.mort as years
     if(!is.null(nrow(nat.mort))) lx <- 1-exp(-nat.mort[j,]) else lx <- 1-exp(-nat.mort)
     # Convert to survivorship vector
-    si <- 1-lx
+    si <- 1-unlist(lx)
     # Set the first age class to be 1
     lx<-1
     # And get cumulative survivorship for the stock
     for(s in 2:(length(si))) lx[s]<-lx[s-1]*si[s-1]
-
+    #browser()
     if(!is.null(nrow(mx.t))) mx <- mx.t[j,] else mx <- mx.t
     # Now we are cooking!
-    junk<-nlminb(start = 0.1, obj = eulerlotka)
-    res[j,] <- c(yrs[j],junk$par)
+    junk<-optimize(lower=-0.99,upper=5,f = eulerlotka)
+    res[j,] <- c(yrs[j],junk$minimum)
     mx.tmp[[j]] <- mx
     lx.tmp[[j]] <- lx
+    #browser()
   } # end for(j in 1:(n.yrs-1))
   
   mx.mat <- do.call("rbind",mx.tmp)
   lx.mat <- do.call('rbind',lx.tmp)
-  return(list(res=res,mx=mx.mat,lx=lx.mat,spr = spr,mat.ogive = mat.ogive,wt.at.age = W.age,nat.mort = nat.mort))
+  
+  
+  return(list(res=res,mx=mx.mat,lx=lx.mat,spr = spr,mat.ogive = mat.ogive,nat.mort = nat.mort))
 }

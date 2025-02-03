@@ -1,0 +1,57 @@
+
+# APPENDIX A {#app:A}
+
+<!-- f -->
+\newpage
+```{r dd-nf-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F=0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_nf_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dd-fish-stock-plt, echo=F, fig.cap="Density dependence of $\\lambda_{F>0}$ for each stock in the analysis plotted regionally."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/density_dependence_fish_stocks_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-other-plt, echo=F, fig.cap="$R_0$ estimates for the remainder of the stocks in this analysis, plotted by the location of the stock. The abbreviated species name is provided on the x axis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/R0_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-nf-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r r0-fish-ts-plt, echo=F, fig.cap="$R_0$ estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/r0_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+
+\newpage
+```{r gl-other-plt, echo=F, fig.cap="Generation length estimates for the remainder of the stocks in this analysis, plotted by the location of the stock. The abbreviated species name is provided on the x axis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_boxplot_other_species_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-nf-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species excluding the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_nf_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r gl-fish-ts-plt, echo=F, fig.cap="Generation length estimates for every cohort for each species including the effects of fishing."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/GL_heatmap_fish_",what.2.tune,".png"))
+```
+
+
+\newpage
+```{r dub-ts, echo=F, fig.cap="The number of stocks which doubled in size by a given year with no fishing mortality  The dashed line represents the 77 stocks in the analysis."}
+knitr::include_graphics(paste0(loc,"/Figures/tuned/No_age_correction/Doubling_time_time_series_",what.2.tune,".png"))
+```
