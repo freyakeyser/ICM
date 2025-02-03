@@ -113,6 +113,16 @@ locs <- stocks %>% group_by(ID,lat, lon) %>%
 # locs %>% group_by(ID) %>%
 #   summarize(sum(nstocks))
 
+stocks$lambda_cod_var <- NA
+stocks$lambda_cod_var[stocks$ID %in% c(6,7,8,10)] <- "C"
+stocks$lambda_had_var <- NA
+stocks$lambda_had_var[stocks$ID %in% c(6,7,10)] <- "H"
+stocks$low_doubling_time <- NA
+stocks$low_doubling_time[stocks$Area.long %in% c("Gulf of Alaska", "NFLD", "NAFO 4T")] <- "slow"
+st_geometry(stocks) <- NULL
+
+locs <-  left_join(locs, unique(dplyr::select(stocks, ID, lambda_cod_var, lambda_had_var, low_doubling_time)))
+
 cols <- c('#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4')
 names(cols) <- sort(unique(locs$Order))
 require(magick)
@@ -121,6 +131,9 @@ for (i in 1:11){
   barfig[[i]] <- magick::image_graph(width = 50, height = 50, res = 72, bg="transparent")
   print(ggplot() + geom_bar(data=locs[locs$ID==i,], aes(x=1, y=nstocks),
                       position="stack", stat="identity") +
+          geom_text(data=locs[locs$ID==i,], aes(x=1, y=Inf, label=low_doubling_time), vjust=1)+
+          geom_text(data=locs[locs$ID==i,], aes(x=-Inf, y=Inf, label=lambda_cod_var), vjust=1, hjust=-1.5)+
+          geom_text(data=locs[locs$ID==i,], aes(x=Inf, y=Inf, label=lambda_had_var), vjust=1, hjust=2)+
     #scale_fill_manual(values=cols, guide=F) +
     ylim(0,15)+ # take this lim from the locs summary above
     xlab("") + ylab("") +
