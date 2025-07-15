@@ -102,8 +102,6 @@ stocks <- st_as_sf(stocks, coords=c("lon", "lat"), crs=4326, remove=F)
 ggplot()+ geom_sf(data=nafo, aes(fill=SubArea)) +
   geom_sf_text(data=stocks, aes(label=ID))
 
-
-
 sf_use_s2(FALSE)
 worldcrop <- st_crop(world, xmin=-180, ymin=30, xmax=30, ymax=75)
 
@@ -118,32 +116,40 @@ stocks$lambda_cod_var[stocks$ID %in% c(6,7,8,10)] <- "C"
 stocks$lambda_had_var <- NA
 stocks$lambda_had_var[stocks$ID %in% c(6,7,10)] <- "H"
 stocks$low_doubling_time <- NA
-stocks$low_doubling_time[stocks$Area.long %in% c("Gulf of Alaska", "NFLD", "NAFO 4T")] <- "slow"
+stocks$low_doubling_time[stocks$Area.long %in% c("Gulf of Alaska", "NFLD", "NAFO 4T")] <- "*"
 st_geometry(stocks) <- NULL
 
 locs <-  left_join(locs, unique(dplyr::select(stocks, ID, lambda_cod_var, lambda_had_var, low_doubling_time)))
 
-cols <- c('#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4')
-names(cols) <- sort(unique(locs$Order))
+cols <- c('#d73027','#91bfdb','#7F7F7F')
+names(cols) <- sort(unique(locs$sp.group))
 require(magick)
 barfig<- NULL
-for (i in 1:11){
+for (i in unique(locs$ID)){
   barfig[[i]] <- magick::image_graph(width = 50, height = 50, res = 72, bg="transparent")
-  print(ggplot() + geom_bar(data=locs[locs$ID==i,], aes(x=1, y=nstocks),
-                      position="stack", stat="identity") +
-          geom_text(data=locs[locs$ID==i,], aes(x=1, y=Inf, label=low_doubling_time), vjust=1)+
-          geom_text(data=locs[locs$ID==i,], aes(x=-Inf, y=Inf, label=lambda_cod_var), vjust=1, hjust=-1.5)+
-          geom_text(data=locs[locs$ID==i,], aes(x=Inf, y=Inf, label=lambda_had_var), vjust=1, hjust=2)+
-    #scale_fill_manual(values=cols, guide=F) +
-    ylim(0,15)+ # take this lim from the locs summary above
-    xlab("") + ylab("") +
-    theme_bw() +theme(axis.text=element_blank(), axis.ticks = element_blank(), panel.background=element_blank(), panel.grid=element_blank()))
+  print(
+    ggplot() + geom_bar(data=locs[locs$ID==i,], aes(x=1, y=nstocks),
+                        position="stack", stat="identity") +
+      geom_text(data=unique(locs[locs$ID==i,c("lat", "lon", "low_doubling_time")]), aes(x=1, y=Inf, label=low_doubling_time), vjust=1)+
+      geom_text(data=unique(locs[locs$ID==i,c("lat", "lon", "lambda_cod_var")]), aes(x=1, y=Inf, label=lambda_cod_var), vjust=0, hjust=-0.1)+
+      geom_text(data=unique(locs[locs$ID==i,c("lat", "lon", "lambda_had_var")]), aes(x=1, y=Inf, label=lambda_had_var), vjust=0, hjust=1)+
+      # geom_text(data=locs[locs$ID==i,], aes(x=-Inf, y=Inf, label=lambda_cod_var), vjust=1, hjust=-1.5)+
+      # geom_text(data=locs[locs$ID==i,], aes(x=Inf, y=Inf, label=lambda_had_var), vjust=1, hjust=2)+
+      #scale_fill_manual(values=cols) +
+      ylim(0,15)+ # take this lim from the locs summary above
+      xlab("") + ylab("") +
+      theme_bw() +theme(axis.text=element_blank(), 
+                        axis.ticks = element_blank(), 
+                        panel.background=element_blank(), 
+                        panel.grid=element_blank(),
+                        legend.position="none")
+  )
   dev.off()
   barfig[[i]] <- image_transparent(barfig[[i]], 'white')
 }
 
 basemap <- image_graph(width = 850, height = 550, res = 96)
-ggplot() + geom_sf(data=worldcrop) +
+ggplot() + geom_sf(data=worldcrop, colour=NA) +
   #geom_sf_text(data=locs, aes(label=ID)) +
   coord_sf(expand=F) + theme_minimal() + theme(panel.grid = element_blank()) + xlab("")+ ylab("")
 dev.off()
